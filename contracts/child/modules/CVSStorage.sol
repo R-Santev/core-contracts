@@ -6,6 +6,8 @@ import "../../interfaces/IBLS.sol";
 import "../../interfaces/IValidatorQueue.sol";
 import "../../interfaces/IWithdrawalQueue.sol";
 
+import "../../interfaces/h_modules/IPowerExponent.sol";
+
 import "../../libs/ValidatorStorage.sol";
 
 abstract contract CVSStorage is ICVSStorage {
@@ -14,7 +16,7 @@ abstract contract CVSStorage is ICVSStorage {
     bytes32 public constant NEW_VALIDATOR_SIG = 0xbddc396dfed8423aa810557cfed0b5b9e7b7516dac77d0b0cdf3cfbca88518bc;
     uint256 public constant ACTIVE_VALIDATOR_SET_SIZE = 100; // might want to change later!
     uint256 public constant MAX_VALIDATOR_SET_SIZE = 500;
-    uint256 public constant REWARD_PRECISION = 10**18;
+    uint256 public constant REWARD_PRECISION = 10 ** 18;
     uint256 public constant WITHDRAWAL_WAIT_PERIOD = 1;
     // more granular commission?
     uint256 public constant MAX_COMMISSION = 100;
@@ -43,6 +45,9 @@ abstract contract CVSStorage is ICVSStorage {
 
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;
+
+    // Initial Voting Power exponent to be ^0.85
+    PowerExponentStore public powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
 
     /**
      * @inheritdoc ICVSStorage
