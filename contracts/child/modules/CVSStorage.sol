@@ -7,6 +7,8 @@ import "../../interfaces/IValidatorQueue.sol";
 import "../../interfaces/IWithdrawalQueue.sol";
 import "../../interfaces/Errors.sol";
 
+import "../../interfaces/h_modules/IPowerExponent.sol";
+
 import "../../libs/ValidatorStorage.sol";
 
 abstract contract CVSStorage is ICVSStorage {
@@ -39,12 +41,13 @@ abstract contract CVSStorage is ICVSStorage {
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;
 
+    // Initial Voting Power exponent to be ^0.85
+    PowerExponentStore public powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
+
     /**
      * @inheritdoc ICVSStorage
      */
-    function getValidator(
-        address validator
-    )
+    function getValidator(address validator)
         external
         view
         returns (
