@@ -24,6 +24,7 @@ contract ChildValidatorSet is
     CVSWithdrawal,
     CVSStaking,
     CVSDelegation,
+    PowerExponent,
     System
 {
     using ValidatorStorageLib for ValidatorTree;
@@ -321,6 +322,8 @@ contract ChildValidatorSet is
         }
 
         _processQueue();
+
+        _applyPendingExp();
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
     }
