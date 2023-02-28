@@ -82,6 +82,9 @@ contract ChildValidatorSet is
 
             verifyValidatorRegistration(validators[i].addr, validators[i].signature, validators[i].pubkey);
         }
+
+        // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
+        powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
     }
 
     /**
