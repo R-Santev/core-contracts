@@ -70,6 +70,19 @@ describe("ChildValidatorSet", () => {
     const systemSigner = await ethers.getSigner("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
     systemChildValidatorSet = childValidatorSet.connect(systemSigner);
   });
+
+  describe("Voting Power Exponent", async () => {
+    it("initial value must be", async () => {
+      const powerExp = await childValidatorSet.powerExponent();
+      expect(powerExp.value).to.equal(8500);
+      expect(powerExp.pendingValue).to.equal(0);
+
+      const powerExpRes = await childValidatorSet.getExponent();
+      expect(powerExpRes.numerator).to.equal(8500);
+      expect(powerExpRes.denominator).to.equal(10000);
+    });
+  });
+
   it("Initialize without system call", async () => {
     await expect(
       childValidatorSet.initialize(

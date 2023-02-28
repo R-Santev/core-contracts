@@ -566,6 +566,24 @@ Look up an epoch by block number. Searches in O(log n) time.
 |---|---|---|
 | _0 | Epoch | Epoch Returns epoch if found, or else, the last epoch |
 
+### getExponent
+
+```solidity
+function getExponent() external view returns (uint256 numerator, uint256 denominator)
+```
+
+Return the Voting Power Exponent Numerator and Denominator
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| numerator | uint256 | undefined |
+| denominator | uint256 | undefined |
+
 ### getValidator
 
 ```solidity
@@ -744,6 +762,24 @@ Calculates how much is yet to become withdrawable for account.
 |---|---|---|
 | _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
 
+### powerExponent
+
+```solidity
+function powerExponent() external view returns (uint128 value, uint128 pendingValue)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| value | uint128 | undefined |
+| pendingValue | uint128 | undefined |
+
 ### register
 
 ```solidity
@@ -919,6 +955,22 @@ Unstakes amount for sender. Claims rewards beforehand.
 | Name | Type | Description |
 |---|---|---|
 | amount | uint256 | Amount to unstake |
+
+### updateExponent
+
+```solidity
+function updateExponent(uint256 newValue) external nonpayable
+```
+
+Set new pending exponent, to be activated in the next commit epoch
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newValue | uint256 | New Voting Power Exponent Numerator |
 
 ### whitelist
 
