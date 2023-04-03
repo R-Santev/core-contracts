@@ -27,44 +27,10 @@ function ACTIVE_VALIDATOR_SET_SIZE() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### MAX_COMMISSION
+### DOMAIN
 
 ```solidity
-function MAX_COMMISSION() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### MAX_VALIDATOR_SET_SIZE
-
-```solidity
-function MAX_VALIDATOR_SET_SIZE() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### NEW_VALIDATOR_SIG
-
-```solidity
-function NEW_VALIDATOR_SIG() external view returns (bytes32)
+function DOMAIN() external view returns (bytes32)
 ```
 
 
@@ -78,10 +44,10 @@ function NEW_VALIDATOR_SIG() external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### REWARD_PRECISION
+### MAX_COMMISSION
 
 ```solidity
-function REWARD_PRECISION() external view returns (uint256)
+function MAX_COMMISSION() external view returns (uint256)
 ```
 
 
@@ -274,7 +240,7 @@ Return the Voting Power Exponent Numerator and Denominator
 ### getValidator
 
 ```solidity
-function getValidator(address validator) external view returns (struct Validator)
+function getValidator(address validator) external view returns (uint256[4] blsKey, uint256 stake, uint256 totalStake, uint256 commission, uint256 withdrawableRewards, bool active)
 ```
 
 Gets validator by address.
@@ -291,29 +257,12 @@ Gets validator by address.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | Validator | Validator (BLS public key, self-stake, total stake, commission, withdrawable rewards, activity status) |
-
-### message
-
-```solidity
-function message(uint256) external view returns (uint256)
-```
-
-Message to sign for registration
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
+| blsKey | uint256[4] | BLS public key |
+| stake | uint256 | self-stake |
+| totalStake | uint256 | self-stake + delegation |
+| commission | uint256 | commission |
+| withdrawableRewards | uint256 | withdrawable rewards |
+| active | bool | activity status |
 
 ### minDelegation
 

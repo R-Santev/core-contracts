@@ -3,8 +3,14 @@ import "@openzeppelin/hardhat-upgrades";
 import "@primitivefi/hardhat-dodoc";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-
+import "@tenderly/hardhat-tenderly";
 dotenv.config();
+
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
+import "./tasks";
 
 const config: HardhatUserConfig = {
   solidity: {

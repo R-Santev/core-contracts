@@ -355,6 +355,24 @@ Calculates how much is yet to become withdrawable for account.
 |---|---|---|
 | _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
 
+### powerExponent
+
+```solidity
+function powerExponent() external view returns (uint128 value, uint128 pendingValue)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| value | uint128 | undefined |
+| pendingValue | uint128 | undefined |
+
 ### totalDelegationOf
 
 ```solidity

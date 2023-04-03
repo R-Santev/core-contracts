@@ -6,12 +6,15 @@ import "./CVSStorage.sol";
 import "./CVSWithdrawal.sol";
 import "../../interfaces/Errors.sol";
 
+import "../h_modules/Vesting.sol";
+import "../h_modules/APR.sol";
+
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/RewardPool.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal {
+abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Vesting, APR {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using RewardPoolLib for RewardPool;
@@ -59,7 +62,13 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal {
     function claimDelegatorReward(address validator, bool restake) public {
         RewardPool storage pool = _validators.getDelegationPool(validator);
         uint256 reward = pool.claimRewards(msg.sender);
+
         if (reward == 0) return;
+
+        // H_MODIFY: In case of NOT vested position apply the base APR
+        if (!isPosition(validator, msg.sender)) {
+            reward = applyBaseAPR(reward);
+        }
 
         if (restake) {
             _delegate(msg.sender, validator, reward);
@@ -67,6 +76,7 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal {
             _registerWithdrawal(msg.sender, reward);
         }
 
+        // TODO: Emit event when sender is not a position only
         emit DelegatorRewardClaimed(msg.sender, validator, restake, reward);
     }
 
