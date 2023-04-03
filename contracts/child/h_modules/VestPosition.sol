@@ -4,10 +4,13 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "./APR.sol";
+import "./Vesting.sol";
 
 import "./../modules/CVSDelegation.sol";
 
 // import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+
+// error NoReward();
 
 contract VestPosition is Initializable, OwnableUpgradeable {
     struct VestData {
@@ -17,9 +20,16 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         uint256 bonus; // user apr params
     }
 
+    struct TopUpData {
+        uint256 balance;
+        int256 correction;
+        uint256 epochNum;
+    }
+
     address public staking;
 
     mapping(address => VestData) public vestingPerVal;
+    mapping(address => TopUpData[]) public topUpPerVal;
 
     event Claimed(address indexed account, uint256 amount);
 
@@ -36,9 +46,9 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         VestData storage data = vestingPerVal[validator];
         require(msg.value > 0, "VestPosition: no value");
         require(_period > 0 && _period < 53, "VestPosition: no period");
-        require(data.vestingEnd < block.timestamp, "VestPosition: not ended");
+        require(data.end < block.timestamp, "VestPosition: not ended");
 
-        _claim();
+        // _claim();
 
         data.amount = msg.value;
         data.end = block.timestamp + (_period * 1 weeks);
@@ -52,35 +62,70 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         CVSDelegation(staking).delegate{value: msg.value}(validator, false);
     }
 
-    function claim(address validator) external onlyOwner {
+    function handleTopUp(
+        address validator,
+        uint256 epochNumber,
+        uint256 topUpIndex
+    ) internal returns (TopUpData memory) {
+        if (topUpIndex >= topUpPerVal[validator].length) {
+            revert();
+        }
+
+        TopUpData memory topUp = topUpPerVal[validator][topUpIndex];
+
+        if (topUp.epochNum > epochNumber) {
+            revert();
+        } else if (topUp.epochNum == epochNumber) {
+            // If topUp is made exactly in the before epoch - it is the valid one for sure
+        } else {
+            // This is the case where the topUp is made more than 1 epoch before the handled one (epochNumber)
+            if (topUpIndex == topUpPerVal[validator].length - 1) {
+                // If it is the last topUp - don't check does the next one can be better
+            } else {
+                // If it is not the last topUp - check does the next one can be better
+                TopUpData memory nextTopUp = topUpPerVal[validator][topUpIndex + 1];
+                if (nextTopUp.epochNum < epochNumber) {
+                    // If the next topUp is made in an epoch before the handled one
+                    // and is bigger than the provided top - the provided one is not valid
+                    revert();
+                }
+            }
+        }
+
+        return topUp;
+    }
+
+    function claim(address validator, uint256 epochNumber, uint256 topUpIndex) external onlyOwner {
         VestData storage data = vestingPerVal[validator];
-        require(block.timestamp >= data.start, "VestPosition: not started");
+        uint256 start = data.end - data.period * 1 weeks;
+        require(block.timestamp >= start, "VestPosition: not started");
+
+        if (data.end > block.timestamp) {
+            revert NoReward();
+        }
+
+        uint256 maturePeriod = block.timestamp - data.end;
+        uint256 matureTimestamp = start + maturePeriod;
+
+        (uint256 epochRPS, uint256 timestamp) = Vesting(staking).historyRPS(validator, epochNumber);
+        if (timestamp > matureTimestamp) {
+            revert NoReward();
+        }
+
+        TopUpData memory topUp = handleTopUp(validator, epochNumber, topUpIndex);
 
         uint256 currentBalance = address(this).balance;
-        CVSDelegation(staking).claimDelegatorReward(validator, false);
+        CVSDelegation(staking).claimDelegatorReward(validator, false, epochRPS, topUp.balance, topUp.correction);
         uint256 reward = address(this).balance - currentBalance;
         require(reward > 0, "VestPosition: no reward");
 
-        // CONTINUE HERE: calculate the actual reward, withdraw amount from staking
+        uint256 bonusReward = Vesting(staking).claimBonus(validator);
 
-        uint256 amount = (vestingAmount / (vestingEnd - vestingStart)) * vestingInterval;
-        vestingClaimed += amount;
+        uint256 amount = reward + bonusReward;
 
         emit Claimed(msg.sender, amount);
-        // slither-disable-next-line low-level-calls
-        (bool success, ) = msg.sender.call{value: amount}(""); // solhint-disable-line avoid-low-level-calls
+
+        (bool success, ) = msg.sender.call{value: amount}("");
         require(success, "VestPosition: claim failed");
-    }
-
-    function _claim() private {
-        if (vestingClaimed < vestingAmount) {
-            uint256 amount = (vestingAmount / (vestingEnd - vestingStart)) * vestingInterval;
-            vestingClaimed += amount;
-
-            emit Claimed(msg.sender, amount);
-            // slither-disable-next-line low-level-calls
-            (bool success, ) = msg.sender.call{value: amount}(""); // solhint-disable-line avoid-low-level-calls
-            require(success, "VestPosition: claim failed");
-        }
     }
 }

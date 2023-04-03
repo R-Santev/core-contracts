@@ -111,4 +111,37 @@ library RewardPoolLib {
     function magnitude() private pure returns (uint256) {
         return 1e18;
     }
+
+    function rewardsEarned(
+        RewardPool storage pool,
+        address account,
+        uint256 rps,
+        uint256 balance,
+        int256 correction
+    ) internal view returns (uint256) {
+        int256 magnifiedRewards = (rps * balance).toInt256Safe();
+        uint256 correctedRewards = (magnifiedRewards + correction).toUint256Safe();
+        return correctedRewards / magnitude();
+    }
+
+    function claimableRewards(
+        RewardPool storage pool,
+        address account,
+        uint256 rps,
+        uint256 balance,
+        int256 correction
+    ) internal view returns (uint256) {
+        return rewardsEarned(pool, account, rps, balance, correction) - pool.claimedRewards[account];
+    }
+
+    function claimRewards(
+        RewardPool storage pool,
+        address account,
+        uint256 rps,
+        uint256 balance,
+        int256 correction
+    ) internal returns (uint256 reward) {
+        reward = claimableRewards(pool, account, rps, balance, correction);
+        pool.claimedRewards[account] += reward;
+    }
 }
