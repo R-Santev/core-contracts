@@ -81,6 +81,10 @@ library RewardPoolLib {
         return (pool.balances[account] * pool.supply) / pool.virtualSupply;
     }
 
+    function correctionOf(RewardPool storage pool, address account) internal view returns (int256) {
+        return pool.magnifiedRewardCorrections[account];
+    }
+
     /**
      * @notice returns the historical total rewards earned by an account in a specific pool
      * @param pool the RewardPool to query the total from

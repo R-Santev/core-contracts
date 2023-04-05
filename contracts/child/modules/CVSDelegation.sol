@@ -7,14 +7,13 @@ import "./CVSWithdrawal.sol";
 import "../../interfaces/Errors.sol";
 
 import "../h_modules/Vesting.sol";
-import "../h_modules/APR.sol";
 
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/RewardPool.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Vesting, APR {
+abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Vesting {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using RewardPoolLib for RewardPool;
@@ -29,6 +28,39 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
             revert StakeRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
         claimDelegatorReward(validator, restake);
         _delegate(msg.sender, validator, msg.value);
+    }
+
+    function vestDelegate(address validator, bool restake) external payable {
+        if (!isPosition()) {
+            revert StakeRequirement({src: "vestDelegate", msg: "NOT_POSITION"});
+        }
+
+        RewardPool storage delegation = _validators.getDelegationPool(validator);
+        uint256 oldBalance = delegation.balanceOf(msg.sender);
+
+        // OLD logic
+        if (delegation.balanceOf(msg.sender) + msg.value < minDelegation)
+            revert StakeRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
+        claimDelegatorReward(validator, restake);
+        _delegate(msg.sender, validator, msg.value);
+
+        if (isActivePosition(validator, msg.sender)) {
+            if (isTopUpMade(validator)) {
+                revert StakeRequirement({src: "vestDelegate", msg: "TOPUP_ALREADY_MADE"});
+            }
+
+            // add topUp data and modify end period of position, decrease RSI bonus
+            int256 correction = delegation.correctionOf(msg.sender);
+            _topUp(validator, oldBalance, oldBalance + msg.value, correction);
+        } else {
+            // old reward must be already taken, so not a problem to clear the data
+            vestingPerVal[validator][msg.sender] = new VestData({
+                amount: msg.value,
+                end: block.timestamp + (period * 1 weeks),
+                period: period,
+                bonus: bonus
+            });
+        }
     }
 
     /**
@@ -66,7 +98,7 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
         if (reward == 0) return;
 
         // H_MODIFY: In case of NOT vested position apply the base APR
-        if (!isPosition(validator, msg.sender)) {
+        if (!isPosition()) {
             reward = applyBaseAPR(reward);
         }
 
@@ -81,7 +113,7 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
     }
 
     function claimVestDelegatorReward(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) public {
-        if (!isPosition(validator, msg.sender)) {
+        if (!isPosition()) {
             revert Unauthorized("NOT_POSITION");
         }
 
@@ -91,7 +123,7 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
         uint256 reward = pool.claimRewards(msg.sender, epochRPS, topUp.balance, topUp.correction);
 
         // CONTINUE: copy custom apr formula and paste it in the vesting, apply here
-        reward = applyCustomAPR(reward, epochNumber, topUpIndex);
+        reward = applyCustomAPR(validator, reward);
 
         if (reward == 0) return;
 

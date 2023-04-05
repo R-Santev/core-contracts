@@ -73,7 +73,7 @@ contract APR {
         return (amount * base) / DENOMINATOR;
     }
 
-    function magnitude() private pure returns (uint256) {
+    function magnitude() internal pure returns (uint256) {
         return 1e18;
     }
 }

@@ -3,26 +3,23 @@ pragma solidity 0.8.17;
 
 import "./../modules/CVSStorage.sol";
 
+import "./../h_modules/APR.sol";
+import "./../h_modules/VestFactory.sol";
+
 import "../../interfaces/Errors.sol";
 
 error NoReward();
 
-contract Vesting is CVSStorage {
+abstract contract Vesting is CVSStorage, VestFactory, APR {
     // RPS = Reward Per Share
     struct RPS {
         uint192 value;
         uint64 timestamp;
     }
 
-    struct Position {
-        uint256 vestingStart;
-        uint256 vestingEnd;
-    }
-
     struct VestData {
         uint256 amount;
         uint256 end;
-        uint256 period; // in weeks
         uint256 bonus; // user apr params
     }
 
@@ -33,11 +30,10 @@ contract Vesting is CVSStorage {
     }
 
     // validator => user => VestData
-    mapping(address => mapping(address => VestData)) public vestingPerVal;
     mapping(address => mapping(address => TopUpData[])) public topUpPerVal;
 
-    // validator => delegator => Position Data
-    mapping(address => mapping(address => Position)) public positions;
+    // validator => vesting period => delegator => Position Data
+    mapping(address => mapping(uint256 => mapping(address => VestData))) public positions;
 
     // validator delegation pool => epochNumber => RPS
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
@@ -67,21 +63,28 @@ contract Vesting is CVSStorage {
         // }
     }
 
-    // function _setPosition(address validator, uint256 amount, uint256 vestingWeeks) internal {
-    //     require(amount > 0, "amount must be greater than 0");
-    //     require(vestingWeeks > 0, "vestingWeeks must be greater than 0");
+    function createPosition(address validator, uint256 vestingWeeks) external {
+        if (vestingWeeks > 0 && vestingWeeks < 53) {
+            revert StakeRequirement({src: "vesting", msg: "INVALID_VESTING_PERIOD"});
+        }
 
-    //     if (isUsedPosition(validator, msg.sender)) {
-    //         revert StakeRequirement({src: "vesting", msg: "POSITION_ALREADY_USED"});
-    //     }
+        if (expression) {}
 
-    //     positions[validator][msg.sender] = Position({
-    //         vestingStart: block.timestamp,
-    //         vestingEnd: block.timestamp + vestingWeeks * 1 weeks
-    //     });
+        if (isUsedPosition(validator, msg.sender)) {
+            revert StakeRequirement({src: "vesting", msg: "POSITION_ALREADY_USED"});
+        }
 
-    //     _delegate(msg.sender, validator, msg.value);
-    // }
+        // CONTINUE: find a way to check if position for specific period is created
+        // there is no need for separate position contract per validator (because different delegation pools)
+        // Create position
+        // continue with delegate
+        positions[validator][msg.sender] = Position({
+            vestingStart: block.timestamp,
+            vestingEnd: block.timestamp + vestingWeeks * 1 weeks
+        });
+
+        _delegate(msg.sender, validator, msg.value);
+    }
 
     // CONTINUE: Think about the structure of the vesting, because with the current withdrawal settings the mechanism would not work
 
@@ -91,7 +94,7 @@ contract Vesting is CVSStorage {
         address validator,
         uint256 epochNumber,
         uint256 topUpIndex
-    ) internal returns (uint256, TopUpData memory) {
+    ) internal view returns (uint256, TopUpData memory) {
         VestData storage data = vestingPerVal[validator][msg.sender];
         uint256 start = data.end - data.period * 1 weeks;
         require(block.timestamp >= start, "VestPosition: not started");
@@ -125,20 +128,51 @@ contract Vesting is CVSStorage {
         // require(success, "VestPosition: claim failed");
     }
 
-    function isPosition(address validator, address delegator) public view returns (bool) {
-        return positions[validator][delegator].vestingEnd > 0;
+    function isPosition() public view returns (bool) {
+        return isClone(msg.sender);
     }
 
     function isActivePosition(address validator, address delegator) public view returns (bool) {
         Position memory position = positions[validator][delegator];
-        return position.vestingStart <= block.timestamp && position.vestingEnd >= block.timestamp;
+        return position.vestingEnd >= block.timestamp && position.vestingStart <= block.timestamp;
+    }
+
+    // TODO: Check if the commitEpoch is the last transaction in the epoch, otherwise bug may occur
+    /**
+     * @notice Checks if a top up was already made in the current epoch
+     * @param validator Validator to delegate to
+     */
+    function isTopUpMade(address validator) public view returns (bool) {
+        uint256 length = topUpPerVal[validator][msg.sender].length;
+        if (length == 0) {
+            return false;
+        }
+
+        TopUpData memory data = topUpPerVal[validator][msg.sender][length - 1];
+        if (data.epochNum == currentEpochId) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function _topUp(address validator, uint256 oldBalance, uint256 balance, int256 correction) internal {
+        topUpPerVal[validator][msg.sender].push(
+            TopUpData({balance: balance, correction: correction, epochNum: currentEpochId})
+        );
+
+        // balance / old balance = increase coefficient
+        // apply increase coefficient to the vesting period to find the increase in the period
+        // TODO: Optimize gas costs
+        uint256 timeIncrease = (balance * vestingPerVal[validator][msg.sender].period) / oldBalance;
+        vestingPerVal[validator][msg.sender].end = vestingPerVal[validator][msg.sender].end + timeIncrease;
     }
 
     function handleTopUp(
         address validator,
         uint256 epochNumber,
         uint256 topUpIndex
-    ) internal returns (TopUpData memory) {
+    ) internal view returns (TopUpData memory) {
         if (topUpIndex >= topUpPerVal[validator][msg.sender].length) {
             revert();
         }
@@ -165,5 +199,9 @@ contract Vesting is CVSStorage {
         }
 
         return topUp;
+    }
+
+    function applyCustomAPR(address validator, uint256 amount) internal returns (uint256) {
+        return (amount * vestingPerVal[validator][msg.sender].bonus) / DENOMINATOR;
     }
 }
