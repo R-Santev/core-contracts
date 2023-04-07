@@ -68,7 +68,7 @@ contract APR {
         return (totalStaked * macroFactor) / DENOMINATOR;
     }
 
-    function applyBaseAPR(uint256 amount) internal pure returns (uint256) {
+    function _applyBaseAPR(uint256 amount) internal pure returns (uint256) {
         uint256 base = getBase();
         return (amount * base) / DENOMINATOR;
     }

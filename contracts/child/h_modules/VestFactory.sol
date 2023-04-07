@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import "./VestPosition.sol";
 
-contract VestFactory is Ownable {
-    uint8 public latestAddedVersion;
-
-    mapping(address => bool) public clones;
+contract VestFactory {
     address public implementation;
 
     event NewClone(address newClone);
@@ -18,16 +14,13 @@ contract VestFactory is Ownable {
         implementation = _implementation;
     }
 
-    function clone() external {
+    function clone() internal returns (address) {
         address child = Clones.clone(implementation);
-        clones[child] = true;
 
         VestPosition(child).initialize(address(this));
 
         emit NewClone(child);
-    }
 
-    function isClone(address proxy) public view returns (bool) {
-        return clones[proxy];
+        return child;
     }
 }

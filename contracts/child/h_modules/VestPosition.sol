@@ -4,31 +4,10 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-// import "./APR.sol";
-// import "./Vesting.sol";
-
-// import "./../modules/CVSDelegation.sol";
-
-// error NoReward();
+import "../../interfaces/modules/ICVSDelegation.sol";
 
 contract VestPosition is Initializable, OwnableUpgradeable {
-    // struct VestData {
-    //     uint256 amount;
-    //     uint256 end;
-    //     uint256 period; // in weeks
-    //     uint256 bonus; // user apr params
-    // }
-
-    // struct TopUpData {
-    //     uint256 balance;
-    //     int256 correction;
-    //     uint256 epochNum;
-    // }
-
     address public staking;
-
-    // mapping(address => VestData) public vestingPerVal;
-    // mapping(address => TopUpData[]) public topUpPerVal;
 
     event Claimed(address indexed account, uint256 amount);
 
@@ -36,30 +15,14 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address _staking) public initializer {
+    function initialize() public initializer {
         __Ownable_init();
-        staking = _staking;
+        staking = msg.sender;
     }
 
-    // function delegate(address validator, uint256 _period) external payable onlyOwner {
-    //     // VestData storage data = vestingPerVal[validator];
-    //     require(msg.value > 0, "VestPosition: no value");
-    //     require(_period > 0 && _period < 53, "VestPosition: no period");
-    //     require(data.end < block.timestamp, "VestPosition: not ended");
-
-    //     // _claim();
-
-    //     data.amount = msg.value;
-    //     data.end = block.timestamp + (_period * 1 weeks);
-    //     data.period = _period;
-
-    //     (uint256 base, uint256 vestBonus, uint256 rsiBonus) = APR(staking).getUserParams();
-
-    //     // TODO: check if it's correct
-    //     data.bonus = base + (vestBonus * rsiBonus) / (10000 * 10000 * 10000);
-
-    //     CVSDelegation(staking).delegate{value: msg.value}(validator, false);
-    // }
+    function delegate(address validator, bool restake) external payable onlyOwner {
+        ICVSDelegation(staking).delegate{value: msg.value}(validator, restake);
+    }
 
     // function handleTopUp(
     //     address validator,

@@ -28,39 +28,24 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
             revert StakeRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
         claimDelegatorReward(validator, restake);
         _delegate(msg.sender, validator, msg.value);
+
+        // TODO: delegation value must be updated because it is a reference type - check it
+        _onDelegate(validator, delegation);
     }
 
-    function vestDelegate(address validator, bool restake) external payable {
+    function delegate(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) external payable {
         if (!isPosition()) {
-            revert StakeRequirement({src: "vestDelegate", msg: "NOT_POSITION"});
+            revert StakeRequirement({src: "delegate", msg: "NOT_POSITION"});
         }
 
         RewardPool storage delegation = _validators.getDelegationPool(validator);
-        uint256 oldBalance = delegation.balanceOf(msg.sender);
-
-        // OLD logic
         if (delegation.balanceOf(msg.sender) + msg.value < minDelegation)
             revert StakeRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
-        claimDelegatorReward(validator, restake);
+        claimDelegatorReward(validator, restake, epochNumber, topUpIndex);
         _delegate(msg.sender, validator, msg.value);
 
-        if (isActivePosition(validator, msg.sender)) {
-            if (isTopUpMade(validator)) {
-                revert StakeRequirement({src: "vestDelegate", msg: "TOPUP_ALREADY_MADE"});
-            }
-
-            // add topUp data and modify end period of position, decrease RSI bonus
-            int256 correction = delegation.correctionOf(msg.sender);
-            _topUp(validator, oldBalance, oldBalance + msg.value, correction);
-        } else {
-            // old reward must be already taken, so not a problem to clear the data
-            vestingPerVal[validator][msg.sender] = new VestData({
-                amount: msg.value,
-                end: block.timestamp + (period * 1 weeks),
-                period: period,
-                bonus: bonus
-            });
-        }
+        // TODO: delegation value must be updated because it is a reference type - check it
+        _onDelegate(validator, delegation);
     }
 
     /**
@@ -74,11 +59,37 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
         delegation.withdraw(msg.sender, amount);
 
         uint256 amountAfterUndelegate = delegatedAmount - amount;
+        if (amountAfterUndelegate < minDelegation && amountAfterUndelegate != 0)
+            revert StakeRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
+
+        claimDelegatorReward(validator, false);
+
+        int256 amountInt = amount.toInt256Safe();
+        _queue.insert(validator, 0, amountInt * -1);
+
+        _registerWithdrawal(msg.sender, amount);
+        emit Undelegated(msg.sender, validator, amount);
+    }
+
+    function undelegate(address validator, uint256 amount, uint256 epochNumber, uint256 topUpIndex) external {
+        if (!isPosition()) {
+            revert StakeRequirement({src: "delegate", msg: "NOT_POSITION"});
+        }
+
+        RewardPool storage delegation = _validators.getDelegationPool(validator);
+        uint256 delegatedAmount = delegation.balanceOf(msg.sender);
+
+        if (amount > delegatedAmount) revert StakeRequirement({src: "undelegate", msg: "INSUFFICIENT_BALANCE"});
+        delegation.withdraw(msg.sender, amount);
+
+        uint256 amountAfterUndelegate = delegatedAmount - amount;
 
         if (amountAfterUndelegate < minDelegation && amountAfterUndelegate != 0)
             revert StakeRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
 
         claimDelegatorReward(validator, false);
+
+        amount = _onUndelegate(validator, delegation, amount, amountAfterUndelegate);
 
         int256 amountInt = amount.toInt256Safe();
 
@@ -92,15 +103,15 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
      * @inheritdoc ICVSDelegation
      */
     function claimDelegatorReward(address validator, bool restake) public {
+        if (isPosition()) {
+            revert Unauthorized("POSITION");
+        }
+
         RewardPool storage pool = _validators.getDelegationPool(validator);
         uint256 reward = pool.claimRewards(msg.sender);
-
         if (reward == 0) return;
 
-        // H_MODIFY: In case of NOT vested position apply the base APR
-        if (!isPosition()) {
-            reward = applyBaseAPR(reward);
-        }
+        reward = _applyCustomReward(reward);
 
         if (restake) {
             _delegate(msg.sender, validator, reward);
@@ -108,11 +119,10 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
             _registerWithdrawal(msg.sender, reward);
         }
 
-        // TODO: Emit event when sender is not a position only
         emit DelegatorRewardClaimed(msg.sender, validator, restake, reward);
     }
 
-    function claimVestDelegatorReward(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) public {
+    function claimDelegatorReward(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) public {
         if (!isPosition()) {
             revert Unauthorized("NOT_POSITION");
         }
@@ -122,10 +132,9 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
         RewardPool storage pool = _validators.getDelegationPool(validator);
         uint256 reward = pool.claimRewards(msg.sender, epochRPS, topUp.balance, topUp.correction);
 
-        // CONTINUE: copy custom apr formula and paste it in the vesting, apply here
-        reward = applyCustomAPR(validator, reward);
-
         if (reward == 0) return;
+
+        reward = _applyCustomAPR(validator, reward);
 
         if (restake) {
             _delegate(msg.sender, validator, reward);

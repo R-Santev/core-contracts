@@ -8,9 +8,13 @@ import "./../h_modules/VestFactory.sol";
 
 import "../../interfaces/Errors.sol";
 
+import "../../libs/RewardPool.sol";
+
 error NoReward();
 
 abstract contract Vesting is CVSStorage, VestFactory, APR {
+    using RewardPoolLib for RewardPool;
+
     // RPS = Reward Per Share
     struct RPS {
         uint192 value;
@@ -19,8 +23,12 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
 
     struct VestData {
         uint256 amount;
+        uint256 period; // in weeks
         uint256 end;
-        uint256 bonus; // user apr params
+        uint256 base;
+        uint256 vestBonus;
+        uint248 rsiBonus;
+        bool exist;
     }
 
     struct TopUpData {
@@ -29,11 +37,17 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
         uint256 epochNum;
     }
 
-    // validator => user => VestData
-    mapping(address => mapping(address => TopUpData[])) public topUpPerVal;
+    struct PositionData {
+        address addr;
+        uint96 period;
+    }
 
-    // validator => vesting period => delegator => Position Data
-    mapping(address => mapping(uint256 => mapping(address => VestData))) public positions;
+    // validator => user => top-up data
+    mapping(address => mapping(address => TopUpData[])) public topUpPerVal;
+    // validator => position => vesting user data
+    mapping(address => mapping(address => VestData)) public vestings;
+    // check is a contract position
+    mapping(address => PositionData) public positionsData;
 
     // validator delegation pool => epochNumber => RPS
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
@@ -63,30 +77,89 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
         // }
     }
 
-    function createPosition(address validator, uint256 vestingWeeks) external {
+    function createPosition(uint256 vestingWeeks) external {
         if (vestingWeeks > 0 && vestingWeeks < 53) {
             revert StakeRequirement({src: "vesting", msg: "INVALID_VESTING_PERIOD"});
         }
 
-        if (expression) {}
-
-        if (isUsedPosition(validator, msg.sender)) {
-            revert StakeRequirement({src: "vesting", msg: "POSITION_ALREADY_USED"});
-        }
-
-        // CONTINUE: find a way to check if position for specific period is created
-        // there is no need for separate position contract per validator (because different delegation pools)
-        // Create position
-        // continue with delegate
-        positions[validator][msg.sender] = Position({
-            vestingStart: block.timestamp,
-            vestingEnd: block.timestamp + vestingWeeks * 1 weeks
-        });
-
-        _delegate(msg.sender, validator, msg.value);
+        address positionAddress = clone();
+        positionsData[positionAddress] = PositionData({addr: positionAddress, period: uint96(vestingWeeks)});
     }
 
-    // CONTINUE: Think about the structure of the vesting, because with the current withdrawal settings the mechanism would not work
+    function _onDelegate(address validator, RewardPool storage delegation) internal {
+        if (!isPosition()) {
+            return;
+        }
+
+        if (isActivePosition(validator)) {
+            if (isTopUpMade(validator)) {
+                // Top up can be made only once on epoch
+                revert StakeRequirement({src: "vestDelegate", msg: "TOPUP_ALREADY_MADE"});
+            }
+
+            // add topUp data and modify end period of position, decrease RSI bonus
+            uint256 balance = delegation.balanceOf(msg.sender);
+            int256 correction = delegation.correctionOf(msg.sender);
+
+            _topUp(validator, balance - msg.value, balance, correction);
+        } else {
+            // If there are funds in the position
+            if (vestings[validator][msg.sender].exist) {
+                // and the full reward is not matured yet, so not taken
+                if (
+                    vestings[validator][msg.sender].end * vestings[validator][msg.sender].period * 1 weeks <
+                    block.timestamp
+                ) {
+                    // user must create a new position proxy contract - can't use this one
+                    revert StakeRequirement({src: "vestDelegate", msg: "REWARD_NOT_TAKEN"});
+                } else {
+                    // CONTINUE: properly set the vesting data for this case
+                    // reward is already taken, so don't delete vesting data, just update it
+                    vestings[validator][msg.sender] = VestData({
+                        amount: msg.value,
+                        period: positionsData[msg.sender].period,
+                        end: block.timestamp + (positionsData[msg.sender].period * 1 weeks),
+                        base: getBase(),
+                        vestBonus: getVestingBonus(positionsData[msg.sender].period),
+                        rsiBonus: uint248(getRSI()),
+                        exist: true
+                    });
+                }
+            } else {
+                // create new vesting data
+                vestings[validator][msg.sender] = VestData({
+                    amount: msg.value,
+                    period: positionsData[msg.sender].period,
+                    end: block.timestamp + (positionsData[msg.sender].period * 1 weeks),
+                    base: getBase(),
+                    vestBonus: getVestingBonus(positionsData[msg.sender].period),
+                    rsiBonus: uint248(getRSI()),
+                    exist: true
+                });
+            }
+        }
+    }
+
+    function _onUndelegate(
+        address validator,
+        RewardPool storage delegation,
+        uint256 amount,
+        uint256 leftAmount
+    ) internal returns (uint256) {
+        if (isActivePosition(validator)) {
+            amount = _applySlashing(validator, amount);
+            // burn reward
+            uint256 reward = delegation.claimRewards(msg.sender);
+            _burnAmount(reward);
+        }
+
+        if (leftAmount == 0) {
+            delete vestings[validator][msg.sender];
+        }
+
+        // return amount after slashing
+        return amount;
+    }
 
     // function claimBonus()
 
@@ -95,7 +168,7 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
         uint256 epochNumber,
         uint256 topUpIndex
     ) internal view returns (uint256, TopUpData memory) {
-        VestData storage data = vestingPerVal[validator][msg.sender];
+        VestData storage data = vestings[validator][msg.sender];
         uint256 start = data.end - data.period * 1 weeks;
         require(block.timestamp >= start, "VestPosition: not started");
 
@@ -129,12 +202,12 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
     }
 
     function isPosition() public view returns (bool) {
-        return isClone(msg.sender);
+        return positionsData[msg.sender].addr != address(0);
     }
 
-    function isActivePosition(address validator, address delegator) public view returns (bool) {
-        Position memory position = positions[validator][delegator];
-        return position.vestingEnd >= block.timestamp && position.vestingStart <= block.timestamp;
+    function isActivePosition(address validator) public view returns (bool) {
+        VestData memory position = vestings[validator][msg.sender];
+        return position.end >= block.timestamp && position.end - position.period * 1 weeks <= block.timestamp;
     }
 
     // TODO: Check if the commitEpoch is the last transaction in the epoch, otherwise bug may occur
@@ -164,8 +237,8 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
         // balance / old balance = increase coefficient
         // apply increase coefficient to the vesting period to find the increase in the period
         // TODO: Optimize gas costs
-        uint256 timeIncrease = (balance * vestingPerVal[validator][msg.sender].period) / oldBalance;
-        vestingPerVal[validator][msg.sender].end = vestingPerVal[validator][msg.sender].end + timeIncrease;
+        uint256 timeIncrease = (balance * vestings[validator][msg.sender].period) / oldBalance;
+        vestings[validator][msg.sender].end = vestings[validator][msg.sender].end + timeIncrease;
     }
 
     function handleTopUp(
@@ -201,7 +274,34 @@ abstract contract Vesting is CVSStorage, VestFactory, APR {
         return topUp;
     }
 
-    function applyCustomAPR(address validator, uint256 amount) internal returns (uint256) {
-        return (amount * vestingPerVal[validator][msg.sender].bonus) / DENOMINATOR;
+    function _applySlashing(address validator, uint256 amount) internal view returns (uint256) {
+        VestData memory data = vestings[validator][msg.sender];
+
+        // Calculate what part of the delegated balance to be slashed
+        uint256 leftPeriod = data.end - block.timestamp;
+        uint256 fullPeriod = data.period * 1 weeks;
+        uint256 slash = (amount * leftPeriod) / fullPeriod;
+
+        _burnAmount(slash);
+
+        return amount - slash;
+    }
+
+    function _burnAmount(uint256 amount) internal {
+        payable(address(0)).transfer(amount);
+    }
+
+    function _applyCustomAPR(address validator, uint256 amount) internal view returns (uint256) {}
+
+    function _applyCustomReward(uint256 reward) internal view returns (uint256) {
+        return _applyBaseAPR(reward);
+    }
+
+    function _applyCustomReward(address validator, uint256 reward) internal view returns (uint256) {
+        VestData memory data = vestings[validator][msg.sender];
+
+        // TODO: check if it's correct
+        uint256 bonus = data.base + (data.vestBonus * data.rsiBonus);
+        return (reward * bonus) / (10000 * 10000 * 10000);
     }
 }
