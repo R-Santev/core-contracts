@@ -12,6 +12,7 @@ import "./System.sol";
 import "./h_modules/PowerExponent.sol";
 import "./h_modules/APR.sol";
 import "./h_modules/Vesting.sol";
+import "./h_modules/VestPosition.sol";
 
 import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
@@ -25,8 +26,8 @@ contract ChildValidatorSet is
     CVSAccessControl,
     CVSWithdrawal,
     CVSStaking,
-    Vesting,
     APR,
+    Vesting,
     CVSDelegation,
     PowerExponent,
     System
@@ -89,6 +90,10 @@ contract ChildValidatorSet is
 
         // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
         powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
+
+        // TODO: Extract creation of the base impl
+        // H_MODIFY: Set base implementation for VestFactory
+        implementation = address(new VestPosition());
     }
 
     /**
@@ -334,12 +339,7 @@ contract ChildValidatorSet is
             validator.withdrawableRewards += validatorShares;
             emit ValidatorRewardDistributed(uptimeData.validator, validatorReward);
 
-            RewardPool storage rewardPool = _validators.getDelegationPool(uptimeData.validator);
-            // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
-            _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
-
-            rewardPool.distributeReward(delegatorShares);
-            emit DelegatorRewardDistributed(uptimeData.validator, delegatorShares);
+            _handleDelegation(uptimeData, uptime, delegatorShares);
         }
 
         _processQueue();
@@ -348,6 +348,16 @@ contract ChildValidatorSet is
         _applyPendingExp();
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
+    }
+
+    function _handleDelegation(UptimeData memory uptimeData, Uptime memory uptime, uint256 delegatorShares) internal {
+        RewardPool storage rewardPool = _validators.getDelegationPool(uptimeData.validator);
+        // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
+        _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
+
+        rewardPool.distributeReward(delegatorShares);
+
+        emit DelegatorRewardDistributed(uptimeData.validator, delegatorShares);
     }
 
     function _calculateValidatorAndDelegatorShares(

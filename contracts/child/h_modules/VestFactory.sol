@@ -3,21 +3,17 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
+import "../modules/CVSStorage.sol";
+
 import "./VestPosition.sol";
 
-contract VestFactory {
-    address public implementation;
-
+abstract contract VestFactory is CVSStorage {
     event NewClone(address newClone);
 
-    constructor(address _implementation) {
-        implementation = _implementation;
-    }
-
-    function clone() internal returns (address) {
+    function clone(address owner) internal returns (address) {
         address child = Clones.clone(implementation);
 
-        VestPosition(child).initialize(address(this));
+        VestPosition(child).initialize(owner);
 
         emit NewClone(child);
 

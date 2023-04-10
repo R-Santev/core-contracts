@@ -87,7 +87,7 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, Ve
         if (amountAfterUndelegate < minDelegation && amountAfterUndelegate != 0)
             revert StakeRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
 
-        claimDelegatorReward(validator, false);
+        claimDelegatorReward(validator, false, epochNumber, topUpIndex);
 
         amount = _onUndelegate(validator, delegation, amount, amountAfterUndelegate);
 

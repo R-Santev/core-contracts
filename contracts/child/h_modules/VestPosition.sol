@@ -15,13 +15,21 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         _disableInitializers();
     }
 
-    function initialize() public initializer {
-        __Ownable_init();
+    function initialize(address owner) public initializer {
+        _transferOwnership(owner);
         staking = msg.sender;
     }
 
     function delegate(address validator, bool restake) external payable onlyOwner {
         ICVSDelegation(staking).delegate{value: msg.value}(validator, restake);
+    }
+
+    function undelegate(address validator, uint256 amount) external payable onlyOwner {
+        ICVSDelegation(staking).undelegate(validator, amount);
+    }
+
+    function claimDelegatorReward(address validator, bool restake) external payable onlyOwner {
+        ICVSDelegation(staking).claimDelegatorReward(validator, restake);
     }
 
     // function handleTopUp(

@@ -116,13 +116,7 @@ library RewardPoolLib {
         return 1e18;
     }
 
-    function rewardsEarned(
-        RewardPool storage pool,
-        address account,
-        uint256 rps,
-        uint256 balance,
-        int256 correction
-    ) internal view returns (uint256) {
+    function rewardsEarned(uint256 rps, uint256 balance, int256 correction) internal pure returns (uint256) {
         int256 magnifiedRewards = (rps * balance).toInt256Safe();
         uint256 correctedRewards = (magnifiedRewards + correction).toUint256Safe();
         return correctedRewards / magnitude();
@@ -135,7 +129,7 @@ library RewardPoolLib {
         uint256 balance,
         int256 correction
     ) internal view returns (uint256) {
-        return rewardsEarned(pool, account, rps, balance, correction) - pool.claimedRewards[account];
+        return rewardsEarned(rps, balance, correction) - pool.claimedRewards[account];
     }
 
     function claimRewards(

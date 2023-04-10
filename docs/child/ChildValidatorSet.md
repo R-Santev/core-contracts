@@ -27,6 +27,23 @@ function ACTIVE_VALIDATOR_SET_SIZE() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### DENOMINATOR
+
+```solidity
+function DENOMINATOR() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### DOMAIN
 
 ```solidity
@@ -48,6 +65,23 @@ function DOMAIN() external view returns (bytes32)
 
 ```solidity
 function DOUBLE_SIGNING_SLASHING_PERCENT() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### EPOCHS_YEAR
+
+```solidity
+function EPOCHS_YEAR() external view returns (uint256)
 ```
 
 
@@ -244,6 +278,25 @@ function bls() external view returns (contract IBLS)
 ### claimDelegatorReward
 
 ```solidity
+function claimDelegatorReward(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| restake | bool | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
+
+### claimDelegatorReward
+
+```solidity
 function claimDelegatorReward(address validator, bool restake) external nonpayable
 ```
 
@@ -308,6 +361,22 @@ function commitEpochWithDoubleSignerSlashing(uint256 curEpochId, uint256 blockNu
 | uptime | Uptime | undefined |
 | inputs | IChildValidatorSetBase.DoubleSignerSlashingInput[] | undefined |
 
+### createPosition
+
+```solidity
+function createPosition(uint256 vestingWeeks) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| vestingWeeks | uint256 | undefined |
+
 ### currentEpochId
 
 ```solidity
@@ -324,6 +393,25 @@ function currentEpochId() external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### delegate
+
+```solidity
+function delegate(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| restake | bool | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
 
 ### delegate
 
@@ -549,6 +637,25 @@ Return the Voting Power Exponent Numerator and Denominator
 | numerator | uint256 | undefined |
 | denominator | uint256 | undefined |
 
+### getUserParams
+
+```solidity
+function getUserParams() external pure returns (uint256 base, uint256 vesting, uint256 rsi)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| base | uint256 | undefined |
+| vesting | uint256 | undefined |
+| rsi | uint256 | undefined |
+
 ### getValidator
 
 ```solidity
@@ -598,6 +705,47 @@ Gets validator&#39;s unclaimed rewards.
 |---|---|---|
 | _0 | uint256 | Validator&#39;s unclaimed rewards (in MATIC wei) |
 
+### historyRPS
+
+```solidity
+function historyRPS(address, uint256) external view returns (uint192 value, uint64 timestamp)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| value | uint192 | undefined |
+| timestamp | uint64 | undefined |
+
+### implementation
+
+```solidity
+function implementation() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### initialize
 
 ```solidity
@@ -616,6 +764,89 @@ function initialize(IChildValidatorSetBase.InitStruct init, IChildValidatorSetBa
 | validators | IChildValidatorSetBase.ValidatorInit[] | undefined |
 | newBls | contract IBLS | undefined |
 | governance | address | undefined |
+
+### isActivePosition
+
+```solidity
+function isActivePosition(address validator) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isMaturingPosition
+
+```solidity
+function isMaturingPosition(address validator) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isPosition
+
+```solidity
+function isPosition() external view returns (bool)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isTopUpMade
+
+```solidity
+function isTopUpMade(address validator) external view returns (bool)
+```
+
+Checks if a top up was already made in the current epoch
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to delegate to |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
 
 ### minDelegation
 
@@ -706,6 +937,29 @@ Calculates how much is yet to become withdrawable for account.
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
+
+### positionsData
+
+```solidity
+function positionsData(address) external view returns (address addr, uint96 period)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| addr | address | undefined |
+| period | uint96 | undefined |
 
 ### powerExponent
 
@@ -818,6 +1072,32 @@ Stakes sent amount. Claims rewards beforehand.
 
 
 
+### topUpPerVal
+
+```solidity
+function topUpPerVal(address, address, uint256) external view returns (uint256 balance, int256 correction, uint256 epochNum)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+| _2 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| balance | uint256 | undefined |
+| correction | int256 | undefined |
+| epochNum | uint256 | undefined |
+
 ### totalActiveStake
 
 ```solidity
@@ -915,6 +1195,25 @@ function transferOwnership(address newOwner) external nonpayable
 ### undelegate
 
 ```solidity
+function undelegate(address validator, uint256 amount, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| amount | uint256 | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
+
+### undelegate
+
+```solidity
 function undelegate(address validator, uint256 amount) external nonpayable
 ```
 
@@ -960,6 +1259,34 @@ Set new pending exponent, to be activated in the next commit epoch
 | Name | Type | Description |
 |---|---|---|
 | newValue | uint256 | New Voting Power Exponent Numerator |
+
+### vestings
+
+```solidity
+function vestings(address, address) external view returns (uint256 amount, uint256 period, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| amount | uint256 | undefined |
+| period | uint256 | undefined |
+| end | uint256 | undefined |
+| base | uint256 | undefined |
+| vestBonus | uint256 | undefined |
+| rsiBonus | uint256 | undefined |
 
 ### whitelist
 
@@ -1146,6 +1473,22 @@ event Initialized(uint8 version)
 | Name | Type | Description |
 |---|---|---|
 | version  | uint8 | undefined |
+
+### NewClone
+
+```solidity
+event NewClone(address newClone)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newClone  | address | undefined |
 
 ### NewEpoch
 
@@ -1400,6 +1743,17 @@ error InvalidSignature(address signer)
 | Name | Type | Description |
 |---|---|---|
 | signer | address | undefined |
+
+### NoReward
+
+```solidity
+error NoReward()
+```
+
+
+
+
+
 
 ### NoTokensDelegated
 
