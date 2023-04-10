@@ -62,6 +62,7 @@ contract APR {
         return (totalStaked * nominator) / denominator / 100 / EPOCHS_YEAR;
     }
 
+    // TODO: Calculate per epoch - currently yearly reward is used
     function applyMacro(uint256 totalStaked) internal pure returns (uint256 reward) {
         uint256 macroFactor = getMacro();
 

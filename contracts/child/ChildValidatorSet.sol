@@ -250,11 +250,13 @@ contract ChildValidatorSet is
                 validatorReward
             );
 
-            // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
-            _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
-
             _distributeValidatorReward(uptimeData.validator, validatorShares);
             _distributeDelegatorReward(uptimeData.validator, delegatorShares);
+
+            // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
+            if (delegatorShares > 0) {
+                _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
+            }
         }
     }
 
