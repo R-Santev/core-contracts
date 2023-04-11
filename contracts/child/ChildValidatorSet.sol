@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "hardhat/console.sol";
+
 import "../interfaces/IChildValidatorSetBase.sol";
 import "./modules/CVSStorage.sol";
 import "./modules/CVSAccessControl.sol";
@@ -27,8 +29,8 @@ contract ChildValidatorSet is
     CVSWithdrawal,
     CVSStaking,
     APR,
-    Vesting,
     CVSDelegation,
+    Vesting,
     PowerExponent,
     System
 {
@@ -354,10 +356,13 @@ contract ChildValidatorSet is
 
     function _handleDelegation(UptimeData memory uptimeData, Uptime memory uptime, uint256 delegatorShares) internal {
         RewardPool storage rewardPool = _validators.getDelegationPool(uptimeData.validator);
-        // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
-        _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
 
         rewardPool.distributeReward(delegatorShares);
+
+        // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
+        if (delegatorShares > 0) {
+            _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
+        }
 
         emit DelegatorRewardDistributed(uptimeData.validator, delegatorShares);
     }

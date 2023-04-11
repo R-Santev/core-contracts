@@ -1,6 +1,6 @@
 import { task } from "hardhat/config";
 // eslint-disable-next-line camelcase, node/no-unpublished-import
-import { ChildValidatorSet__factory } from "../typechain";
+import { ChildValidatorSet__factory } from "../typechain-types";
 
 task("getReward", "Withdraw reward from the pool").setAction(async (_, hre) => {
   // get signers from hardhat

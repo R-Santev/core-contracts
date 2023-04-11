@@ -278,25 +278,6 @@ function bls() external view returns (contract IBLS)
 ### claimDelegatorReward
 
 ```solidity
-function claimDelegatorReward(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| restake | bool | undefined |
-| epochNumber | uint256 | undefined |
-| topUpIndex | uint256 | undefined |
-
-### claimDelegatorReward
-
-```solidity
 function claimDelegatorReward(address validator, bool restake) external nonpayable
 ```
 
@@ -393,25 +374,6 @@ function currentEpochId() external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
-
-### delegate
-
-```solidity
-function delegate(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| restake | bool | undefined |
-| epochNumber | uint256 | undefined |
-| topUpIndex | uint256 | undefined |
 
 ### delegate
 
@@ -1195,25 +1157,6 @@ function transferOwnership(address newOwner) external nonpayable
 ### undelegate
 
 ```solidity
-function undelegate(address validator, uint256 amount, uint256 epochNumber, uint256 topUpIndex) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| amount | uint256 | undefined |
-| epochNumber | uint256 | undefined |
-| topUpIndex | uint256 | undefined |
-
-### undelegate
-
-```solidity
 function undelegate(address validator, uint256 amount) external nonpayable
 ```
 
@@ -1259,6 +1202,40 @@ Set new pending exponent, to be activated in the next commit epoch
 | Name | Type | Description |
 |---|---|---|
 | newValue | uint256 | New Voting Power Exponent Numerator |
+
+### vestClaimReward
+
+```solidity
+function vestClaimReward(address validator, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
+
+### vestDelegate
+
+```solidity
+function vestDelegate(address validator) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
 
 ### vestings
 
@@ -1477,7 +1454,7 @@ event Initialized(uint8 version)
 ### NewClone
 
 ```solidity
-event NewClone(address newClone)
+event NewClone(address indexed owner, address newClone)
 ```
 
 
@@ -1488,6 +1465,7 @@ event NewClone(address newClone)
 
 | Name | Type | Description |
 |---|---|---|
+| owner `indexed` | address | undefined |
 | newClone  | address | undefined |
 
 ### NewEpoch

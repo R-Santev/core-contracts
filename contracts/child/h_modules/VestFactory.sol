@@ -8,14 +8,14 @@ import "../modules/CVSStorage.sol";
 import "./VestPosition.sol";
 
 abstract contract VestFactory is CVSStorage {
-    event NewClone(address newClone);
+    event NewClone(address indexed owner, address newClone);
 
     function clone(address owner) internal returns (address) {
         address child = Clones.clone(implementation);
 
         VestPosition(child).initialize(owner);
 
-        emit NewClone(child);
+        emit NewClone(owner, child);
 
         return child;
     }

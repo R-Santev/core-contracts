@@ -5,8 +5,10 @@ import { BigNumber, BigNumberish } from "ethers";
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import * as mcl from "../../ts/mcl";
-import { BLS, ChildValidatorSet } from "../../typechain";
+// eslint-disable-next-line camelcase
+import { BLS, ChildValidatorSet } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
+import { log } from "console";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -14,13 +16,15 @@ const CHAIN_ID = 31337;
 const MAX_COMMISSION = 100;
 const DOUBLE_SIGNING_SLASHING_PERCENT = 10;
 
-describe("ChildValidatorSet", () => {
+describe.only("ChildValidatorSet", () => {
   let bls: BLS,
+    // eslint-disable-next-line no-unused-vars
     rootValidatorSetAddress: string,
     governance: string,
     childValidatorSet: ChildValidatorSet,
     systemChildValidatorSet: ChildValidatorSet,
     validatorSetSize: number,
+    // eslint-disable-next-line no-unused-vars
     validatorStake: BigNumber,
     epochReward: BigNumber,
     minStake: number,
@@ -585,7 +589,7 @@ describe("ChildValidatorSet", () => {
     it("should only be able to delegate to validators", async () => {
       const restake = false;
 
-      await expect(childValidatorSet["delegate(address,bool)"](accounts[1].address, restake, { value: minDelegation }))
+      await expect(childValidatorSet.delegate(accounts[1].address, restake, { value: minDelegation }))
         .to.be.revertedWithCustomError(childValidatorSet, "Unauthorized")
         .withArgs("INVALID_VALIDATOR");
     });
@@ -593,7 +597,7 @@ describe("ChildValidatorSet", () => {
     it("Delegate less amount than minDelegation", async () => {
       const restake = false;
 
-      await expect(childValidatorSet["delegate(address,bool)"](accounts[0].address, restake, { value: 100 }))
+      await expect(childValidatorSet.delegate(accounts[0].address, restake, { value: 100 }))
         .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
         .withArgs("delegate", "DELEGATION_TOO_LOW");
     });
@@ -609,7 +613,7 @@ describe("ChildValidatorSet", () => {
 
       await childValidatorSet.connect(accounts[2]).register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey));
       await childValidatorSet.connect(accounts[2]).stake({ value: minStake });
-      const tx = await childValidatorSet.connect(accounts[3])["delegate(address,bool)"](accounts[2].address, restake, {
+      const tx = await childValidatorSet.connect(accounts[3]).delegate(accounts[2].address, restake, {
         value: delegateAmount,
       });
 
@@ -625,7 +629,7 @@ describe("ChildValidatorSet", () => {
       const delegateAmount = minDelegation + 1;
       const restake = false;
 
-      const tx = await childValidatorSet.connect(accounts[3])["delegate(address,bool)"](accounts[2].address, restake, {
+      const tx = await childValidatorSet.connect(accounts[3]).delegate(accounts[2].address, restake, {
         value: delegateAmount,
       });
 
@@ -638,7 +642,7 @@ describe("ChildValidatorSet", () => {
       const delegateAmount = minDelegation + 1;
       const restake = true;
 
-      const tx = await childValidatorSet.connect(accounts[3])["delegate(address,bool)"](accounts[2].address, restake, {
+      const tx = await childValidatorSet.connect(accounts[3]).delegate(accounts[2].address, restake, {
         value: delegateAmount,
       });
 
@@ -689,9 +693,7 @@ describe("ChildValidatorSet", () => {
       const reward = await childValidatorSet.getDelegatorReward(accounts[2].address, accounts[3].address);
 
       // Claim with restake
-      const tx = await childValidatorSet
-        .connect(accounts[3])
-        ["claimDelegatorReward(address,bool)"](accounts[2].address, true);
+      const tx = await childValidatorSet.connect(accounts[3]).claimDelegatorReward(accounts[2].address, true);
 
       const receipt = await tx.wait();
       const event = receipt.events?.find((log) => log.event === "DelegatorRewardClaimed");
@@ -732,9 +734,7 @@ describe("ChildValidatorSet", () => {
 
       const reward = await childValidatorSet.getDelegatorReward(accounts[2].address, accounts[3].address);
       // Claim without restake
-      const tx = await childValidatorSet
-        .connect(accounts[3])
-        ["claimDelegatorReward(address,bool)"](accounts[2].address, false);
+      const tx = await childValidatorSet.connect(accounts[3]).claimDelegatorReward(accounts[2].address, false);
 
       const receipt = await tx.wait();
       const event = receipt.events?.find((log) => log.event === "DelegatorRewardClaimed");
@@ -1564,39 +1564,27 @@ describe("ChildValidatorSet", () => {
   describe("undelegate", async () => {
     it("undelegate insufficient amount", async () => {
       const delegatedAmount = await childValidatorSet.delegationOf(accounts[2].address, accounts[3].address);
-      await expect(
-        childValidatorSet
-          .connect(accounts[3])
-          ["undelegate(address,uint256)"](accounts[2].address, delegatedAmount.add(1))
-      )
+      await expect(childValidatorSet.connect(accounts[3]).undelegate(accounts[2].address, delegatedAmount.add(1)))
         .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
         .withArgs("undelegate", "INSUFFICIENT_BALANCE");
     });
 
     it("undelegate low amount", async () => {
       const delegatedAmount = await childValidatorSet.delegationOf(accounts[2].address, accounts[3].address);
-      await expect(
-        childValidatorSet
-          .connect(accounts[3])
-          ["undelegate(address,uint256)"](accounts[2].address, delegatedAmount.sub(1))
-      )
+      await expect(childValidatorSet.undelegate(accounts[2].address, delegatedAmount.sub(1)))
         .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
         .withArgs("undelegate", "DELEGATION_TOO_LOW");
     });
 
     it("should not be able to exploit int overflow", async () => {
       await expect(
-        childValidatorSet
-          .connect(accounts[3])
-          ["undelegate(address,uint256)"](accounts[2].address, ethers.constants.MaxInt256.add(1))
+        childValidatorSet.connect(accounts[3]).undelegate(accounts[2].address, ethers.constants.MaxInt256.add(1))
       ).to.be.reverted;
     });
 
     it("undelegate", async () => {
       let delegatedAmount = await childValidatorSet.delegationOf(accounts[2].address, accounts[3].address);
-      const tx = await childValidatorSet
-        .connect(accounts[3])
-        ["undelegate(address,uint256)"](accounts[2].address, delegatedAmount);
+      const tx = await childValidatorSet.connect(accounts[3]).undelegate(accounts[2].address, delegatedAmount);
 
       await expect(tx)
         .to.emit(childValidatorSet, "Undelegated")
@@ -1632,4 +1620,79 @@ describe("ChildValidatorSet", () => {
     const totalStake = await childValidatorSet.totalStake();
     expect(totalStake).to.equal(minStake * 2);
   });
+
+  describe("Vesting", async () => {
+    it("Should already create a base implementation", async () => {
+      const baseImplementation = await childValidatorSet.implementation();
+
+      expect(baseImplementation).to.not.equal(ethers.constants.AddressZero);
+    });
+
+    describe("Create Vesting position", async () => {
+      it("Should be able to create a vesting position", async () => {
+        const vestingWeeks = 52;
+        const tx = await childValidatorSet.connect(accounts[4]).createPosition(vestingWeeks);
+        const receipt = await tx.wait();
+        const event = receipt.events?.find((e) => e.event === "NewClone");
+        const address = event?.args?.newClone;
+
+        expect(address).to.not.equal(ethers.constants.AddressZero);
+      });
+    });
+
+    describe("delegate", async () => {
+      it("should properly delegate", async () => {
+        // Find user 2 vesting position based on the emited above event
+        const filter = childValidatorSet.filters.NewClone(accounts[4].address);
+        const positionAddr = (await childValidatorSet.queryFilter(filter))[0].args.newClone;
+
+        // eslint-disable-next-line camelcase
+        const VestPositionFactory = await ethers.getContractFactory("VestPosition");
+        const vestPosition = VestPositionFactory.attach(positionAddr);
+        const vestPositionAddr4 = vestPosition.connect(accounts[4]);
+
+        await expect(
+          await vestPositionAddr4.delegate(accounts[2].address, {
+            value: minDelegation,
+          })
+        ).to.not.be.reverted;
+      });
+    });
+
+    describe("claim Reward", async () => {
+      it("should properly claim Reward", async () => {
+        // commit epoch
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        const vestPositionAddr4 = vestPosition.connect(accounts[4]);
+        await vestPositionAddr4.claimReward();
+      });
+    });
+  });
 });
+
+async function commitEpoch(systemChildValidatorSet: ChildValidatorSet, accounts: any[]) {
+  const currentEpochId = await systemChildValidatorSet.currentEpochId();
+
+  const previousEpoch = await systemChildValidatorSet.epochs(currentEpochId.sub(1));
+  const startBlock = previousEpoch.endBlock.add(1);
+  const validatorSet = await systemChildValidatorSet.getCurrentValidatorSet();
+
+  const newEpoch = {
+    startBlock,
+    endBlock: startBlock.add(63),
+    epochRoot: ethers.utils.randomBytes(32),
+    validatorSet: validatorSet,
+  };
+
+  const newUptime = {
+    epochId: currentEpochId,
+    uptimeData: [
+      { validator: accounts[0].address, signedBlocks: 64 },
+      { validator: accounts[2].address, signedBlocks: 64 },
+    ],
+    totalBlocks: 64,
+  };
+
+  await systemChildValidatorSet.commitEpoch(currentEpochId, newEpoch, newUptime);
+}

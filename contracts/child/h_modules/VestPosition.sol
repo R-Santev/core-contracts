@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import "../../interfaces/modules/ICVSDelegation.sol";
+import "../../interfaces/h_modules/IVesting.sol";
 
 contract VestPosition is Initializable, OwnableUpgradeable {
     address public staking;
@@ -20,16 +20,25 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         staking = msg.sender;
     }
 
-    function delegate(address validator, bool restake) external payable onlyOwner {
-        ICVSDelegation(staking).delegate{value: msg.value}(validator, restake);
+    function delegate(address validator) external payable onlyOwner {
+        IVesting(staking).vestDelegate{value: msg.value}(validator);
     }
 
-    function undelegate(address validator, uint256 amount) external payable onlyOwner {
-        ICVSDelegation(staking).undelegate(validator, amount);
-    }
+    // function undelegate(
+    //     address validator,
+    //     uint256 amount,
+    //     uint256 epochNumber,
+    //     uint256 topUpIndex
+    // ) external payable onlyOwner {
+    //     IVesting(staking).undelegate(validator, amount, epochNumber, topUpIndex);
+    // }
 
-    function claimDelegatorReward(address validator, bool restake) external payable onlyOwner {
-        ICVSDelegation(staking).claimDelegatorReward(validator, restake);
+    function claimDelegatorReward(
+        address validator,
+        uint256 epochNumber,
+        uint256 topUpIndex
+    ) external payable onlyOwner {
+        IVesting(staking).vestClaimReward(validator, epochNumber, topUpIndex);
     }
 
     // function handleTopUp(

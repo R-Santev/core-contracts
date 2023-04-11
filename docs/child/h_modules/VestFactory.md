@@ -317,7 +317,7 @@ function whitelist(address) external view returns (bool)
 ### NewClone
 
 ```solidity
-event NewClone(address newClone)
+event NewClone(address indexed owner, address newClone)
 ```
 
 
@@ -328,6 +328,7 @@ event NewClone(address newClone)
 
 | Name | Type | Description |
 |---|---|---|
+| owner `indexed` | address | undefined |
 | newClone  | address | undefined |
 
 

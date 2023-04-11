@@ -3,7 +3,6 @@ import "@openzeppelin/hardhat-upgrades";
 import "@primitivefi/hardhat-dodoc";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-import "@tenderly/hardhat-tenderly";
 dotenv.config();
 
 BigInt.prototype.toJSON = function () {
@@ -52,6 +51,7 @@ const config: HardhatUserConfig = {
       // allow impersonation of smart contracts without modifying balance
       gasPrice: 0,
       hardfork: "berlin",
+      allowUnlimitedContractSize: true,
     },
   },
   gasReporter: {

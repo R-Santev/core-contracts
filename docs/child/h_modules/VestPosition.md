@@ -13,7 +13,7 @@
 ### claimDelegatorReward
 
 ```solidity
-function claimDelegatorReward(address validator, bool restake) external payable
+function claimDelegatorReward(address validator, uint256 epochNumber, uint256 topUpIndex) external payable
 ```
 
 
@@ -25,12 +25,13 @@ function claimDelegatorReward(address validator, bool restake) external payable
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
-| restake | bool | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
 
 ### delegate
 
 ```solidity
-function delegate(address validator, bool restake) external payable
+function delegate(address validator) external payable
 ```
 
 
@@ -42,7 +43,6 @@ function delegate(address validator, bool restake) external payable
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
-| restake | bool | undefined |
 
 ### initialize
 
@@ -120,23 +120,6 @@ function transferOwnership(address newOwner) external nonpayable
 | Name | Type | Description |
 |---|---|---|
 | newOwner | address | undefined |
-
-### undelegate
-
-```solidity
-function undelegate(address validator, uint256 amount) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| amount | uint256 | undefined |
 
 
 

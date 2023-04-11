@@ -77,4 +77,8 @@ contract APR {
     function magnitude() internal pure returns (uint256) {
         return 1e18;
     }
+
+    function _applyCustomReward(uint256 reward) internal pure returns (uint256) {
+        return _applyBaseAPR(reward);
+    }
 }
