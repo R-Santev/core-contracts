@@ -146,10 +146,10 @@ Claims delegator rewards for sender.
 | validator | address | Validator to claim from |
 | restake | bool | Whether to redelegate the claimed rewards |
 
-### createPosition
+### claimPositionReward
 
 ```solidity
-function createPosition(uint256 vestingWeeks) external nonpayable
+function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external nonpayable
 ```
 
 
@@ -160,7 +160,9 @@ function createPosition(uint256 vestingWeeks) external nonpayable
 
 | Name | Type | Description |
 |---|---|---|
-| vestingWeeks | uint256 | undefined |
+| validator | address | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
 
 ### currentEpochId
 
@@ -178,6 +180,23 @@ function currentEpochId() external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### cutPosition
+
+```solidity
+function cutPosition(address validator, uint256 amount) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| amount | uint256 | undefined |
 
 ### delegate
 
@@ -453,23 +472,6 @@ function isMaturingPosition(address validator) external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
-### isPosition
-
-```solidity
-function isPosition() external view returns (bool)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bool | undefined |
-
 ### isTopUpMade
 
 ```solidity
@@ -485,6 +487,23 @@ Checks if a top up was already made in the current epoch
 | Name | Type | Description |
 |---|---|---|
 | validator | address | Validator to delegate to |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isVestManager
+
+```solidity
+function isVestManager() external view returns (bool)
+```
+
+
+
+
+
 
 #### Returns
 
@@ -526,6 +545,34 @@ function minStake() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### newManager
+
+```solidity
+function newManager() external nonpayable
+```
+
+
+
+
+
+
+### openPosition
+
+```solidity
+function openPosition(address validator, uint256 duration) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| duration | uint256 | undefined |
+
 ### pendingWithdrawals
 
 ```solidity
@@ -547,29 +594,6 @@ Calculates how much is yet to become withdrawable for account.
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
-
-### positionsData
-
-```solidity
-function positionsData(address) external view returns (address addr, uint96 period)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| addr | address | undefined |
-| period | uint96 | undefined |
 
 ### powerExponent
 
@@ -615,6 +639,22 @@ function topUpPerVal(address, address, uint256) external view returns (uint256 b
 | correction | int256 | undefined |
 | epochNum | uint256 | undefined |
 
+### topUpPosition
+
+```solidity
+function topUpPosition(address validator) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
 ### totalDelegationOf
 
 ```solidity
@@ -654,10 +694,10 @@ Undelegates amount from validator for sender. Claims rewards beforehand.
 | validator | address | Validator to undelegate from |
 | amount | uint256 | The amount to undelegate |
 
-### vestClaimReward
+### vestManagers
 
 ```solidity
-function vestClaimReward(address validator, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+function vestManagers(address) external view returns (address)
 ```
 
 
@@ -668,30 +708,18 @@ function vestClaimReward(address validator, uint256 epochNumber, uint256 topUpIn
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | undefined |
-| epochNumber | uint256 | undefined |
-| topUpIndex | uint256 | undefined |
+| _0 | address | undefined |
 
-### vestDelegate
-
-```solidity
-function vestDelegate(address validator) external payable
-```
-
-
-
-
-
-#### Parameters
+#### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | undefined |
+| _0 | address | undefined |
 
 ### vestings
 
 ```solidity
-function vestings(address, address) external view returns (uint256 amount, uint256 period, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+function vestings(address, address) external view returns (uint256 amount, uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
 ```
 
 
@@ -710,7 +738,8 @@ function vestings(address, address) external view returns (uint256 amount, uint2
 | Name | Type | Description |
 |---|---|---|
 | amount | uint256 | undefined |
-| period | uint256 | undefined |
+| duration | uint256 | undefined |
+| start | uint256 | undefined |
 | end | uint256 | undefined |
 | base | uint256 | undefined |
 | vestBonus | uint256 | undefined |

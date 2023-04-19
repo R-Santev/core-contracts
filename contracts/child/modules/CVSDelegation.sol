@@ -67,34 +67,6 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, AP
         emit Undelegated(msg.sender, validator, amount);
     }
 
-    // function undelegate(address validator, uint256 amount, uint256 epochNumber, uint256 topUpIndex) external {
-    //     if (!isPosition()) {
-    //         revert StakeRequirement({src: "delegate", msg: "NOT_POSITION"});
-    //     }
-
-    //     RewardPool storage delegation = _validators.getDelegationPool(validator);
-    //     uint256 delegatedAmount = delegation.balanceOf(msg.sender);
-
-    //     if (amount > delegatedAmount) revert StakeRequirement({src: "undelegate", msg: "INSUFFICIENT_BALANCE"});
-    //     delegation.withdraw(msg.sender, amount);
-
-    //     uint256 amountAfterUndelegate = delegatedAmount - amount;
-
-    //     if (amountAfterUndelegate < minDelegation && amountAfterUndelegate != 0)
-    //         revert StakeRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
-
-    //     claimDelegatorReward(validator, false, epochNumber, topUpIndex);
-
-    //     amount = _onUndelegate(validator, delegation, amount, amountAfterUndelegate);
-
-    //     int256 amountInt = amount.toInt256Safe();
-
-    //     _queue.insert(validator, 0, amountInt * -1);
-
-    //     _registerWithdrawal(msg.sender, amount);
-    //     emit Undelegated(msg.sender, validator, amount);
-    // }
-
     /**
      * @inheritdoc ICVSDelegation
      */

@@ -6,7 +6,9 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "../../interfaces/h_modules/IVesting.sol";
 
-contract VestPosition is Initializable, OwnableUpgradeable {
+import "../../interfaces/modules/ICVSWithdrawal.sol";
+
+contract VestManager is Initializable, OwnableUpgradeable {
     address public staking;
 
     event Claimed(address indexed account, uint256 amount);
@@ -20,25 +22,28 @@ contract VestPosition is Initializable, OwnableUpgradeable {
         staking = msg.sender;
     }
 
-    function delegate(address validator) external payable onlyOwner {
-        IVesting(staking).vestDelegate{value: msg.value}(validator);
+    function openPosition(address validator, uint256 duration) external payable onlyOwner {
+        IVesting(staking).openPosition{value: msg.value}(validator, duration);
     }
 
-    // function undelegate(
-    //     address validator,
-    //     uint256 amount,
-    //     uint256 epochNumber,
-    //     uint256 topUpIndex
-    // ) external payable onlyOwner {
-    //     IVesting(staking).undelegate(validator, amount, epochNumber, topUpIndex);
-    // }
+    function topUpPosition(address validator) external payable onlyOwner {
+        IVesting(staking).topUpPosition{value: msg.value}(validator);
+    }
 
-    function claimDelegatorReward(
+    function cutPosition(address validator, uint256 amount) external payable onlyOwner {
+        IVesting(staking).cutPosition(validator, amount);
+    }
+
+    function claimPositionReward(
         address validator,
         uint256 epochNumber,
         uint256 topUpIndex
     ) external payable onlyOwner {
-        IVesting(staking).vestClaimReward(validator, epochNumber, topUpIndex);
+        IVesting(staking).claimPositionReward(validator, epochNumber, topUpIndex);
+    }
+
+    function withdraw(address to) external {
+        ICVSWithdrawal(staking).withdraw(to);
     }
 
     // function handleTopUp(

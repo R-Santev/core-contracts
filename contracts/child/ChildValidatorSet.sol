@@ -14,7 +14,7 @@ import "./System.sol";
 import "./h_modules/PowerExponent.sol";
 import "./h_modules/APR.sol";
 import "./h_modules/Vesting.sol";
-import "./h_modules/VestPosition.sol";
+import "./h_modules/VestManager.sol";
 
 import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
@@ -95,7 +95,7 @@ contract ChildValidatorSet is
 
         // TODO: Extract creation of the base impl
         // H_MODIFY: Set base implementation for VestFactory
-        implementation = address(new VestPosition());
+        implementation = address(new VestManager());
     }
 
     /**

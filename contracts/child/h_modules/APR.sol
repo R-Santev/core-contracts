@@ -42,7 +42,7 @@ contract APR {
         // TODO: Base + vesting and RSI must return the max possible value nere
         uint256 base = getBase();
         uint256 vesting = getVestingBonus(52);
-        uint256 rsiBonusFactor = getRSI();
+        uint256 rsiBonusFactor = getMaxRSI();
         // TODO: Macro must return the right value for that epoch
         uint256 macroFactor = getMacro();
 
@@ -50,6 +50,18 @@ contract APR {
             10000;
 
         return (result, magnitude());
+    }
+
+    function applyMaxReward(uint256 reward) public pure returns (uint256) {
+        // TODO: Consider setting max base
+        uint256 base = getBase();
+        uint256 rsi = getMaxRSI();
+        // max vesting bonus is 52 weeks
+        uint256 vestBonus = getVestingBonus(52);
+
+        uint256 bonus = (base + vestBonus) * rsi;
+
+        return (reward * bonus) / (10000 * 10000);
     }
 
     function getEpochReward(uint256 totalStaked) internal pure returns (uint256 reward) {

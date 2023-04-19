@@ -1,4 +1,4 @@
-# VestPosition
+# VestManager
 
 
 
@@ -10,10 +10,10 @@
 
 ## Methods
 
-### claimDelegatorReward
+### claimPositionReward
 
 ```solidity
-function claimDelegatorReward(address validator, uint256 epochNumber, uint256 topUpIndex) external payable
+function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external payable
 ```
 
 
@@ -28,10 +28,10 @@ function claimDelegatorReward(address validator, uint256 epochNumber, uint256 to
 | epochNumber | uint256 | undefined |
 | topUpIndex | uint256 | undefined |
 
-### delegate
+### cutPosition
 
 ```solidity
-function delegate(address validator) external payable
+function cutPosition(address validator, uint256 amount) external payable
 ```
 
 
@@ -43,6 +43,7 @@ function delegate(address validator) external payable
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
+| amount | uint256 | undefined |
 
 ### initialize
 
@@ -59,6 +60,23 @@ function initialize(address owner) external nonpayable
 | Name | Type | Description |
 |---|---|---|
 | owner | address | undefined |
+
+### openPosition
+
+```solidity
+function openPosition(address validator, uint256 duration) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| duration | uint256 | undefined |
 
 ### owner
 
@@ -105,6 +123,22 @@ function staking() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
+### topUpPosition
+
+```solidity
+function topUpPosition(address validator) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
 ### transferOwnership
 
 ```solidity
@@ -120,6 +154,22 @@ function transferOwnership(address newOwner) external nonpayable
 | Name | Type | Description |
 |---|---|---|
 | newOwner | address | undefined |
+
+### withdraw
+
+```solidity
+function withdraw(address to) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| to | address | undefined |
 
 
 
