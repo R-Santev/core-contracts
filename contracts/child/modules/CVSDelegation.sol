@@ -86,26 +86,6 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, AP
         emit DelegatorRewardClaimed(msg.sender, validator, restake, reward);
     }
 
-    // function claimDelegatorReward(address validator, bool restake, uint256 epochNumber, uint256 topUpIndex) public {
-    //     if (!isPosition()) {
-    //         revert Unauthorized("NOT_POSITION");
-    //     }
-
-    //     (uint256 epochRPS, TopUpData memory topUp) = poolStateParams(validator, epochNumber, topUpIndex);
-
-    //     RewardPool storage pool = _validators.getDelegationPool(validator);
-    //     uint256 reward = pool.claimRewards(msg.sender, epochRPS, topUp.balance, topUp.correction);
-
-    //     if (reward == 0) return;
-
-    //     reward = _applyCustomAPR(validator, reward);
-
-    //     if (restake) {
-    //         _delegate(msg.sender, validator, reward);
-    //     } else {
-    //         _registerWithdrawal(msg.sender, reward);
-    //     }
-
     //     // TODO: Emit event when sender is not a position only
     //     emit DelegatorRewardClaimed(msg.sender, validator, restake, reward);
     // }

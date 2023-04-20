@@ -112,6 +112,28 @@ function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### applyMaxReward
+
+```solidity
+function applyMaxReward(uint256 reward) external pure returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### bls
 
 ```solidity

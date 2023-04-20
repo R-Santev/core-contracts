@@ -258,6 +258,28 @@ Adds addresses that are allowed to register as validators.
 |---|---|---|
 | whitelistAddreses | address[] | Array of address to whitelist |
 
+### applyMaxReward
+
+```solidity
+function applyMaxReward(uint256 reward) external pure returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### bls
 
 ```solidity
@@ -618,6 +640,29 @@ Return the Voting Power Exponent Numerator and Denominator
 | numerator | uint256 | undefined |
 | denominator | uint256 | undefined |
 
+### getPositionReward
+
+```solidity
+function getPositionReward(address validator, address delegator) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### getUserParams
 
 ```solidity
@@ -749,7 +794,7 @@ function initialize(IChildValidatorSetBase.InitStruct init, IChildValidatorSetBa
 ### isActivePosition
 
 ```solidity
-function isActivePosition(address validator) external view returns (bool)
+function isActivePosition(address validator, address delegator) external view returns (bool)
 ```
 
 
@@ -761,6 +806,7 @@ function isActivePosition(address validator) external view returns (bool)
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
+| delegator | address | undefined |
 
 #### Returns
 
@@ -815,13 +861,18 @@ Checks if a top up was already made in the current epoch
 ### isVestManager
 
 ```solidity
-function isVestManager() external view returns (bool)
+function isVestManager(address delegator) external view returns (bool)
 ```
 
 
 
 
 
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| delegator | address | undefined |
 
 #### Returns
 

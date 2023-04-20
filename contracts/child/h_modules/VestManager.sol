@@ -22,8 +22,8 @@ contract VestManager is Initializable, OwnableUpgradeable {
         staking = msg.sender;
     }
 
-    function openPosition(address validator, uint256 duration) external payable onlyOwner {
-        IVesting(staking).openPosition{value: msg.value}(validator, duration);
+    function openPosition(address validator, uint256 durationWeeks) external payable onlyOwner {
+        IVesting(staking).openPosition{value: msg.value}(validator, durationWeeks);
     }
 
     function topUpPosition(address validator) external payable onlyOwner {

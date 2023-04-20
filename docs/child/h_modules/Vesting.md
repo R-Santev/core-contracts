@@ -112,6 +112,28 @@ function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### applyMaxReward
+
+```solidity
+function applyMaxReward(uint256 reward) external pure returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### bls
 
 ```solidity
@@ -341,6 +363,29 @@ Gets delegators&#39;s unclaimed rewards with validator.
 |---|---|---|
 | _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
 
+### getPositionReward
+
+```solidity
+function getPositionReward(address validator, address delegator) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### getUserParams
 
 ```solidity
@@ -431,7 +476,7 @@ function implementation() external view returns (address)
 ### isActivePosition
 
 ```solidity
-function isActivePosition(address validator) external view returns (bool)
+function isActivePosition(address validator, address delegator) external view returns (bool)
 ```
 
 
@@ -443,6 +488,7 @@ function isActivePosition(address validator) external view returns (bool)
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
+| delegator | address | undefined |
 
 #### Returns
 
@@ -497,13 +543,18 @@ Checks if a top up was already made in the current epoch
 ### isVestManager
 
 ```solidity
-function isVestManager() external view returns (bool)
+function isVestManager(address delegator) external view returns (bool)
 ```
 
 
 
 
 
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| delegator | address | undefined |
 
 #### Returns
 
