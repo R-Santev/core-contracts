@@ -94,6 +94,7 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
     }
 
     // TODO: add events for all actions
+    // TODO : burn all amounts that left from rewards
 
     function topUpPosition(address validator) external payable onlyManager {
         // TODO: Handle the case when the user has old finished position and the top-up data is not cleared
@@ -143,16 +144,26 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
         }
 
         // distribute the proper vesting reward
-        uint256 reward;
-        (uint256 epochRPS, uint256 balance, int256 correction) = poolStateParams(validator, epochNumber, topUpIndex);
+        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(validator, epochNumber, topUpIndex);
         RewardPool storage pool = _validators.getDelegationPool(validator);
-        reward = pool.claimRewards(msg.sender, epochRPS, balance, correction);
+        uint256 reward = pool.claimRewards(msg.sender, epochRPS, balance, correction);
+        uint256 maxReward = applyMaxReward(reward);
         reward = _applyCustomReward(validator, msg.sender, reward);
+        uint256 remainder = maxReward - reward;
+        if (remainder > 0) {
+            _burnAmount(remainder);
+        }
 
         // If the full maturing period is finished, withdraw also the reward made after the vesting period
         if (block.timestamp > vesting.end + vesting.duration) {
             uint256 additionalReward = pool.claimRewards(msg.sender);
-            additionalReward += _applyCustomReward(additionalReward);
+            uint256 maxAdditionalReward = applyMaxReward(additionalReward);
+            additionalReward = _applyCustomReward(additionalReward);
+
+            uint256 additionalRemainder = maxAdditionalReward - additionalReward;
+            if (additionalRemainder > 0) {
+                _burnAmount(additionalRemainder);
+            }
 
             reward += additionalReward;
         }
@@ -201,6 +212,7 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
         console.log("timeIncrease: %s", timeIncrease);
         vestings[validator][msg.sender].duration = duration + timeIncrease;
         vestings[validator][msg.sender].end = vestings[validator][msg.sender].end + timeIncrease;
+        vestings[validator][msg.sender].rsiBonus = 1;
     }
 
     function _openPosition(address validator, RewardPool storage delegation, uint256 durationWeeks) internal {
@@ -212,12 +224,13 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
             revert StakeRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
         }
 
-        // If is a position which is not active and not in maturing state,
-        // then all rewards are taken if there are any and we can recreate/create the position
+        // ensure previous rewards are claimed
+        if (delegation.claimableRewards(msg.sender) > 0) {
+            revert StakeRequirement({src: "vesting", msg: "REWARDS_NOT_CLAIMED"});
+        }
 
-        // But first call claimReward to get all the reward from the last iteration
-        // set zero epoch number and topUp index because they would not be used in this case
-        claimPositionReward(validator, 0, 0);
+        // If is a position which is not active and not in maturing state,
+        // we can recreate/create the position
 
         uint256 duration = durationWeeks * 1 weeks;
 
@@ -264,41 +277,34 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
         return amount;
     }
 
-    function poolStateParams(
+    function _rewardParams(
         address validator,
         uint256 epochNumber,
         uint256 topUpIndex
     ) internal view returns (uint256 rps, uint256 balance, int256 correction) {
         VestData memory position = vestings[validator][msg.sender];
-        require(block.timestamp >= position.start, "VestPosition: not started");
-
-        // vesting not finished
-        if (position.end > block.timestamp) {
-            revert NoReward();
-        }
-
         uint256 matureEnd = position.end + position.duration;
-        uint256 rewardPerShare;
-        // If full mature period is finished
+        uint256 alreadyMatured;
+        // If full mature period is finished, the full reward up to the end of the vesting must be matured
         if (matureEnd < block.timestamp) {
-            // rewardPerShare is the actual one
-            RewardPool storage pool = _validators.getDelegationPool(validator);
-            rewardPerShare = pool.magnifiedRewardPerShare;
+            alreadyMatured = position.end;
         } else {
             // rewardPerShare must be fetched from the history records
             uint256 maturedPeriod = block.timestamp - position.end;
-            uint256 alreadyMatured = position.start + maturedPeriod;
-
-            RPS memory rpsData = historyRPS[validator][epochNumber];
-            // If the given RPS is for future time - it is wrong, so revert
-            if (rpsData.timestamp > alreadyMatured) {
-                revert StakeRequirement({src: "vesting", msg: "WRONG_RPS"});
-            }
-
-            rewardPerShare = rpsData.value;
+            alreadyMatured = position.start + maturedPeriod;
         }
 
-        (uint256 balanceData, int256 correctionData) = handleTopUp(validator, epochNumber, topUpIndex);
+        RPS memory rpsData = historyRPS[validator][epochNumber];
+        if (rpsData.timestamp == 0) {
+            revert StakeRequirement({src: "vesting", msg: "INVALID_EPOCH"});
+        }
+        // If the given RPS is for future time - it is wrong, so revert
+        if (rpsData.timestamp > alreadyMatured) {
+            revert StakeRequirement({src: "vesting", msg: "WRONG_RPS"});
+        }
+
+        uint256 rewardPerShare = rpsData.value;
+        (uint256 balanceData, int256 correctionData) = _handleTopUp(validator, epochNumber, topUpIndex);
 
         return (rewardPerShare, balanceData, correctionData);
     }
@@ -367,7 +373,7 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
         return false;
     }
 
-    function handleTopUp(
+    function _handleTopUp(
         address validator,
         uint256 epochNumber,
         uint256 topUpIndex
@@ -379,13 +385,13 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
         }
 
         if (topUpIndex >= topUpPerVal[validator][msg.sender].length) {
-            revert();
+            revert StakeRequirement({src: "vesting", msg: "INVALID_TOPUP_INDEX"});
         }
 
         TopUpData memory topUp = topUpPerVal[validator][msg.sender][topUpIndex];
 
         if (topUp.epochNum > epochNumber) {
-            revert();
+            revert StakeRequirement({src: "vesting", msg: "LATER_TOPUP"});
         } else if (topUp.epochNum == epochNumber) {
             // If topUp is made exactly in the before epoch - it is the valid one for sure
         } else {
@@ -398,7 +404,7 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
                 if (nextTopUp.epochNum < epochNumber) {
                     // If the next topUp is made in an epoch before the handled one
                     // and is bigger than the provided top - the provided one is not valid
-                    revert();
+                    revert StakeRequirement({src: "vesting", msg: "EARLIER_TOPUP"});
                 }
             }
         }
@@ -431,6 +437,7 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
 
     function _applyCustomAPR(address validator, uint256 amount) internal view returns (uint256) {}
 
+    // TODO: rsi bonus must be changed on top-up, so kept in user params
     function _applyCustomReward(address validator, address delegator, uint256 reward) internal view returns (uint256) {
         VestData memory data = vestings[validator][delegator];
 
@@ -453,5 +460,16 @@ abstract contract Vesting is IVesting, CVSStorage, APR, CVSDelegation, VestFacto
         }
 
         return 0;
+    }
+
+    function getRPSValues(address validator) external view returns (RPS[] memory) {
+        RPS[] memory values = new RPS[](currentEpochId);
+        for (uint256 i = 0; i < currentEpochId; i++) {
+            if (historyRPS[validator][i].value != 0) {
+                values[i] = (historyRPS[validator][i]);
+            }
+        }
+
+        return values;
     }
 }

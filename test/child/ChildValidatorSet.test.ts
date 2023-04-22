@@ -1,17 +1,15 @@
 /* eslint-disable camelcase */
 /* eslint-disable node/no-extraneous-import */
-import { setBalance, impersonateAccount, time } from "@nomicfoundation/hardhat-network-helpers";
+import { setBalance, impersonateAccount, time, loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import * as mcl from "../../ts/mcl";
 // eslint-disable-next-line camelcase
-import { BLS, ChildValidatorSet, VestManager__factory, VestManager } from "../../typechain-types";
+import { BLS, ChildValidatorSet, VestManager__factory, VestManager, Vesting } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
 import { log } from "console";
-import { child } from "../../typechain-types/factories/contracts";
-import { LogDescription } from "ethers/lib/utils";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -1736,7 +1734,7 @@ describe.only("ChildValidatorSet", () => {
           .withArgs("vesting", "POSITION_MATURING");
       });
 
-      it("Should claim reward when recreating position", async () => {
+      it("reverts when reward not claimed", async () => {
         // enter the matured phase
         await time.increase(week * 55);
 
@@ -1750,11 +1748,9 @@ describe.only("ChildValidatorSet", () => {
           manager.openPosition(validator, vestingDuration, {
             value: minDelegation,
           })
-        ).to.not.be.reverted;
-
-        const rewardAfterOpening = await childValidatorSet.getDelegatorReward(accounts[2].address, manager.address);
-
-        expect(rewardAfterOpening).to.equal(0);
+        )
+          .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
+          .withArgs("vesting", "REWARDS_NOT_CLAIMED");
       });
     });
 
@@ -1783,6 +1779,14 @@ describe.only("ChildValidatorSet", () => {
         const user = accounts[4];
         const validator = accounts[2].address;
         const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
+        const vestingDuration = 52; // in weeks
+
+        await claimRewards(childValidatorSet, manager, validator);
+
+        await manager.openPosition(validator, vestingDuration, {
+          value: minDelegation,
+        });
+        const position = await childValidatorSet.vestings(validator, manager.address);
 
         // clear pending withdrawals
         await commitEpoch(systemChildValidatorSet, accounts);
@@ -1793,7 +1797,6 @@ describe.only("ChildValidatorSet", () => {
         expect(isActive).to.be.true;
 
         // set next block timestamp so half of the vesting period passed
-        const position = await childValidatorSet.vestings(validator, manager.address);
         const nextBlockTimestamp = position.duration.div(2).add(position.start);
         await time.setNextBlockTimestamp(nextBlockTimestamp);
 
@@ -1917,9 +1920,12 @@ describe.only("ChildValidatorSet", () => {
       it("properly top-up position", async () => {
         const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
         const validator = accounts[2].address;
+        const duration = 1; // 1 week
+
+        // claim rewards to be able to recreate position
+        await claimRewards(childValidatorSet, manager, validator);
 
         // create position with the same validator and manager, because the old one is finished
-        const duration = 1; // 1 week
         await manager.openPosition(validator, duration, { value: minDelegation });
         const vestingEndBefore = (await childValidatorSet.vestings(validator, manager.address)).end;
 
@@ -1988,17 +1994,25 @@ describe.only("ChildValidatorSet", () => {
     });
 
     describe("claimPositionReward()", async () => {
+      async function setupManagerFixture() {
+        await childValidatorSet.connect(accounts[6]).newManager();
+        const user = accounts[6];
+        const manager = await getUserManager(childValidatorSet, user, VestManagerFactory);
+        const validator = accounts[2].address;
+        const duration = 1; // 1 week
+        await manager.openPosition(validator, duration, { value: minDelegation });
+        // commit epoch, so reward is mined
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        return { user, manager, validator };
+      }
+
       it("reverts when not manager", async () => {
         const validator = accounts[2].address;
 
         await expect(childValidatorSet.connect(accounts[3]).claimPositionReward(validator, 0, 0))
           .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
           .withArgs("vesting", "NOT_MANAGER");
-      });
-
-      it("returns when unused position", async () => {
-        const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
-        expect(await childValidatorSet.withdrawable(manager.address)).to.be.eq(0);
       });
 
       it("returns when active position", async () => {
@@ -2010,6 +2024,8 @@ describe.only("ChildValidatorSet", () => {
         // enter the active state
         await time.increase(1);
         // ensure is active position
+        const position = await childValidatorSet.vestings(validator, manager.address);
+        log("position end", position.end.toString());
         expect(await childValidatorSet.isActivePosition(validator, manager.address)).to.be.true;
 
         // reward to be accumulated
@@ -2023,23 +2039,271 @@ describe.only("ChildValidatorSet", () => {
         expect(await childValidatorSet.withdrawable(manager.address)).to.be.eq(0);
       });
 
-      it("should properly claim Reward", async () => {
-        // const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
-        // const validator = accounts[2].address;
-        // // commit epoch
-        // const epochNum = await commitEpoch(systemChildValidatorSet, accounts);
-        // const week = 60 * 60 * 24 * 7;
-        // // Pretend the vesting period has passed
-        // await time.increase(week * 53);
-        // const balanceBefore = await accounts[4].getBalance();
-        // // When there are no top ups, just set 0, because it is not actually checked
-        // const topUpIndex = 0;
-        // await vestPosition.connect(accounts[4]).claimReward(validator, epochNum, topUpIndex);
-        // // Commit one more epoch so withdraw to be available
-        // await commitEpoch(systemChildValidatorSet, accounts);
-        // await vestPosition.connect(accounts[4]).withdraw(accounts[4].address);
-        // const balanceAfter = await accounts[4].getBalance();
-        // expect(balanceAfter.sub(balanceBefore)).to.be.gt(0);
+      it("returns when unused position", async () => {
+        const validator = accounts[2].address;
+        const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
+        const delegation = await childValidatorSet.delegationOf(accounts[2].address, manager.address);
+        // is position active
+        expect(await childValidatorSet.isActivePosition(validator, manager.address)).to.be.true;
+        await manager.cutPosition(validator, delegation);
+        // check reward
+        expect(await childValidatorSet.getPositionReward(validator, manager.address)).to.be.eq(0);
+        expect(await childValidatorSet.withdrawable(manager.address)).to.eq(0);
+      });
+
+      it("reverts when wrong rps index is provided", async () => {
+        const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
+        const validator = accounts[2].address;
+        const duration = 1; // 1 week
+        await manager.openPosition(validator, duration, { value: minDelegation });
+        // commit epoch
+        await commitEpoch(systemChildValidatorSet, accounts);
+        // enter the matured state
+        await time.increase(2 * week);
+
+        const position = await childValidatorSet.vestings(validator, manager.address);
+        const end = position.end;
+        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const epochNum = findProperRPSIndex(rpsValues, end);
+        const topUpIndex = 0;
+
+        await expect(manager.claimPositionReward(validator, epochNum + 1, topUpIndex))
+          .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
+          .withArgs("vesting", "INVALID_EPOCH");
+
+        // commit epoch
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        await expect(manager.claimPositionReward(validator, epochNum + 1, topUpIndex))
+          .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
+          .withArgs("vesting", "WRONG_RPS");
+      });
+
+      it("should properly claim reward when no top-ups and not full reward matured", async () => {
+        const { user, manager, validator } = await loadFixture(setupManagerFixture);
+        // calculate reward
+        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        log("TEST baseReward", baseReward.toString());
+        const base = await childValidatorSet.getBase();
+        const vestBonus = await childValidatorSet.getVestingBonus(1);
+        const rsi = await childValidatorSet.getRSI();
+        const expectedReward = base
+          .add(vestBonus)
+          .mul(rsi)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        log("TEST expectedReward", expectedReward.toString());
+
+        // calculate max reward
+        const maxRSI = await childValidatorSet.getMaxRSI();
+        const maxVestBonus = await childValidatorSet.getVestingBonus(52);
+        const maxReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        log("TEST maxReward", maxReward.toString());
+
+        // enter the maturing state
+        await time.increase(1 * week + 1);
+
+        // comit epoch, so more reward is added that must not be claimed now
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        // prepare params for call
+        const position = await childValidatorSet.vestings(validator, manager.address);
+        const end = position.end;
+        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const epochNum = findProperRPSIndex(rpsValues, end);
+        // When there are no top ups, just set 0, because it is not actually checked
+        const topUpIndex = 0;
+
+        // // ensure rewards are matured
+        // const areRewardsMatured = position.end.add(position.duration).lt(await time.latest());
+        // expect(areRewardsMatured).to.be.true;
+
+        await expect(await manager.claimPositionReward(validator, epochNum, topUpIndex)).to.changeEtherBalances(
+          [childValidatorSet.address, ethers.constants.AddressZero],
+          [maxReward.sub(expectedReward).mul(-1), maxReward.sub(expectedReward)]
+        );
+
+        // Commit one more epoch so withdraw to be available
+        await commitEpoch(systemChildValidatorSet, accounts);
+        await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
+          [user.address, childValidatorSet.address],
+          [expectedReward, expectedReward.mul(-1)]
+        );
+      });
+
+      it("should properly claim reward when no top-ups and full reward matured", async () => {
+        const { user, manager, validator } = await loadFixture(setupManagerFixture);
+        // calculate reward
+        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const base = await childValidatorSet.getBase();
+        const vestBonus = await childValidatorSet.getVestingBonus(1);
+        const rsi = await childValidatorSet.getRSI();
+        const expectedReward = base
+          .add(vestBonus)
+          .mul(rsi)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        // calculate max reward
+        const maxRSI = await childValidatorSet.getMaxRSI();
+        const maxVestBonus = await childValidatorSet.getVestingBonus(52);
+        const maxReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        // enter the maturing state
+        await time.increase(2 * week + 1);
+
+        // comit epoch, so more reward is added that must be without bonus
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        const additionalReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(
+          baseReward
+        );
+
+        const expectedAdditionalReward = base.mul(additionalReward).div(10000);
+
+        const maxAdditionalReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(additionalReward)
+          .div(10000 * 10000);
+
+        // prepare params for call
+        const position = await childValidatorSet.vestings(validator, manager.address);
+        const end = position.end;
+        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const epochNum = findProperRPSIndex(rpsValues, end);
+        // When there are no top ups, just set 0, because it is not actually checked
+        const topUpIndex = 0;
+
+        // ensure rewards are matured
+        const areRewardsMatured = position.end.add(position.duration).lt(await time.latest());
+        expect(areRewardsMatured).to.be.true;
+
+        const expectedFinalReward = expectedReward.add(expectedAdditionalReward);
+
+        const maxFinalReward = maxReward.add(maxAdditionalReward);
+
+        await expect(await manager.claimPositionReward(validator, epochNum, topUpIndex)).to.changeEtherBalances(
+          [childValidatorSet.address, ethers.constants.AddressZero],
+          [maxFinalReward.sub(expectedFinalReward).mul(-1), maxFinalReward.sub(expectedFinalReward)]
+        );
+
+        // Commit one more epoch so withdraw to be available
+        await commitEpoch(systemChildValidatorSet, accounts);
+        await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
+          [user.address, childValidatorSet.address],
+          [expectedFinalReward, expectedFinalReward.mul(-1)]
+        );
+      });
+
+      it("should properly claim reward when top-ups and not full reward matured", async () => {
+        const { user, manager, validator } = await loadFixture(setupManagerFixture);
+        // calculate reward
+        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const base = await childValidatorSet.getBase();
+        const vestBonus = await childValidatorSet.getVestingBonus(1);
+        const rsi = await childValidatorSet.getRSI();
+        const expectedReward = base
+          .add(vestBonus)
+          .mul(rsi)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        // calculate max reward
+        const maxRSI = await childValidatorSet.getMaxRSI();
+        const maxVestBonus = await childValidatorSet.getVestingBonus(52);
+        const maxReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        // top-up
+        await manager.topUpPosition(validator, { value: minDelegation });
+
+        // more rewards to be distributed but with the top-up data
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
+
+        const expectedTopUpReward = base
+          .add(vestBonus)
+          .mul(1)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        const maxTopUpReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(topUpReward)
+          .div(10000 * 10000);
+
+        // enter the maturing state
+        await time.increase(4 * week + 1);
+
+        // comit epoch, so more reward is added that must be without bonus
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        const additionalReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(
+          baseReward
+        );
+
+        const expectedAdditionalReward = base.mul(additionalReward).div(10000);
+
+        const maxAdditionalReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(additionalReward)
+          .div(10000 * 10000);
+
+        // prepare params for call
+        const position = await childValidatorSet.vestings(validator, manager.address);
+        const end = position.end;
+        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const epochNum = findProperRPSIndex(rpsValues, end);
+        // When there are no top ups, just set 0, because it is not actually checked
+        const topUpIndex = 0;
+
+        // ensure rewards are matured
+        const areRewardsMatured = position.end.add(position.duration).lt(await time.latest());
+        expect(areRewardsMatured).to.be.true;
+
+        const expectedFinalReward = expectedReward.add(expectedAdditionalReward).add(expectedTopUpReward);
+
+        const maxFinalReward = maxReward.add(maxAdditionalReward).add(maxTopUpReward);
+
+        await expect(await manager.claimPositionReward(validator, epochNum, topUpIndex)).to.changeEtherBalances(
+          [childValidatorSet.address, ethers.constants.AddressZero],
+          [maxFinalReward.sub(expectedFinalReward).mul(-1), maxFinalReward.sub(expectedFinalReward)]
+        );
+
+        // Commit one more epoch so withdraw to be available
+        await commitEpoch(systemChildValidatorSet, accounts);
+        await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
+          [user.address, childValidatorSet.address],
+          [expectedFinalReward, expectedFinalReward.mul(-1)]
+        );
+      });
+
+      it("should properly claim reward when there are top-ups", async () => {
+        await childValidatorSet.connect(accounts[6]).newManager();
+        const user = accounts[6];
+        const manager = await getUserManager(childValidatorSet, user, VestManagerFactory);
+        const validator = accounts[2].address;
+        const duration = 1; // 1 week
+        await manager.openPosition(validator, duration, { value: minDelegation });
+        // commit epoch, so reward is mined
+        await commitEpoch(systemChildValidatorSet, accounts);
       });
     });
   });
@@ -2087,3 +2351,52 @@ async function getUserManager(
 
   return manager.connect(account);
 }
+
+async function claimRewards(childValidatorSet: ChildValidatorSet, manager: VestManager, validator: string) {
+  const position = await childValidatorSet.vestings(validator, manager.address);
+  const end = position.end;
+  const rpsValues = await childValidatorSet.getRPSValues(validator);
+  const rpsIndex = findProperRPSIndex(rpsValues, end);
+  const topUpIndex = 0; // because top up is not used yet
+  log("rpsIndex", rpsIndex);
+
+  await manager.claimPositionReward(validator, rpsIndex, topUpIndex);
+}
+
+// TODO: Faster method can be applied here:
+// based on the current timestamp and the duration of one epoch
+// calculate relatively how many epochs have passed and start searching from there
+// Maybe faster method can be applied as well
+function findProperRPSIndex(arr: Vesting.RPSStructOutput[], timestamp: BigNumber): number {
+  let left = 0;
+  let right = arr.length - 1;
+  let closestTimestamp: null | BigNumber = null;
+  let closestIndex: null | number = null;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const midValue = arr[mid].timestamp;
+
+    if (midValue === timestamp) {
+      // Timestamp found
+      return mid;
+    } else if (midValue < timestamp) {
+      // Check if the timestamp is closer to the mid
+      if (closestTimestamp === null || timestamp.sub(midValue).abs().lt(timestamp.sub(closestTimestamp).abs())) {
+        closestTimestamp = midValue;
+        closestIndex = mid;
+      }
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  if (closestIndex === null) {
+    throw new Error("Invalid timestamp");
+  }
+
+  return closestIndex;
+}
+
+// TODO: when oracles are ready, test reward calculations with mocked contract that inherit from the ChildValidatorSet

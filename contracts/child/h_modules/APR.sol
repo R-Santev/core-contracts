@@ -6,28 +6,28 @@ contract APR {
     uint256 public constant EPOCHS_YEAR = 31450;
 
     // TODO: fetch from oracles when they are ready
-    function getBase() internal pure returns (uint256 nominator) {
+    function getBase() public pure returns (uint256 nominator) {
         return 50000;
     }
 
     // TODO: fetch from oracles when they are ready
-    function getVestingBonus(uint256 weeksCount) internal pure returns (uint256 nominator) {
+    function getVestingBonus(uint256 weeksCount) public pure returns (uint256 nominator) {
         // Currently represents a week bonus
         return 1000 * weeksCount;
     }
 
     // TODO: fetch from oracles when they are ready
-    function getMacro() internal pure returns (uint256 nominator) {
+    function getMacro() public pure returns (uint256 nominator) {
         return 8000;
     }
 
     // TODO: fetch from oracles when they are ready
-    function getRSI() internal pure returns (uint256 nominator) {
+    function getRSI() public pure returns (uint256 nominator) {
         return 11000;
     }
 
     // TODO: Ensure the fetched from oracles value is smaller or equal to this
-    function getMaxRSI() internal pure returns (uint256 nominator) {
+    function getMaxRSI() public pure returns (uint256 nominator) {
         return 15000;
     }
 
