@@ -31,19 +31,6 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, AP
         _delegate(msg.sender, validator, msg.value);
     }
 
-    // function topUp(address validator) external payable {
-    //     if (!isPosition()) {
-    //         revert StakeRequirement({src: "topUp", msg: "NOT_POSITION"});
-    //     }
-
-    //     RewardPool storage delegation = _validators.getDelegationPool(validator);
-    //     if (delegation.balanceOf(msg.sender) + msg.value < minDelegation)
-    //         revert StakeRequirement({src: "topUp", msg: "DELEGATION_TOO_LOW"});
-
-    //     claimDelegatorReward(validator, false);
-    //     _delegate(msg.sender, validator, msg.value);
-    // }
-
     /**
      * @inheritdoc ICVSDelegation
      */
@@ -85,10 +72,6 @@ abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, AP
 
         emit DelegatorRewardClaimed(msg.sender, validator, restake, reward);
     }
-
-    //     // TODO: Emit event when sender is not a position only
-    //     emit DelegatorRewardClaimed(msg.sender, validator, restake, reward);
-    // }
 
     /**
      * @inheritdoc ICVSDelegation

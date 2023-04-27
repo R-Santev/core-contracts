@@ -26,6 +26,10 @@ contract APR {
         return 11000;
     }
 
+    function getDefaultRSI() public pure returns (uint256 nominator) {
+        return DENOMINATOR;
+    }
+
     // TODO: Ensure the fetched from oracles value is smaller or equal to this
     function getMaxRSI() public pure returns (uint256 nominator) {
         return 15000;
