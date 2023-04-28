@@ -9,7 +9,6 @@ import * as mcl from "../../ts/mcl";
 // eslint-disable-next-line camelcase
 import { BLS, ChildValidatorSet, VestManager__factory, VestManager, Vesting } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
-import { log } from "console";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -1839,7 +1838,6 @@ describe.only("ChildValidatorSet", () => {
         await commitEpoch(systemChildValidatorSet, accounts);
 
         const reward = await childValidatorSet.getPositionReward(validator, manager.address);
-        log("reward", reward.toString());
 
         // Finish the vesting period
         await time.increase(week * 27);
@@ -1865,7 +1863,6 @@ describe.only("ChildValidatorSet", () => {
 
         // ensure reward is still available for withdrawal
         const rewardAfter = await childValidatorSet.getPositionReward(validator, manager.address);
-        log("rewardAfter", rewardAfter.toString());
         expect(rewardAfter).to.be.eq(reward);
       });
 
@@ -2025,8 +2022,6 @@ describe.only("ChildValidatorSet", () => {
         // enter the active state
         await time.increase(1);
         // ensure is active position
-        const position = await childValidatorSet.vestings(validator, manager.address);
-        log("position end", position.end.toString());
         expect(await childValidatorSet.isActivePosition(validator, manager.address)).to.be.true;
 
         // reward to be accumulated
@@ -2084,7 +2079,6 @@ describe.only("ChildValidatorSet", () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
         const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
-        log("TEST baseReward", baseReward.toString());
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
         const rsi = await childValidatorSet.getRSI();
@@ -2094,8 +2088,6 @@ describe.only("ChildValidatorSet", () => {
           .mul(baseReward)
           .div(10000 * 10000);
 
-        log("TEST expectedReward", expectedReward.toString());
-
         // calculate max reward
         const maxRSI = await childValidatorSet.getMaxRSI();
         const maxVestBonus = await childValidatorSet.getVestingBonus(52);
@@ -2104,8 +2096,6 @@ describe.only("ChildValidatorSet", () => {
           .mul(maxRSI)
           .mul(baseReward)
           .div(10000 * 10000);
-
-        log("TEST maxReward", maxReward.toString());
 
         // enter the maturing state
         await time.increase(1 * week + 1);
@@ -2211,11 +2201,14 @@ describe.only("ChildValidatorSet", () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
         const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
-        log("TEST baseReward", baseReward.toString());
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
-        // no rsi because top-up is used
-        const rsi = await childValidatorSet.getDefaultRSI();
+        const rsi = await childValidatorSet.getRSI();
+        const expectedBaseReward = base
+          .add(vestBonus)
+          .mul(rsi)
+          .mul(baseReward)
+          .div(10000 * 10000);
 
         // top-up
         await manager.topUpPosition(validator, { value: minDelegation });
@@ -2228,24 +2221,29 @@ describe.only("ChildValidatorSet", () => {
         const toBeMatured = ethers.BigNumber.from(topUpRewardsTimestamp).sub(position.start);
 
         const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
-        const expectedReward = base
+        // no rsi because top-up is used
+        const defaultRSI = await childValidatorSet.getDefaultRSI();
+        const expectedTopUpReward = base
           .add(vestBonus)
-          .mul(rsi)
-          .mul(baseReward.add(topUpReward))
+          .mul(defaultRSI)
+          .mul(topUpReward)
           .div(10000 * 10000);
-
-        log("TEST expectedReward", expectedReward.toString());
+        const expectedReward = expectedBaseReward.add(expectedTopUpReward);
 
         // calculate max reward
         const maxRSI = await childValidatorSet.getMaxRSI();
         const maxVestBonus = await childValidatorSet.getVestingBonus(52);
-        const maxReward = base
+        const maxBaseReward = base
           .add(maxVestBonus)
           .mul(maxRSI)
-          .mul(baseReward.add(topUpReward))
+          .mul(baseReward)
           .div(10000 * 10000);
-
-        log("TEST maxReward", maxReward.toString());
+        const maxTopUpReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(topUpReward)
+          .div(10000 * 10000);
+        const maxReward = maxBaseReward.add(maxTopUpReward);
 
         // enter the maturing state
         // two week is the duration + the needed time for the top-up to be matured
@@ -2260,11 +2258,9 @@ describe.only("ChildValidatorSet", () => {
         const epochNum = findProperRPSIndex(rpsValues, end);
         // 1 because we have only one top-up
         const topUpIndex = 1;
-
         // ensure rewards are maturing
         const areRewardsMatured = position.end.add(toBeMatured).lt(await time.latest());
         expect(areRewardsMatured).to.be.true;
-
         await expect(await manager.claimPositionReward(validator, epochNum, topUpIndex)).to.changeEtherBalances(
           [childValidatorSet.address, ethers.constants.AddressZero],
           [maxReward.sub(expectedReward).mul(-1), maxReward.sub(expectedReward)]
@@ -2284,8 +2280,9 @@ describe.only("ChildValidatorSet", () => {
         const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
+        const rsi = await childValidatorSet.getRSI();
         // Default RSI because we use top-up
-        const rsi = await childValidatorSet.getDefaultRSI();
+        const defaultRSI = await childValidatorSet.getDefaultRSI();
 
         // top-up
         await manager.topUpPosition(validator, { value: minDelegation });
@@ -2294,21 +2291,32 @@ describe.only("ChildValidatorSet", () => {
         await commitEpoch(systemChildValidatorSet, accounts);
 
         const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
-        const expectedReward = base
+        const expectedBaseReward = base
           .add(vestBonus)
           .mul(rsi)
-          .mul(baseReward.add(topUpReward))
+          .mul(baseReward)
           .div(10000 * 10000);
+        const expectedTopUpReward = base
+          .add(vestBonus)
+          .mul(defaultRSI)
+          .mul(topUpReward)
+          .div(10000 * 10000);
+        const expectedReward = expectedBaseReward.add(expectedTopUpReward);
 
         // calculate max reward
         const maxRSI = await childValidatorSet.getMaxRSI();
         const maxVestBonus = await childValidatorSet.getVestingBonus(52);
-        const maxReward = base
+        const maxBaseReward = base
           .add(maxVestBonus)
           .mul(maxRSI)
-          .mul(baseReward.add(topUpReward))
+          .mul(baseReward)
           .div(10000 * 10000);
-
+        const maxTopUpReward = base
+          .add(maxVestBonus)
+          .mul(maxRSI)
+          .mul(topUpReward)
+          .div(10000 * 10000);
+        const maxReward = maxBaseReward.add(maxTopUpReward);
         // enter the matured state
         await time.increase(4 * week + 1);
 
@@ -2355,14 +2363,6 @@ describe.only("ChildValidatorSet", () => {
 
       it("reverts when invalid top-up index", async () => {
         const { manager, validator } = await loadFixture(setupManagerFixture);
-        // calculate reward
-        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
-        log("TEST baseReward", baseReward.toString());
-        const base = await childValidatorSet.getBase();
-        const vestBonus = await childValidatorSet.getVestingBonus(1);
-        // no rsi because top-up is used
-        const rsi = await childValidatorSet.getDefaultRSI();
-
         // top-up
         await manager.topUpPosition(validator, { value: minDelegation });
 
@@ -2372,26 +2372,6 @@ describe.only("ChildValidatorSet", () => {
         const topUpRewardsTimestamp = await time.latest();
         const position = await childValidatorSet.vestings(validator, manager.address);
         const toBeMatured = ethers.BigNumber.from(topUpRewardsTimestamp).sub(position.start);
-
-        const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
-        const expectedReward = base
-          .add(vestBonus)
-          .mul(rsi)
-          .mul(baseReward.add(topUpReward))
-          .div(10000 * 10000);
-
-        log("TEST expectedReward", expectedReward.toString());
-
-        // calculate max reward
-        const maxRSI = await childValidatorSet.getMaxRSI();
-        const maxVestBonus = await childValidatorSet.getVestingBonus(52);
-        const maxReward = base
-          .add(maxVestBonus)
-          .mul(maxRSI)
-          .mul(baseReward.add(topUpReward))
-          .div(10000 * 10000);
-
-        log("TEST maxReward", maxReward.toString());
 
         // enter the maturing state
         // two week is the duration + the needed time for the top-up to be matured
@@ -2480,8 +2460,6 @@ describe.only("ChildValidatorSet", () => {
         const rpsValues = await childValidatorSet.getRPSValues(validator);
         const epochNum = findProperRPSIndex(rpsValues, end);
 
-        log("epochNum", epochNum.toString());
-
         // set earlier index
         const topUpIndex = 0;
 
@@ -2496,8 +2474,8 @@ describe.only("ChildValidatorSet", () => {
         const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
-        // Default RSI because we use top-up
-        const rsi = await childValidatorSet.getDefaultRSI();
+        // Not default RSI because we claim rewards made before top-up
+        const rsi = await childValidatorSet.getRSI();
         const reward = base
           .add(vestBonus)
           .mul(rsi)
@@ -2536,6 +2514,64 @@ describe.only("ChildValidatorSet", () => {
           [user.address, childValidatorSet.address],
           [reward, reward.mul(-1)]
         );
+      });
+
+      it("claim rewards multiple times", async () => {
+        const { user, manager, validator } = await loadFixture(setupManagerFixture);
+        // calculate reward
+        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const base = await childValidatorSet.getBase();
+        const vestBonus = await childValidatorSet.getVestingBonus(1);
+        // Not default RSI because we claim rewards made before top-up
+        const rsi = await childValidatorSet.getRSI();
+        const reward = base
+          .add(vestBonus)
+          .mul(rsi)
+          .mul(baseReward)
+          .div(10000 * 10000);
+
+        const rewardDistributionTime = await time.latest();
+        let position = await childValidatorSet.vestings(validator, manager.address);
+        const toBeMatured = ethers.BigNumber.from(rewardDistributionTime).sub(position.start);
+        time.increase(50);
+
+        // top-up
+        await manager.topUpPosition(validator, { value: minDelegation });
+        // more rewards to be distributed but with the top-up data
+        await commitEpoch(systemChildValidatorSet, accounts);
+        // comit epoch, so more reward is added that must be without bonus
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        // prepare params for call
+        position = await childValidatorSet.vestings(validator, manager.address);
+        // enter the maturing state
+        await time.increaseTo(position.end.toNumber() + toBeMatured.toNumber() + 1);
+
+        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const epochNum = findProperRPSIndex(rpsValues, position.start.add(toBeMatured));
+        const topUpIndex = 0;
+        // ensure rewards are maturing
+        const areRewardsMaturing = position.end.add(toBeMatured).lt(await time.latest());
+        expect(areRewardsMaturing).to.be.true;
+
+        await manager.claimPositionReward(validator, epochNum, topUpIndex);
+
+        // Commit one more epoch so withdraw to be available
+        await commitEpoch(systemChildValidatorSet, accounts);
+        await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
+          [user.address, childValidatorSet.address],
+          [reward, reward.mul(-1)]
+        );
+
+        time.increase(2 * week);
+
+        await commitEpoch(systemChildValidatorSet, accounts);
+        expect(await manager.claimPositionReward(validator, epochNum + 1, topUpIndex + 1)).to.not.be.reverted;
+
+        time.increase(2 * week);
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        expect(await manager.claimPositionReward(validator, epochNum + 1, topUpIndex + 1)).to.not.be.reverted;
       });
     });
   });
@@ -2591,7 +2627,6 @@ async function claimRewards(childValidatorSet: ChildValidatorSet, manager: VestM
   const accountParams = await childValidatorSet.getAccountParams(validator, manager.address);
   const rpsIndex = findProperRPSIndex(rpsValues, end);
   const accountParamsIndex = findAccountParamsIndex(accountParams, ethers.BigNumber.from(rpsIndex));
-  log("rpsIndex", rpsIndex);
 
   await manager.claimPositionReward(validator, rpsIndex, accountParamsIndex);
 }
@@ -2633,7 +2668,6 @@ function findProperRPSIndex(arr: Vesting.RPSStructOutput[], timestamp: BigNumber
 }
 
 function findAccountParamsIndex(arr: Vesting.AccountPoolParamsStructOutput[], epochNum: BigNumber): number {
-  log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! ARR", arr);
   let left = 0;
   let right = arr.length - 1;
   let closestEpoch: null | BigNumber = null;
@@ -2642,9 +2676,6 @@ function findAccountParamsIndex(arr: Vesting.AccountPoolParamsStructOutput[], ep
   while (left <= right) {
     const mid = Math.floor((left + right) / 2);
     const midValue = arr[mid].epochNum;
-    log("!!!!!!!!!!!!!!! midValue", midValue.toString());
-    log("!!!!!!!!!!!!!!! epochNum", epochNum.toString());
-
     if (midValue.eq(epochNum)) {
       // Timestamp found
       return mid;
