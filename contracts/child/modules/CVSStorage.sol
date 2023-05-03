@@ -71,7 +71,7 @@ abstract contract CVSStorage is ICVSStorage {
         stake = v.stake;
         totalStake = v.stake + _validators.getDelegationPool(validator).supply;
         commission = v.commission;
-        withdrawableRewards = v.withdrawableRewards;
+        withdrawableRewards = v.totalRewards - v.takenRewards;
         active = v.active;
     }
 

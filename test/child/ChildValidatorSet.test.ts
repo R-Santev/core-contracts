@@ -7,7 +7,7 @@ import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import * as mcl from "../../ts/mcl";
 // eslint-disable-next-line camelcase
-import { BLS, ChildValidatorSet, VestManager__factory, VestManager, Vesting } from "../../typechain-types";
+import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegatorVesting } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
@@ -2635,7 +2635,7 @@ async function claimRewards(childValidatorSet: ChildValidatorSet, manager: VestM
 // based on the current timestamp and the duration of one epoch
 // calculate relatively how many epochs have passed and start searching from there
 // Maybe faster method can be applied as well
-function findProperRPSIndex(arr: Vesting.RPSStructOutput[], timestamp: BigNumber): number {
+function findProperRPSIndex(arr: DelegatorVesting.RPSStructOutput[], timestamp: BigNumber): number {
   let left = 0;
   let right = arr.length - 1;
   let closestTimestamp: null | BigNumber = null;
@@ -2667,7 +2667,7 @@ function findProperRPSIndex(arr: Vesting.RPSStructOutput[], timestamp: BigNumber
   return closestIndex;
 }
 
-function findAccountParamsIndex(arr: Vesting.AccountPoolParamsStructOutput[], epochNum: BigNumber): number {
+function findAccountParamsIndex(arr: DelegatorVesting.AccountPoolParamsStructOutput[], epochNum: BigNumber): number {
   let left = 0;
   let right = arr.length - 1;
   let closestEpoch: null | BigNumber = null;

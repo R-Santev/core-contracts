@@ -13,8 +13,10 @@ import "./System.sol";
 
 import "./h_modules/PowerExponent.sol";
 import "./h_modules/APR.sol";
-import "./h_modules/Vesting.sol";
+import "./h_modules/DelegatorVesting.sol";
+import "./h_modules/StakerVesting.sol";
 import "./h_modules/VestManager.sol";
+import "./h_modules/Vesting.sol";
 
 import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
@@ -27,12 +29,14 @@ contract ChildValidatorSet is
     CVSStorage,
     CVSAccessControl,
     CVSWithdrawal,
-    CVSStaking,
+    System,
+    PowerExponent,
     APR,
     CVSDelegation,
     Vesting,
-    PowerExponent,
-    System
+    CVSStaking,
+    StakerVesting,
+    DelegatorVesting
 {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
@@ -82,7 +86,8 @@ contract ChildValidatorSet is
                 blsKey: validators[i].pubkey,
                 stake: validators[i].stake,
                 commission: 0,
-                withdrawableRewards: 0,
+                totalRewards: 0,
+                takenRewards: 0,
                 active: true
             });
             _validators.insert(validators[i].addr, validator);
@@ -258,6 +263,8 @@ contract ChildValidatorSet is
             if (delegatorShares > 0) {
                 _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
             }
+
+            _saveValRewardData(uptimeData.validator);
         }
     }
 
@@ -339,7 +346,7 @@ contract ChildValidatorSet is
                 uptimeData.validator,
                 validatorReward
             );
-            validator.withdrawableRewards += validatorShares;
+            validator.totalRewards += validatorShares;
             emit ValidatorRewardDistributed(uptimeData.validator, validatorReward);
 
             _handleDelegation(uptimeData, uptime, delegatorShares);
