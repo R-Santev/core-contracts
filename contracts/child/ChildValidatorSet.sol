@@ -14,7 +14,7 @@ import "./System.sol";
 import "./h_modules/PowerExponent.sol";
 import "./h_modules/APR.sol";
 import "./h_modules/DelegatorVesting.sol";
-import "./h_modules/StakerVesting.sol";
+import "./h_modules/ExtendedStaking.sol";
 import "./h_modules/VestManager.sol";
 import "./h_modules/Vesting.sol";
 
@@ -26,16 +26,14 @@ import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 // solhint-disable max-states-count
 contract ChildValidatorSet is
     IChildValidatorSetBase,
+    System,
+    APR,
     CVSStorage,
     CVSAccessControl,
     CVSWithdrawal,
-    System,
     PowerExponent,
-    APR,
     CVSDelegation,
-    Vesting,
-    CVSStaking,
-    StakerVesting,
+    ExtendedStaking,
     DelegatorVesting
 {
     using ValidatorStorageLib for ValidatorTree;
@@ -264,7 +262,11 @@ contract ChildValidatorSet is
                 _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
             }
 
-            _saveValRewardData(uptimeData.validator);
+            if (validatorShares > 0) {
+                _saveValRewardData(uptimeData.validator, uptime.epochId);
+            }
+
+            _saveValRewardData(uptimeData.validator, uptime.epochId);
         }
     }
 

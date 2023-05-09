@@ -9,6 +9,8 @@ import * as mcl from "../../ts/mcl";
 // eslint-disable-next-line camelcase
 import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegatorVesting } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
+import { isActivePosition } from "./helpers";
+import { log } from "console";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -657,7 +659,7 @@ describe.only("ChildValidatorSet", () => {
   describe("Claim", async () => {
     it("Claim validator reward", async () => {
       const reward = await childValidatorSet.getValidatorReward(accounts[0].address);
-      const tx = await childValidatorSet.claimValidatorReward();
+      const tx = await childValidatorSet["claimValidatorReward()"]();
 
       const receipt = await tx.wait();
       const event = receipt.events?.find((log) => log.event === "ValidatorRewardClaimed");
@@ -1623,7 +1625,7 @@ describe.only("ChildValidatorSet", () => {
     expect(totalStake).to.equal(minStake * 2);
   });
 
-  describe("Vesting", async () => {
+  describe("Delegation Vesting", async () => {
     let VestManagerFactory: VestManager__factory;
     let vestManager: VestManager;
 
@@ -1674,15 +1676,15 @@ describe.only("ChildValidatorSet", () => {
       });
     });
 
-    describe("openPosition()", async () => {
+    describe("openDelegatorPosition()", async () => {
       it("reverts when not manager", async () => {
         await expect(
-          childValidatorSet.connect(accounts[3]).openPosition(accounts[3].address, 1)
+          childValidatorSet.connect(accounts[3]).openDelegatorPosition(accounts[3].address, 1)
         ).to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement");
       });
 
       it("reverts when delegation too low", async () => {
-        await expect(vestManager.connect(accounts[4]).openPosition(accounts[2].address, minStake - 1))
+        await expect(vestManager.connect(accounts[4]).openDelegatorPosition(accounts[2].address, minStake - 1))
           .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
           .withArgs("vesting", "DELEGATION_TOO_LOW");
       });
@@ -1693,7 +1695,7 @@ describe.only("ChildValidatorSet", () => {
         const vestingDuration = 52; // in weeks
 
         await expect(
-          await manager.openPosition(validator, vestingDuration, {
+          await manager.openDelegatorPosition(validator, vestingDuration, {
             value: minDelegation,
           })
         ).to.not.be.reverted;
@@ -1708,7 +1710,7 @@ describe.only("ChildValidatorSet", () => {
         const vestingDuration = 52; // in weeks
 
         await expect(
-          manager.openPosition(validator, vestingDuration, {
+          manager.openDelegatorPosition(validator, vestingDuration, {
             value: minDelegation,
           })
         )
@@ -1725,7 +1727,7 @@ describe.only("ChildValidatorSet", () => {
         const vestingDuration = 52; // in weeks
 
         await expect(
-          manager.openPosition(validator, vestingDuration, {
+          manager.openDelegatorPosition(validator, vestingDuration, {
             value: minDelegation,
           })
         )
@@ -1744,7 +1746,7 @@ describe.only("ChildValidatorSet", () => {
         expect(currentReward).to.gt(0);
 
         await expect(
-          manager.openPosition(validator, vestingDuration, {
+          manager.openDelegatorPosition(validator, vestingDuration, {
             value: minDelegation,
           })
         )
@@ -1782,7 +1784,7 @@ describe.only("ChildValidatorSet", () => {
 
         await claimRewards(childValidatorSet, manager, validator);
 
-        await manager.openPosition(validator, vestingDuration, {
+        await manager.openDelegatorPosition(validator, vestingDuration, {
           value: minDelegation,
         });
         const position = await childValidatorSet.vestings(validator, manager.address);
@@ -1792,7 +1794,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.withdraw(user.address);
 
         // ensure position is active
-        const isActive = await childValidatorSet.isActivePosition(validator, manager.address);
+        const isActive = await isActivePosition(childValidatorSet, validator, manager);
         expect(isActive).to.be.true;
 
         // set next block timestamp so half of the vesting period passed
@@ -1843,12 +1845,13 @@ describe.only("ChildValidatorSet", () => {
         await time.increase(week * 27);
 
         // ensure position is inactive
-        const isActive = await childValidatorSet.isActivePosition(validator, manager.address);
+        const isActive = await isActivePosition(childValidatorSet, validator, manager);
         expect(isActive).to.be.false;
 
         const balanceBefore = await accounts[4].getBalance();
         const delegatedAmount = await childValidatorSet.delegationOf(validator, manager.address);
         manager.cutPosition(accounts[2].address, delegatedAmount);
+        log("here");
 
         // Commit one more epoch so withdraw to be available
         await commitEpoch(systemChildValidatorSet, accounts);
@@ -1872,7 +1875,7 @@ describe.only("ChildValidatorSet", () => {
         await childValidatorSet.connect(user2).newManager();
         const manager2 = await getUserManager(childValidatorSet, user2, VestManagerFactory);
 
-        await manager2.openPosition(validator, 1, {
+        await manager2.openDelegatorPosition(validator, 1, {
           value: minDelegation,
         });
 
@@ -1923,14 +1926,14 @@ describe.only("ChildValidatorSet", () => {
         await claimRewards(childValidatorSet, manager, validator);
 
         // create position with the same validator and manager, because the old one is finished
-        await manager.openPosition(validator, duration, { value: minDelegation });
+        await manager.openDelegatorPosition(validator, duration, { value: minDelegation });
         const vestingEndBefore = (await childValidatorSet.vestings(validator, manager.address)).end;
 
         // enter the active state
         await time.increase(1);
         await commitEpoch(systemChildValidatorSet, accounts);
 
-        expect(await childValidatorSet.isActivePosition(validator, manager.address)).to.be.true;
+        expect(await isActivePosition(childValidatorSet, validator, manager)).to.be.true;
 
         const delegatedAmount = await childValidatorSet.delegationOf(validator, manager.address);
         const topUpAmount = minDelegation / 2;
@@ -1998,7 +2001,7 @@ describe.only("ChildValidatorSet", () => {
         const manager = await getUserManager(childValidatorSet, user, VestManagerFactory);
         const validator = accounts[2].address;
         const duration = 1; // 1 week
-        await manager.openPosition(validator, duration, { value: minDelegation });
+        await manager.openDelegatorPosition(validator, duration, { value: minDelegation });
         // commit epoch, so reward is mined
         await commitEpoch(systemChildValidatorSet, accounts);
 
@@ -2018,11 +2021,11 @@ describe.only("ChildValidatorSet", () => {
         const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
         const validator = accounts[2].address;
         const duration = 1; // 1 week
-        await manager.openPosition(validator, duration, { value: minDelegation });
+        await manager.openDelegatorPosition(validator, duration, { value: minDelegation });
         // enter the active state
         await time.increase(1);
         // ensure is active position
-        expect(await childValidatorSet.isActivePosition(validator, manager.address)).to.be.true;
+        expect(await isActivePosition(childValidatorSet, validator, manager)).to.be.true;
 
         // reward to be accumulated
         await commitEpoch(systemChildValidatorSet, accounts);
@@ -2040,7 +2043,7 @@ describe.only("ChildValidatorSet", () => {
         const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
         const delegation = await childValidatorSet.delegationOf(accounts[2].address, manager.address);
         // is position active
-        expect(await childValidatorSet.isActivePosition(validator, manager.address)).to.be.true;
+        expect(await isActivePosition(childValidatorSet, validator, manager)).to.be.true;
         await manager.cutPosition(validator, delegation);
         // check reward
         expect(await childValidatorSet.getPositionReward(validator, manager.address)).to.be.eq(0);
@@ -2051,7 +2054,7 @@ describe.only("ChildValidatorSet", () => {
         const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
         const validator = accounts[2].address;
         const duration = 1; // 1 week
-        await manager.openPosition(validator, duration, { value: minDelegation });
+        await manager.openDelegatorPosition(validator, duration, { value: minDelegation });
         // commit epoch
         await commitEpoch(systemChildValidatorSet, accounts);
         // enter the matured state
@@ -2338,7 +2341,7 @@ describe.only("ChildValidatorSet", () => {
         const end = position.end;
         const rpsValues = await childValidatorSet.getRPSValues(validator);
         const epochNum = findProperRPSIndex(rpsValues, end);
-        // 1 because we have only one top-up, but the first is for the openPosition
+        // 1 because we have only one top-up, but the first is for the openDelegatorPosition
         const topUpIndex = 1;
 
         // ensure rewards are matured
@@ -2575,6 +2578,117 @@ describe.only("ChildValidatorSet", () => {
       });
     });
   });
+
+  describe("Staking Vesting", () => {
+    const vestingDurationWeeks = 10; // in weeks
+    const vestingDuration = vestingDurationWeeks * week;
+    let staker: any, stakerChildValidatorSet: ChildValidatorSet;
+
+    before(async () => {
+      staker = accounts[9];
+      stakerChildValidatorSet = childValidatorSet.connect(staker);
+      childValidatorSet.addToWhitelist([accounts[9].address]);
+      await registerValidator(childValidatorSet, staker);
+    });
+
+    describe("openStakingPosition()", async () => {
+      it("should open staking position", async () => {
+        const tx = await stakerChildValidatorSet.openStakingPosition(vestingDurationWeeks, { value: minDelegation });
+        const vestingData = await stakerChildValidatorSet.stakePositions(staker.address);
+        if (!tx.blockNumber) {
+          throw new Error("block number is undefined");
+        }
+
+        expect(vestingData.duration).to.be.equal(vestingDuration);
+        const start = await time.latest();
+        expect(vestingData.start).to.be.equal(start);
+        expect(vestingData.end).to.be.equal(start + vestingDuration);
+        expect(vestingData.base).to.be.equal(await childValidatorSet.getBase());
+        expect(vestingData.vestBonus).to.be.equal(await childValidatorSet.getVestingBonus(10));
+        expect(vestingData.rsiBonus).to.be.equal(await childValidatorSet.getRSI());
+
+        // commit epoch so the balance is increased
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        // check is balance = min delegation
+        expect(await stakerChildValidatorSet.totalStakeOf(staker.address)).to.be.equal(minDelegation);
+      });
+
+      it("should not be in vesting cycle", async () => {
+        await expect(stakerChildValidatorSet.openStakingPosition(vestingDuration))
+          .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
+          .withArgs("veting", "ALREADY_IN_VESTING");
+      });
+    });
+
+    describe("Top-up staking position with stake()", async () => {
+      it("should top-up staking position", async () => {
+        const tx = await stakerChildValidatorSet.stake({ value: minDelegation });
+        const vestingData = await stakerChildValidatorSet.stakePositions(staker.address);
+        if (!tx.blockNumber) {
+          throw new Error("block number is undefined");
+        }
+
+        expect(vestingData.duration).to.be.equal(vestingDuration * 2);
+        expect(vestingData.end).to.be.equal(vestingData.start.add(vestingDuration * 2));
+        expect(vestingData.rsiBonus).to.be.equal(0);
+
+        // commit epoch so the balance is increased
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        // check is balance = min delegation
+        expect(await stakerChildValidatorSet.totalStakeOf(staker.address)).to.be.equal(minDelegation * 2);
+      });
+    });
+
+    describe("decrease staking position with unstake()", async () => {
+      async function decreasePosition(unstakeAmount: BigNumber) {
+        const position = await stakerChildValidatorSet.stakePositions(staker.address);
+        const latestTimestamp = await time.latest();
+        const nextTimestamp = latestTimestamp + 2;
+        await time.setNextBlockTimestamp(nextTimestamp);
+        const duration = position.duration;
+        const leftDuration = position.end.sub(nextTimestamp);
+        const burnedAmount = unstakeAmount.mul(leftDuration).div(duration);
+        await stakerChildValidatorSet.unstake(unstakeAmount);
+        return { burnedAmount };
+      }
+      it("should decrease staking position", async () => {
+        const unstakeAmount = ethers.BigNumber.from(minDelegation).div(2);
+        const { burnedAmount } = await decreasePosition(unstakeAmount);
+
+        await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
+          childValidatorSet,
+          burnedAmount.mul(-1)
+        );
+      });
+
+      it("should burn full reward made", async () => {
+        await commitEpoch(systemChildValidatorSet, accounts);
+        const validator = await stakerChildValidatorSet.getValidator(staker.address);
+        const reward = validator.withdrawableRewards;
+        const unstakeAmount = ethers.BigNumber.from(minDelegation).div(2);
+        const { burnedAmount } = await decreasePosition(unstakeAmount);
+
+        await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
+          childValidatorSet,
+          burnedAmount.add(reward).mul(-1)
+        );
+      });
+
+      it("should delete position data when full amount removed", async () => {
+        await commitEpoch(systemChildValidatorSet, accounts);
+        const validator = await stakerChildValidatorSet.getValidator(staker.address);
+        const unstakeAmount = validator.stake;
+        const { burnedAmount } = await decreasePosition(unstakeAmount);
+
+        await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
+          childValidatorSet,
+          burnedAmount.mul(-1)
+        );
+      });
+    });
+  });
 });
 
 // eslint-disable-next-line no-unused-vars
@@ -2699,3 +2813,15 @@ function findAccountParamsIndex(arr: DelegatorVesting.AccountPoolParamsStructOut
 }
 
 // TODO: when oracles are ready, test reward calculations with mocked contract that inherit from the ChildValidatorSet
+
+async function registerValidator(childValidatorSet: ChildValidatorSet, account: any) {
+  const keyPair = mcl.newKeyPair();
+  const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, account.address, keyPair.secret).signature;
+
+  const tx = await childValidatorSet.connect(account).register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey));
+  const txReceipt = await tx.wait();
+
+  if (txReceipt.status !== 1) {
+    throw new Error("Cannot register address");
+  }
+}

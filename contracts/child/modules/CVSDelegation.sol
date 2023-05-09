@@ -13,7 +13,7 @@ import "../../libs/ValidatorQueue.sol";
 import "../../libs/RewardPool.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSDelegation is ICVSDelegation, CVSStorage, CVSWithdrawal, APR {
+abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawal {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using RewardPoolLib for RewardPool;

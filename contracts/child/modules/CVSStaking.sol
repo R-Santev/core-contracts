@@ -13,7 +13,7 @@ import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWithdrawal, Vesting {
+abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWithdrawal {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using SafeMathUint for uint256;
@@ -43,7 +43,7 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
     /**
      * @inheritdoc ICVSStaking
      */
-    function stake() public payable onlyValidator {
+    function stake() public payable virtual onlyValidator {
         int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
         if (msg.value.toInt256Safe() + totalValidatorStake < int256(minStake))
             revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
@@ -54,8 +54,10 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
 
     /**
      * @inheritdoc ICVSStaking
+     * @dev Oveerriden by StakerVesting contract
      */
-    function unstake(uint256 amount) public {
+    //
+    function unstake(uint256 amount) public virtual {
         int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
         int256 amountInt = amount.toInt256Safe();
         if (amountInt > totalValidatorStake) revert StakeRequirement({src: "unstake", msg: "INSUFFICIENT_BALANCE"});
@@ -86,7 +88,11 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
     /**
      * @inheritdoc ICVSStaking
      */
-    function claimValidatorReward() public {
+    function claimValidatorReward() public virtual {
+        // if (isInVesting(msg.sender, msg.sender)) {
+        //     return;
+        // }
+
         Validator storage validator = _validators.get(msg.sender);
         uint256 reward = validator.totalRewards - validator.takenRewards;
         if (reward == 0) return;

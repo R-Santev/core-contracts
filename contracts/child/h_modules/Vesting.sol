@@ -9,22 +9,12 @@
 
 pragma solidity 0.8.17;
 
-import "hardhat/console.sol";
-
-import "./../modules/CVSStorage.sol";
-import "./../modules/CVSDelegation.sol";
-
-import "./APR.sol";
-import "./VestFactory.sol";
-
 import "../../interfaces/Errors.sol";
-import "../../interfaces/h_modules/IVesting.sol";
-
-import "../../libs/RewardPool.sol";
+import "./APR.sol";
 
 error NoReward();
 
-abstract contract Vesting is IVesting {
+abstract contract Vesting is APR {
     // validator => position => vesting user data
     mapping(address => mapping(address => VestData)) public vestings;
 
@@ -37,18 +27,13 @@ abstract contract Vesting is IVesting {
         uint256 rsiBonus;
     }
 
-    function openPosition(address validator, uint256 durationWeeks) external payable virtual;
-
-    function topUpPosition(address validator) external payable virtual;
-
-    function cutPosition(address validator, uint256 amount) external virtual;
-
-    function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) public virtual;
-
-    function isActivePosition(address validator, address delegator) public view returns (bool) {
-        return
-            vestings[validator][delegator].start < block.timestamp &&
-            block.timestamp < vestings[validator][delegator].end;
+    /**
+     * Returns true if the staker is in active vesting position
+     *  active position are matured yet
+     * @param position VestData struct holding the vesting position data
+     */
+    function isActivePosition(VestData memory position) public view returns (bool) {
+        return position.start < block.timestamp && block.timestamp < position.end;
     }
 
     function isMaturingPosition(address validator) public view returns (bool) {
@@ -60,12 +45,10 @@ abstract contract Vesting is IVesting {
     /** @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
-    function _calcSlashing(address validator, uint256 amount) internal view returns (uint256) {
-        VestData memory data = vestings[validator][msg.sender];
-
+    function _calcSlashing(VestData memory position, uint256 amount) internal view returns (uint256) {
         // Calculate what part of the delegated balance to be slashed
-        uint256 leftPeriod = data.end - block.timestamp;
-        uint256 fullPeriod = data.duration;
+        uint256 leftPeriod = position.end - block.timestamp;
+        uint256 fullPeriod = position.duration;
         uint256 slash = (amount * leftPeriod) / fullPeriod;
 
         return slash;

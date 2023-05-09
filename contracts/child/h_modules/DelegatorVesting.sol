@@ -12,15 +12,16 @@ pragma solidity 0.8.17;
 import "./../modules/CVSStorage.sol";
 import "./../modules/CVSDelegation.sol";
 
-import "./APR.sol";
 import "./VestFactory.sol";
 
 import "../../interfaces/Errors.sol";
+import "../../interfaces/h_modules/IDelegatorVesting.sol";
+
 import "./Vesting.sol";
 
 import "../../libs/RewardPool.sol";
 
-abstract contract DelegatorVesting is CVSStorage, APR, CVSDelegation, VestFactory, Vesting {
+abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, CVSDelegation {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using RewardPoolLib for RewardPool;
@@ -75,7 +76,7 @@ abstract contract DelegatorVesting is CVSStorage, APR, CVSDelegation, VestFactor
         vestManagers[managerAddr] = msg.sender;
     }
 
-    function openPosition(address validator, uint256 durationWeeks) external payable override onlyManager {
+    function openDelegatorPosition(address validator, uint256 durationWeeks) external payable onlyManager {
         RewardPool storage delegation = _validators.getDelegationPool(validator);
         if (delegation.balanceOf(msg.sender) + msg.value < minDelegation)
             revert StakeRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
@@ -148,7 +149,7 @@ abstract contract DelegatorVesting is CVSStorage, APR, CVSDelegation, VestFactor
         }
 
         // if the position is still active, there is no matured reward
-        if (isActivePosition(validator, msg.sender)) {
+        if (isActivePosition(vesting)) {
             return;
         }
 
@@ -198,7 +199,8 @@ abstract contract DelegatorVesting is CVSStorage, APR, CVSDelegation, VestFactor
     }
 
     function _topUpPosition(address validator, RewardPool storage delegation) internal {
-        if (!isActivePosition(validator, msg.sender)) {
+        VestData memory position = vestings[validator][msg.sender];
+        if (!isActivePosition(position)) {
             revert StakeRequirement({src: "vesting", msg: "POSITION_NOT_ACTIVE"});
         }
 
@@ -245,7 +247,7 @@ abstract contract DelegatorVesting is CVSStorage, APR, CVSDelegation, VestFactor
             revert StakeRequirement({src: "vesting", msg: "POSITION_MATURING"});
         }
 
-        if (isActivePosition(validator, msg.sender)) {
+        if (isActivePosition(vestings[validator][msg.sender])) {
             revert StakeRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
         }
 
@@ -283,8 +285,9 @@ abstract contract DelegatorVesting is CVSStorage, APR, CVSDelegation, VestFactor
         uint256 amount,
         uint256 delegatedAmount
     ) internal returns (uint256) {
-        if (isActivePosition(validator, msg.sender)) {
-            uint256 penalty = _calcSlashing(validator, amount);
+        if (isActivePosition(vestings[validator][msg.sender])) {
+            VestData memory position = vestings[validator][msg.sender];
+            uint256 penalty = _calcSlashing(position, amount);
             // apply the max Vesting bonus, because the full reward must be burned
             uint256 fullReward = applyMaxReward(delegation.claimRewards(msg.sender));
             _burnAmount(penalty + fullReward);

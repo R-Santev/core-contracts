@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface IVesting {
+interface IDelegatorVesting {
     event PositionOpened(
         address indexed manager,
         address indexed validator,
@@ -26,7 +26,7 @@ interface IVesting {
      * @param validator Validator to delegate to
      * @param durationWeeks Duration of the vesting in weeks
      */
-    function openPosition(address validator, uint256 durationWeeks) external payable;
+    function openDelegatorPosition(address validator, uint256 durationWeeks) external payable;
 
     /**
      * @notice Delegates sent amount to validator. Add top-up data.
