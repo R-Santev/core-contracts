@@ -10,3 +10,8 @@ export async function isActivePosition(childValidatorSet: ChildValidatorSet, val
 
   return res;
 }
+
+export async function getValidatorReward(childValidatorSet: ChildValidatorSet, validatorAddr: string) {
+  const validator = await childValidatorSet.getValidator(validatorAddr);
+  return validator.withdrawableRewards;
+}

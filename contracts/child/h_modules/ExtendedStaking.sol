@@ -35,12 +35,20 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
 
     function unstake(uint256 amount) public override {
         int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
+
         int256 amountInt = amount.toInt256Safe();
         if (amountInt > totalValidatorStake) revert StakeRequirement({src: "unstake", msg: "INSUFFICIENT_BALANCE"});
 
         int256 amountAfterUnstake = totalValidatorStake - amountInt;
         if (amountAfterUnstake < int256(minStake) && amountAfterUnstake != 0)
             revert StakeRequirement({src: "unstake", msg: "STAKE_TOO_LOW"});
+
+        claimValidatorReward();
+
+        _queue.insert(msg.sender, amountInt * -1, 0);
+        if (amountAfterUnstake == 0) {
+            _validators.get(msg.sender).active = false;
+        }
 
         // modified part starts
         VestData memory position = stakePositions[msg.sender];
@@ -50,13 +58,6 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
             amountInt = amount.toInt256Safe();
         }
         // modified part ends
-
-        claimValidatorReward();
-
-        _queue.insert(msg.sender, amountInt * -1, 0);
-        if (amountAfterUnstake == 0) {
-            _validators.get(msg.sender).active = false;
-        }
 
         _registerWithdrawal(msg.sender, amount);
         emit Unstaked(msg.sender, amount);
@@ -70,23 +71,43 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
         super.claimValidatorReward();
     }
 
-    function claimValidatorReward(uint256 epochNum) public {
-        if (!isMaturingPosition(msg.sender)) {
+    function claimValidatorReward(uint256 rewardHistoryIndex) public {
+        VestData memory position = stakePositions[msg.sender];
+        if (!isMaturingPosition(position)) {
             revert StakeRequirement({src: "vesting", msg: "NOT_MATURING"});
         }
 
-        // If still unused position, there is no reward
-        // if (vesting.start == 0) {
-        //     return;
-        // }
-
         Validator storage validator = _validators.get(msg.sender);
-        uint256 reward = _calculateRewards(epochNum);
+        uint256 reward = _calculateRewards(rewardHistoryIndex);
         if (reward == 0) return;
 
         validator.takenRewards += reward;
         _registerWithdrawal(msg.sender, reward);
         emit ValidatorRewardClaimed(msg.sender, reward);
+    }
+
+    function _distributeValidatorReward(address validator, uint256 reward) internal override {
+        console.log("validator", validator);
+        console.log("reward", reward);
+        VestData memory position = stakePositions[msg.sender];
+        uint256 maxPotentialReward = applyMaxReward(reward);
+        console.log("maxPotentialReward", maxPotentialReward);
+        if (isActivePosition(position)) {
+            reward = _applyCustomReward(position, reward, true);
+        } else {
+            reward = _applyCustomReward(reward);
+        }
+
+        console.log("reward custom", reward);
+
+        uint256 remainder = maxPotentialReward - reward;
+        console.log("remainder", remainder);
+        if (remainder > 0) {
+            // TODO: Configure burn whenever the mechanism of the reward entering the contract is available
+            _burnAmount(remainder);
+        }
+
+        super._distributeValidatorReward(validator, reward);
     }
 
     function _requireNotInVestingCycle() internal view {

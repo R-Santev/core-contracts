@@ -9,7 +9,7 @@ import * as mcl from "../../ts/mcl";
 // eslint-disable-next-line camelcase
 import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegatorVesting } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
-import { isActivePosition } from "./helpers";
+import { getValidatorReward, isActivePosition } from "./helpers";
 import { log } from "console";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
@@ -73,6 +73,14 @@ describe.only("ChildValidatorSet", () => {
       "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE",
       "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
     ]);
+
+    // TODO: remove this once we have a better way to set balance from Polygon
+    // Need othwerwise burn mechanism doesn't work
+    await hre.network.provider.send("hardhat_setBalance", [
+      childValidatorSet.address,
+      "0x2CD76FE086B93CE2F768A00B22A00000000000",
+    ]);
+
     await hre.network.provider.send("hardhat_setBalance", [
       "0x0000000000000000000000000000000000001001",
       "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
@@ -85,6 +93,9 @@ describe.only("ChildValidatorSet", () => {
       method: "hardhat_impersonateAccount",
       params: ["0x0000000000000000000000000000000000001001"],
     });
+
+    console.log("THEREEEE", await ethers.provider.getBalance(childValidatorSet.address));
+
     const systemSigner = await ethers.getSigner("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
     systemChildValidatorSet = childValidatorSet.connect(systemSigner);
     const keyPair = mcl.newKeyPair();
@@ -2587,7 +2598,6 @@ describe.only("ChildValidatorSet", () => {
     before(async () => {
       staker = accounts[9];
       stakerChildValidatorSet = childValidatorSet.connect(staker);
-      childValidatorSet.addToWhitelist([accounts[9].address]);
       await registerValidator(childValidatorSet, staker);
     });
 
@@ -2650,23 +2660,12 @@ describe.only("ChildValidatorSet", () => {
         const duration = position.duration;
         const leftDuration = position.end.sub(nextTimestamp);
         const burnedAmount = unstakeAmount.mul(leftDuration).div(duration);
-        await stakerChildValidatorSet.unstake(unstakeAmount);
         return { burnedAmount };
       }
+
       it("should decrease staking position", async () => {
-        const unstakeAmount = ethers.BigNumber.from(minDelegation).div(2);
-        const { burnedAmount } = await decreasePosition(unstakeAmount);
-
-        await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
-          childValidatorSet,
-          burnedAmount.mul(-1)
-        );
-      });
-
-      it("should burn full reward made", async () => {
         await commitEpoch(systemChildValidatorSet, accounts);
-        const validator = await stakerChildValidatorSet.getValidator(staker.address);
-        const reward = validator.withdrawableRewards;
+        const reward = await getValidatorReward(childValidatorSet, staker.address);
         const unstakeAmount = ethers.BigNumber.from(minDelegation).div(2);
         const { burnedAmount } = await decreasePosition(unstakeAmount);
 
@@ -2678,14 +2677,86 @@ describe.only("ChildValidatorSet", () => {
 
       it("should delete position data when full amount removed", async () => {
         await commitEpoch(systemChildValidatorSet, accounts);
+        const reward = await getValidatorReward(childValidatorSet, staker.address);
         const validator = await stakerChildValidatorSet.getValidator(staker.address);
         const unstakeAmount = validator.stake;
         const { burnedAmount } = await decreasePosition(unstakeAmount);
 
         await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
           childValidatorSet,
-          burnedAmount.mul(-1)
+          burnedAmount.add(reward).mul(-1)
         );
+        expect((await stakerChildValidatorSet.stakePositions(staker.address)).duration).to.be.equal(0);
+      });
+    });
+
+    describe("claim position reward", async () => {
+      it("can't claim when active", async () => {
+        // clear valdiator stake data
+        await commitEpoch(systemChildValidatorSet, accounts);
+        expect((await stakerChildValidatorSet.getValidator(staker.address)).stake).to.be.equal(0);
+
+        // setup staking position
+        await registerValidator(childValidatorSet, staker);
+        await stakerChildValidatorSet.openStakingPosition(vestingDurationWeeks, { value: minDelegation });
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        // ensure there is available reward
+        await commitEpoch(systemChildValidatorSet, accounts);
+        const reward = await getValidatorReward(childValidatorSet, staker.address);
+        expect(reward).to.be.gt(0);
+
+        // ensure position is active
+        const position = await stakerChildValidatorSet.stakePositions(staker.address);
+        const isActive = await childValidatorSet.isActivePosition(position);
+        expect(isActive).to.be.true;
+        expect(await stakerChildValidatorSet["claimValidatorReward()"]()).to.not.emit(
+          childValidatorSet,
+          "ValidatorRewardClaimed"
+        );
+      });
+
+      it("can claim  with claimValidatorReward(epoch) when maturing", async () => {
+        // add reward exactly before maturing
+        // we need it for the next test
+        const position = await stakerChildValidatorSet.stakePositions(staker.address);
+        const nextTimestamp = position.end.sub(1);
+        await time.setNextBlockTimestamp(nextTimestamp.toNumber());
+        await commitEpoch(systemChildValidatorSet, accounts);
+
+        // enter maturing state
+        const nextTimestampOne = position.end.add(position.duration.div(2));
+        await time.setNextBlockTimestamp(nextTimestampOne.toNumber());
+
+        // calculate up to which epoch rewards are matured
+        const valRewardsRecords = await childValidatorSet.getValRewardsValues(staker.address);
+        log("valRewardsRecords", valRewardsRecords);
+        const valRewardRecordIndex = findProperRPSIndex(valRewardsRecords, position.end.sub(position.duration.div(2)));
+        log("valRewardRecordIndex", valRewardRecordIndex);
+
+        // claim reward
+        await expect(stakerChildValidatorSet["claimValidatorReward(uint256)"](valRewardRecordIndex)).to.emit(
+          childValidatorSet,
+          "ValidatorRewardClaimed"
+        );
+      });
+
+      it("can claim whole reward when not in position", async () => {
+        // enter matured state
+        const position = await stakerChildValidatorSet.stakePositions(staker.address);
+        const nextTimestamp = position.end.add(position.duration).add(1);
+        await time.setNextBlockTimestamp(nextTimestamp.toNumber());
+
+        // check reward amount
+        const reward = await getValidatorReward(childValidatorSet, staker.address);
+
+        // reward must be bigger than 0
+        expect(reward).to.be.gt(0);
+
+        // claim reward
+        await expect(stakerChildValidatorSet["claimValidatorReward()"]())
+          .to.emit(childValidatorSet, "ValidatorRewardClaimed")
+          .withArgs(staker.address, reward);
       });
     });
   });
@@ -2711,6 +2782,7 @@ async function commitEpoch(systemChildValidatorSet: ChildValidatorSet, accounts:
     uptimeData: [
       { validator: accounts[0].address, signedBlocks: 64 },
       { validator: accounts[2].address, signedBlocks: 64 },
+      { validator: accounts[9].address, signedBlocks: 64 },
     ],
     totalBlocks: 64,
   };
@@ -2749,7 +2821,12 @@ async function claimRewards(childValidatorSet: ChildValidatorSet, manager: VestM
 // based on the current timestamp and the duration of one epoch
 // calculate relatively how many epochs have passed and start searching from there
 // Maybe faster method can be applied as well
-function findProperRPSIndex(arr: DelegatorVesting.RPSStructOutput[], timestamp: BigNumber): number {
+
+interface RewardParams {
+  timestamp: BigNumber;
+}
+
+function findProperRPSIndex<T extends RewardParams>(arr: T[], timestamp: BigNumber): number {
   let left = 0;
   let right = arr.length - 1;
   let closestTimestamp: null | BigNumber = null;
@@ -2815,6 +2892,7 @@ function findAccountParamsIndex(arr: DelegatorVesting.AccountPoolParamsStructOut
 // TODO: when oracles are ready, test reward calculations with mocked contract that inherit from the ChildValidatorSet
 
 async function registerValidator(childValidatorSet: ChildValidatorSet, account: any) {
+  childValidatorSet.addToWhitelist([account.address]);
   const keyPair = mcl.newKeyPair();
   const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, account.address, keyPair.secret).signature;
 

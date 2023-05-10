@@ -163,7 +163,7 @@ abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, C
             console.log("FIRST CLAIM");
             uint256 rsiReward = pool.claimRewards(msg.sender, params.rewardPerShare, params.balance, params.correction);
             uint256 maxRsiReward = applyMaxReward(rsiReward);
-            sumReward += _applyCustomReward(validator, msg.sender, rsiReward, true);
+            sumReward += _applyCustomReward(vesting, rsiReward, true);
             sumMaxReward += maxRsiReward;
         }
 
@@ -172,7 +172,7 @@ abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, C
         console.log("SECOND CLAIM");
         uint256 reward = pool.claimRewards(msg.sender, epochRPS, balance, correction);
         uint256 maxReward = applyMaxReward(reward);
-        reward = _applyCustomReward(validator, msg.sender, reward, rsi);
+        reward = _applyCustomReward(vesting, reward, rsi);
         sumReward += reward;
         sumMaxReward += maxReward;
 
@@ -243,7 +243,8 @@ abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, C
     }
 
     function _openPosition(address validator, RewardPool storage delegation, uint256 durationWeeks) internal {
-        if (isMaturingPosition(validator)) {
+        VestData memory position = vestings[validator][msg.sender];
+        if (isMaturingPosition(position)) {
             revert StakeRequirement({src: "vesting", msg: "POSITION_MATURING"});
         }
 
@@ -351,8 +352,6 @@ abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, C
         historyRPS[validator][epochNumber] = RPS({value: uint192(rewardPerShare), timestamp: uint64(block.timestamp)});
     }
 
-    // TODO: Handle stakers rewards
-
     function isVestManager(address delegator) public view returns (bool) {
         return vestManagers[delegator] != address(0);
     }
@@ -412,29 +411,12 @@ abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, C
         return (params.balance, params.correction);
     }
 
-    function _applyCustomReward(
-        address validator,
-        address delegator,
-        uint256 reward,
-        bool rsi
-    ) internal view returns (uint256) {
-        VestData memory data = vestings[validator][delegator];
-        uint256 bonus = (data.base + data.vestBonus);
-        uint256 divider = 10000;
-        if (rsi) {
-            bonus = bonus * data.rsiBonus;
-            divider *= 10000;
-        }
-
-        return (reward * bonus) / divider;
-    }
-
     function getPositionReward(address validator, address delegator) external view returns (uint256) {
         if (isVestManager(delegator)) {
+            VestData memory position = vestings[validator][delegator];
             return
                 _applyCustomReward(
-                    validator,
-                    delegator,
+                    position,
                     _validators.getDelegationPool(validator).claimableRewards(delegator),
                     true
                 );

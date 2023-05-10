@@ -228,7 +228,8 @@ contract ChildValidatorSet is
     function _distributeRewards(Epoch calldata epoch, Uptime calldata uptime) internal {
         // H_MODIFY: Ensure the max reward tokens are sent
         uint256 activeStake = totalActiveStake();
-        require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
+        // TODO: configure how the reward would enter the contract whenever more data from polygon is available
+        // require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
 
         require(uptime.epochId == currentEpochId - 1, "EPOCH_NOT_COMMITTED");
 
@@ -238,7 +239,8 @@ contract ChildValidatorSet is
 
         // H_MODIFY: change the epoch reward calculation
         // apply the reward factor; participation factor is applied then
-        // base + vesting and RSI are applied on claimReward (handled by the position proxy)
+        // base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
+        // and on _distributeValidatorReward for validators
         uint256 modifiedEpochReward = applyMacro(activeStake);
         uint256 reward = (modifiedEpochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
 
@@ -262,11 +264,10 @@ contract ChildValidatorSet is
                 _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
             }
 
+            // H_MODIFY: Keep history record of the validator rewards to be used in reward claim
             if (validatorShares > 0) {
                 _saveValRewardData(uptimeData.validator, uptime.epochId);
             }
-
-            _saveValRewardData(uptimeData.validator, uptime.epochId);
         }
     }
 

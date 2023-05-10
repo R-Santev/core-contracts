@@ -9,6 +9,8 @@
 
 pragma solidity 0.8.17;
 
+import "hardhat/console.sol";
+
 import "../../interfaces/Errors.sol";
 import "./APR.sol";
 
@@ -36,25 +38,43 @@ abstract contract Vesting is APR {
         return position.start < block.timestamp && block.timestamp < position.end;
     }
 
-    function isMaturingPosition(address validator) public view returns (bool) {
-        uint256 vestingEnd = vestings[validator][msg.sender].end;
-        uint256 matureEnd = vestingEnd + vestings[validator][msg.sender].duration;
+    function isMaturingPosition(VestData memory position) public view returns (bool) {
+        uint256 vestingEnd = position.end;
+        uint256 matureEnd = vestingEnd + position.duration;
         return vestingEnd < block.timestamp && block.timestamp < matureEnd;
+    }
+
+    function _applyCustomReward(VestData memory position, uint256 reward, bool rsi) internal pure returns (uint256) {
+        uint256 bonus = (position.base + position.vestBonus);
+        uint256 divider = 10000;
+        if (rsi) {
+            bonus = bonus * position.rsiBonus;
+            divider *= 10000;
+        }
+
+        return (reward * bonus) / divider;
     }
 
     /** @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
     function _calcSlashing(VestData memory position, uint256 amount) internal view returns (uint256) {
-        // Calculate what part of the delegated balance to be slashed
+        // Calculate what part of the balance to be slashed
         uint256 leftPeriod = position.end - block.timestamp;
         uint256 fullPeriod = position.duration;
         uint256 slash = (amount * leftPeriod) / fullPeriod;
+
+        console.log("leftPeriod", leftPeriod);
+        console.log("fullPeriod", fullPeriod);
+        console.log("amount", amount);
+        console.log("slash", slash);
 
         return slash;
     }
 
     function _burnAmount(uint256 amount) internal {
+        console.log("burning", amount);
+        console.log("balance", address(this).balance);
         payable(address(0)).transfer(amount);
     }
 }

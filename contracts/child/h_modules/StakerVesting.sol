@@ -23,7 +23,19 @@ abstract contract StakerVesting is Vesting, CVSStorage {
     mapping(address => uint256) public takenRewards;
     mapping(address => ValReward[]) public valRewards;
 
-    function _calculateRewards(uint256 epoch) internal view returns (uint256) {
+    function getValRewardsValues(address validator) external view returns (ValReward[] memory) {
+        // RPS[] memory values = new RPS[](currentEpochId);
+        // for (uint256 i = 0; i < currentEpochId; i++) {
+        //     if (historyRPS[validator][i].value != 0) {
+        //         values[i] = (historyRPS[validator][i]);
+        //     }
+        // }
+        // return values;
+
+        return valRewards[validator];
+    }
+
+    function _calculateRewards(uint256 rewardHistoryIndex) internal view returns (uint256) {
         VestData memory position = stakePositions[msg.sender];
         uint256 matureEnd = position.end + position.duration;
         uint256 alreadyMatured;
@@ -36,13 +48,10 @@ abstract contract StakerVesting is Vesting, CVSStorage {
             alreadyMatured = position.start + maturedPeriod;
         }
 
-        ValReward memory rewardData = valRewards[msg.sender][epoch];
-        if (rewardData.timestamp == 0) {
-            revert StakeRequirement({src: "vesting", msg: "INVALID_EPOCH"});
-        }
-        // If the given RPS is for future time - it is wrong, so revert
+        ValReward memory rewardData = valRewards[msg.sender][rewardHistoryIndex];
+        // If the given data is for future time - it is wrong, so revert
         if (rewardData.timestamp > alreadyMatured) {
-            revert StakeRequirement({src: "vesting", msg: "WRONG_RPS"});
+            revert StakeRequirement({src: "vesting", msg: "WRONG_DATA"});
         }
 
         if (rewardData.totalReward > takenRewards[msg.sender]) {
@@ -82,6 +91,7 @@ abstract contract StakerVesting is Vesting, CVSStorage {
         // burn penalty and reward
         console.log("penalty", penalty);
         console.log("reward", reward);
+        // TODO: Configure burn whenever the mechanism of the reward entering the contract is available
         _burnAmount(penalty + reward);
 
         // if position is closed when active, top-up must not be available as well as reward must not be available
@@ -130,62 +140,4 @@ abstract contract StakerVesting is Vesting, CVSStorage {
         uint256 matureEnd = stakePositions[staker].end + stakePositions[staker].duration;
         return stakePositions[staker].start < block.timestamp && block.timestamp < matureEnd;
     }
-
-    // function topUpPosition() external {
-    //     if (!isActivePosition(msg.sender, msg.sender)) {
-    //         revert StakeRequirement({src: "vesting", msg: "POSITION_NOT_ACTIVE"});
-    //     }
-
-    //     stake();
-    //     _topUpPosition(msg.sender, _validators.stakeOf(msg.sender));
-    // }
-
-    // function unstake(uint256 amount) public override {
-    //     int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
-    //     int256 amountInt = amount.toInt256Safe();
-    //     if (amountInt > totalValidatorStake) revert StakeRequirement({src: "unstake", msg: "INSUFFICIENT_BALANCE"});
-
-    //     int256 amountAfterUnstake = totalValidatorStake - amountInt;
-    //     if (amountAfterUnstake < int256(minStake) && amountAfterUnstake != 0)
-    //         revert StakeRequirement({src: "unstake", msg: "STAKE_TOO_LOW"});
-
-    //     // modified part starts
-    //     if (isActivePosition(msg.sender, msg.sender)) {
-    //         Validator storage validator = _validators.get(msg.sender);
-    //         amount = _cutPosition(msg.sender, validator, amount, uint256(amountAfterUnstake));
-    //         amountInt = amount.toInt256Safe();
-    //     }
-
-    //     if (!isInVesting(msg.sender, msg.sender)) {
-    //         claimValidatorReward();
-    //     }
-    //     // modified part ends
-
-    //     _queue.insert(msg.sender, amountInt * -1, 0);
-    //     if (amountAfterUnstake == 0) {
-    //         _validators.get(msg.sender).active = false;
-    //     }
-
-    //     _registerWithdrawal(msg.sender, amount);
-    //     emit Unstaked(msg.sender, amount);
-    // }
-
-    // function claimDelegatorReward(uint256 epochNum) public {
-    //     if (!isMaturingPosition(msg.sender)) {
-    //         revert StakeRequirement({src: "vesting", msg: "NOT_MATURING"});
-    //     }
-
-    //     // If still unused position, there is no reward
-    //     // if (vesting.start == 0) {
-    //     //     return;
-    //     // }
-
-    //     Validator storage validator = _validators.get(msg.sender);
-    //     uint256 reward = _calculateRewards(epochNum);
-    //     if (reward == 0) return;
-
-    //     validator.takenRewards += reward;
-    //     _registerWithdrawal(msg.sender, reward);
-    //     emit ValidatorRewardClaimed(msg.sender, reward);
-    // }
 }

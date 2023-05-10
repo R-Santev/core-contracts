@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "hardhat/console.sol";
+
 import "../interfaces/IValidatorStorage.sol";
 import "../interfaces/IValidator.sol";
 import "../interfaces/IRewardPool.sol";
@@ -182,6 +184,8 @@ library ValidatorStorageLib {
      */
     function insert(ValidatorTree storage self, address key, Validator memory validator) internal {
         assert(key != EMPTY);
+        console.log("address", key);
+        console.log("exists", exists(self, key));
         if (exists(self, key)) revert Exists(key);
         self.nodes[key].validator = validator;
         if (validator.stake == 0) {
