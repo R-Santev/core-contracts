@@ -9,15 +9,14 @@
 
 pragma solidity 0.8.17;
 
-import "./../modules/CVSStorage.sol";
-import "./../modules/CVSDelegation.sol";
-
+import "./Vesting.sol";
 import "./VestFactory.sol";
 
 import "../../interfaces/Errors.sol";
 import "../../interfaces/h_modules/IDelegatorVesting.sol";
 
-import "./Vesting.sol";
+import "./../modules/CVSStorage.sol";
+import "./../modules/CVSDelegation.sol";
 
 import "../../libs/RewardPool.sol";
 
@@ -82,7 +81,6 @@ abstract contract DelegatorVesting is IDelegatorVesting, Vesting, VestFactory, C
             revert StakeRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
 
         _delegate(msg.sender, validator, msg.value);
-
         _openPosition(validator, delegation, durationWeeks);
 
         emit PositionOpened(msg.sender, validator, durationWeeks, msg.value);

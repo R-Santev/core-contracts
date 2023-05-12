@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "./StakerVesting.sol";
+
 import "./../modules/CVSStaking.sol";
 
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/SafeMathInt.sol";
-
-import "./StakerVesting.sol";
 
 abstract contract ExtendedStaking is StakerVesting, CVSStaking {
     using ValidatorStorageLib for ValidatorTree;
@@ -18,7 +18,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
         _requireNotInVestingCycle();
 
         stake();
-        _openPosition(durationWeeks);
+        _handleOpenPosition(durationWeeks);
     }
 
     /**
@@ -29,7 +29,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
 
         VestData memory position = stakePositions[msg.sender];
         if (isActivePosition(position)) {
-            _handleTopUp(_validators.stakeOf(msg.sender));
+            _handleStake(_validators.stakeOf(msg.sender));
         }
     }
 
@@ -54,12 +54,13 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
         VestData memory position = stakePositions[msg.sender];
         if (isActivePosition(position)) {
             Validator storage validator = _validators.get(msg.sender);
-            amount = _handleCut(validator, amount, uint256(amountAfterUnstake));
+            amount = _handleUnstake(validator, amount, uint256(amountAfterUnstake));
             amountInt = amount.toInt256Safe();
         }
         // modified part ends
 
         _registerWithdrawal(msg.sender, amount);
+
         emit Unstaked(msg.sender, amount);
     }
 
@@ -78,32 +79,26 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
         }
 
         Validator storage validator = _validators.get(msg.sender);
-        uint256 reward = _calculateRewards(rewardHistoryIndex);
+        uint256 reward = _calcValidatorReward(validator, rewardHistoryIndex);
         if (reward == 0) return;
 
-        validator.takenRewards += reward;
+        _claimValidatorReward(validator, reward);
         _registerWithdrawal(msg.sender, reward);
+
         emit ValidatorRewardClaimed(msg.sender, reward);
     }
 
     function _distributeValidatorReward(address validator, uint256 reward) internal override {
-        console.log("validator", validator);
-        console.log("reward", reward);
         VestData memory position = stakePositions[msg.sender];
         uint256 maxPotentialReward = applyMaxReward(reward);
-        console.log("maxPotentialReward", maxPotentialReward);
         if (isActivePosition(position)) {
             reward = _applyCustomReward(position, reward, true);
         } else {
             reward = _applyCustomReward(reward);
         }
 
-        console.log("reward custom", reward);
-
         uint256 remainder = maxPotentialReward - reward;
-        console.log("remainder", remainder);
         if (remainder > 0) {
-            // TODO: Configure burn whenever the mechanism of the reward entering the contract is available
             _burnAmount(remainder);
         }
 

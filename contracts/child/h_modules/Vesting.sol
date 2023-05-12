@@ -64,11 +64,6 @@ abstract contract Vesting is APR {
         uint256 fullPeriod = position.duration;
         uint256 slash = (amount * leftPeriod) / fullPeriod;
 
-        console.log("leftPeriod", leftPeriod);
-        console.log("fullPeriod", fullPeriod);
-        console.log("amount", amount);
-        console.log("slash", slash);
-
         return slash;
     }
 

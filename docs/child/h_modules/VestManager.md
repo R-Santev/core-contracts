@@ -61,10 +61,10 @@ function initialize(address owner) external nonpayable
 |---|---|---|
 | owner | address | undefined |
 
-### openPosition
+### openDelegatorPosition
 
 ```solidity
-function openPosition(address validator, uint256 duration) external payable
+function openDelegatorPosition(address validator, uint256 durationWeeks) external payable
 ```
 
 
@@ -76,7 +76,7 @@ function openPosition(address validator, uint256 duration) external payable
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
-| duration | uint256 | undefined |
+| durationWeeks | uint256 | undefined |
 
 ### owner
 

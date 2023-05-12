@@ -89,23 +89,24 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
      * @inheritdoc ICVSStaking
      */
     function claimValidatorReward() public virtual {
-        uint256 reward = _claimValidatorReward(msg.sender);
+        Validator storage validator = _validators.get(msg.sender);
+        uint256 reward = _calcValidatorReward(validator);
         if (reward == 0) {
             return;
         }
+
+        _claimValidatorReward(validator, reward);
 
         _registerWithdrawal(msg.sender, reward);
         emit ValidatorRewardClaimed(msg.sender, reward);
     }
 
-    function _claimValidatorReward(address validatorAddr) internal returns (uint256) {
-        Validator storage validator = _validators.get(validatorAddr);
-        uint256 reward = validator.totalRewards - validator.takenRewards;
-        if (reward != 0) {
-            validator.takenRewards += reward;
-        }
+    function _claimValidatorReward(Validator storage validator, uint256 reward) internal {
+        validator.takenRewards += reward;
+    }
 
-        return reward;
+    function _calcValidatorReward(Validator memory validator) internal pure returns (uint256) {
+        return validator.totalRewards - validator.takenRewards;
     }
 
     /**
@@ -152,15 +153,8 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
 
     function _distributeValidatorReward(address validator, uint256 reward) internal virtual {
         Validator storage _validator = _validators.get(validator);
-        console.log("distribution");
-        console.log(validator);
-        console.log(_validator.totalRewards);
-        console.log(_validator.takenRewards);
-        console.log(reward);
-        console.log(_validator.totalRewards);
-        console.log(_validator.takenRewards);
-
         _validator.totalRewards += reward;
+
         emit ValidatorRewardDistributed(validator, reward);
     }
 }

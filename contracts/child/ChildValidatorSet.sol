@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "hardhat/console.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 
 import "../interfaces/IChildValidatorSetBase.sol";
+
+import "./System.sol";
+
 import "./modules/CVSStorage.sol";
 import "./modules/CVSAccessControl.sol";
 import "./modules/CVSWithdrawal.sol";
 import "./modules/CVSStaking.sol";
 import "./modules/CVSDelegation.sol";
-import "./System.sol";
 
 import "./h_modules/PowerExponent.sol";
 import "./h_modules/APR.sol";
@@ -21,7 +23,6 @@ import "./h_modules/Vesting.sol";
 import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
 import "../libs/SafeMathInt.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 
 // solhint-disable max-states-count
 contract ChildValidatorSet is
@@ -241,6 +242,7 @@ contract ChildValidatorSet is
         // apply the reward factor; participation factor is applied then
         // base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
         // and on _distributeValidatorReward for validators
+        // TODO: Reward must be calculated per epoch; apply the changes whenever APR oracles are available
         uint256 modifiedEpochReward = applyMacro(activeStake);
         uint256 reward = (modifiedEpochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
 
@@ -259,12 +261,12 @@ contract ChildValidatorSet is
             _distributeValidatorReward(uptimeData.validator, validatorShares);
             _distributeDelegatorReward(uptimeData.validator, delegatorShares);
 
-            // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
+            // H_MODIFY: Keep history record of the rewardPerShare to be used on reward claim
             if (delegatorShares > 0) {
                 _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
             }
 
-            // H_MODIFY: Keep history record of the validator rewards to be used in reward claim
+            // H_MODIFY: Keep history record of the validator rewards to be used on maturing vesting reward claim
             if (validatorShares > 0) {
                 _saveValRewardData(uptimeData.validator, uptime.epochId);
             }
@@ -349,8 +351,12 @@ contract ChildValidatorSet is
                 uptimeData.validator,
                 validatorReward
             );
-            validator.totalRewards += validatorShares;
-            emit ValidatorRewardDistributed(uptimeData.validator, validatorReward);
+
+            _distributeValidatorReward(uptimeData.validator, validatorShares);
+            // H_MODIFY: Keep history record of the validator rewards to be used on maturing vesting reward claim
+            if (validatorShares > 0) {
+                _saveValRewardData(uptimeData.validator, uptime.epochId);
+            }
 
             _handleDelegation(uptimeData, uptime, delegatorShares);
         }

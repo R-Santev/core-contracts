@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "hardhat/console.sol";
-
 contract APR {
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant EPOCHS_YEAR = 31450;
@@ -72,16 +70,13 @@ contract APR {
 
     // TODO: Apply EPOCHS_IN_YEAR everywhere it is needed
 
-    function getEpochReward(uint256 totalStaked) internal view returns (uint256 reward) {
+    function getEpochReward(uint256 totalStaked) internal pure returns (uint256 reward) {
         uint256 nominator;
         uint256 denominator;
 
         (nominator, denominator) = getMaxAPR();
-        console.log("nominator", nominator);
-        console.log("denominator", denominator);
 
         // Divide to 100 because nominator represents a percent value
-        console.log("important", (totalStaked * nominator) / denominator);
         return (totalStaked * nominator) / denominator;
     }
 
