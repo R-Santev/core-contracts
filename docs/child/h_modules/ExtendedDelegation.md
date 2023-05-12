@@ -1,4 +1,4 @@
-# DelegatorVesting
+# ExtendedDelegation
 
 
 
@@ -368,7 +368,7 @@ function epochs(uint256) external view returns (uint256 startBlock, uint256 endB
 ### getAccountParams
 
 ```solidity
-function getAccountParams(address validator, address manager) external view returns (struct DelegatorVesting.AccountPoolParams[])
+function getAccountParams(address validator, address manager) external view returns (struct DelegationVesting.AccountPoolParams[])
 ```
 
 
@@ -386,7 +386,7 @@ function getAccountParams(address validator, address manager) external view retu
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | DelegatorVesting.AccountPoolParams[] | undefined |
+| _0 | DelegationVesting.AccountPoolParams[] | undefined |
 
 ### getBase
 
@@ -505,7 +505,7 @@ function getPositionReward(address validator, address delegator) external view r
 ### getRPSValues
 
 ```solidity
-function getRPSValues(address validator) external view returns (struct DelegatorVesting.RPS[])
+function getRPSValues(address validator) external view returns (struct DelegationVesting.RPS[])
 ```
 
 
@@ -522,7 +522,7 @@ function getRPSValues(address validator) external view returns (struct Delegator
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | DelegatorVesting.RPS[] | undefined |
+| _0 | DelegationVesting.RPS[] | undefined |
 
 ### getRSI
 

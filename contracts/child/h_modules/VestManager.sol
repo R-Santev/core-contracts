@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-import "../../interfaces/h_modules/IDelegatorVesting.sol";
+import "../../interfaces/h_modules/IDelegationVesting.sol";
 
 import "../../interfaces/modules/ICVSWithdrawal.sol";
 
@@ -23,15 +23,15 @@ contract VestManager is Initializable, OwnableUpgradeable {
     }
 
     function openDelegatorPosition(address validator, uint256 durationWeeks) external payable onlyOwner {
-        IDelegatorVesting(staking).openDelegatorPosition{value: msg.value}(validator, durationWeeks);
+        IDelegationVesting(staking).openDelegatorPosition{value: msg.value}(validator, durationWeeks);
     }
 
     function topUpPosition(address validator) external payable onlyOwner {
-        IDelegatorVesting(staking).topUpPosition{value: msg.value}(validator);
+        IDelegationVesting(staking).topUpPosition{value: msg.value}(validator);
     }
 
     function cutPosition(address validator, uint256 amount) external payable onlyOwner {
-        IDelegatorVesting(staking).cutPosition(validator, amount);
+        IDelegationVesting(staking).cutPosition(validator, amount);
     }
 
     function claimPositionReward(
@@ -39,7 +39,7 @@ contract VestManager is Initializable, OwnableUpgradeable {
         uint256 epochNumber,
         uint256 topUpIndex
     ) external payable onlyOwner {
-        IDelegatorVesting(staking).claimPositionReward(validator, epochNumber, topUpIndex);
+        IDelegationVesting(staking).claimPositionReward(validator, epochNumber, topUpIndex);
     }
 
     function withdraw(address to) external {

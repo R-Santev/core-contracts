@@ -1,0 +1,951 @@
+# DelegationVesting
+
+
+
+
+
+
+
+
+
+## Methods
+
+### ACTIVE_VALIDATOR_SET_SIZE
+
+```solidity
+function ACTIVE_VALIDATOR_SET_SIZE() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### DENOMINATOR
+
+```solidity
+function DENOMINATOR() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### DOMAIN
+
+```solidity
+function DOMAIN() external view returns (bytes32)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
+
+### EPOCHS_YEAR
+
+```solidity
+function EPOCHS_YEAR() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### MAX_COMMISSION
+
+```solidity
+function MAX_COMMISSION() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### WITHDRAWAL_WAIT_PERIOD
+
+```solidity
+function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### applyMaxReward
+
+```solidity
+function applyMaxReward(uint256 reward) external pure returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### beforeTopUpParams
+
+```solidity
+function beforeTopUpParams(address, address) external view returns (uint256 rewardPerShare, uint256 balance, int256 correction)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| rewardPerShare | uint256 | undefined |
+| balance | uint256 | undefined |
+| correction | int256 | undefined |
+
+### bls
+
+```solidity
+function bls() external view returns (contract IBLS)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IBLS | undefined |
+
+### claimPositionReward
+
+```solidity
+function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+```
+
+Claims delegator rewards for sender.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to claim from |
+| epochNumber | uint256 | Epoch where the last claimable reward is distributed. We need it because not all rewards are matured at the moment of claiming. |
+| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
+
+### currentEpochId
+
+```solidity
+function currentEpochId() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### cutPosition
+
+```solidity
+function cutPosition(address validator, uint256 amount) external nonpayable
+```
+
+Undelegates amount from validator. Apply penalty in case vesting is not finished. Can be called by vesting positions&#39; managers only.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to undelegate from |
+| amount | uint256 | Amount to be undelegated |
+
+### epochEndBlocks
+
+```solidity
+function epochEndBlocks(uint256) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### epochReward
+
+```solidity
+function epochReward() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### epochSize
+
+```solidity
+function epochSize() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### epochs
+
+```solidity
+function epochs(uint256) external view returns (uint256 startBlock, uint256 endBlock, bytes32 epochRoot)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| startBlock | uint256 | undefined |
+| endBlock | uint256 | undefined |
+| epochRoot | bytes32 | undefined |
+
+### getAccountParams
+
+```solidity
+function getAccountParams(address validator, address manager) external view returns (struct DelegationVesting.AccountPoolParams[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| manager | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | DelegationVesting.AccountPoolParams[] | undefined |
+
+### getBase
+
+```solidity
+function getBase() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getDefaultRSI
+
+```solidity
+function getDefaultRSI() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getMacro
+
+```solidity
+function getMacro() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getMaxRSI
+
+```solidity
+function getMaxRSI() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getPositionReward
+
+```solidity
+function getPositionReward(address validator, address delegator) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### getRPSValues
+
+```solidity
+function getRPSValues(address validator) external view returns (struct DelegationVesting.RPS[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | DelegationVesting.RPS[] | undefined |
+
+### getRSI
+
+```solidity
+function getRSI() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getUserParams
+
+```solidity
+function getUserParams() external pure returns (uint256 base, uint256 vesting, uint256 rsi)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| base | uint256 | undefined |
+| vesting | uint256 | undefined |
+| rsi | uint256 | undefined |
+
+### getValidator
+
+```solidity
+function getValidator(address validator) external view returns (uint256[4] blsKey, uint256 stake, uint256 totalStake, uint256 commission, uint256 withdrawableRewards, bool active)
+```
+
+Gets validator by address.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| blsKey | uint256[4] | BLS public key |
+| stake | uint256 | self-stake |
+| totalStake | uint256 | self-stake + delegation |
+| commission | uint256 | commission |
+| withdrawableRewards | uint256 | withdrawable rewards |
+| active | bool | activity status |
+
+### getVestingBonus
+
+```solidity
+function getVestingBonus(uint256 weeksCount) external pure returns (uint256 nominator)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| weeksCount | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### historyRPS
+
+```solidity
+function historyRPS(address, uint256) external view returns (uint192 value, uint64 timestamp)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| value | uint192 | undefined |
+| timestamp | uint64 | undefined |
+
+### implementation
+
+```solidity
+function implementation() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+### isActivePosition
+
+```solidity
+function isActivePosition(Vesting.VestData position) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| position | Vesting.VestData | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isBalanceChangeMade
+
+```solidity
+function isBalanceChangeMade(address validator) external view returns (bool)
+```
+
+Checks if balance change was already made in the current epoch
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to delegate to |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isMaturingPosition
+
+```solidity
+function isMaturingPosition(Vesting.VestData position) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| position | Vesting.VestData | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isVestManager
+
+```solidity
+function isVestManager(address delegator) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| delegator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### minDelegation
+
+```solidity
+function minDelegation() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### minStake
+
+```solidity
+function minStake() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### newManager
+
+```solidity
+function newManager() external nonpayable
+```
+
+Creates new vesting manager which owner is the caller. Every new instance is proxy leading to base impl, so minimal fees are applied. Only Vesting manager can use the vesting functionality, so users need to create a manager first to be able to vest.
+
+
+
+
+### openDelegatorPosition
+
+```solidity
+function openDelegatorPosition(address validator, uint256 durationWeeks) external payable
+```
+
+Delegates sent amount to validator. Set vesting position data. Delete old top-ups data if exists. Can be called by vesting positions&#39; managers only.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to delegate to |
+| durationWeeks | uint256 | Duration of the vesting in weeks |
+
+### poolParamsChanges
+
+```solidity
+function poolParamsChanges(address, address, uint256) external view returns (uint256 balance, int256 correction, uint256 epochNum)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+| _2 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| balance | uint256 | undefined |
+| correction | int256 | undefined |
+| epochNum | uint256 | undefined |
+
+### powerExponent
+
+```solidity
+function powerExponent() external view returns (uint128 value, uint128 pendingValue)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| value | uint128 | undefined |
+| pendingValue | uint128 | undefined |
+
+### topUpPosition
+
+```solidity
+function topUpPosition(address validator) external payable
+```
+
+Delegates sent amount to validator. Add top-up data. Modify vesting position data. Can be called by vesting positions&#39; managers only.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to delegate to |
+
+### vestManagers
+
+```solidity
+function vestManagers(address) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+### vestings
+
+```solidity
+function vestings(address, address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| duration | uint256 | undefined |
+| start | uint256 | undefined |
+| end | uint256 | undefined |
+| base | uint256 | undefined |
+| vestBonus | uint256 | undefined |
+| rsiBonus | uint256 | undefined |
+
+### whitelist
+
+```solidity
+function whitelist(address) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+
+
+## Events
+
+### NewClone
+
+```solidity
+event NewClone(address indexed owner, address newClone)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| owner `indexed` | address | undefined |
+| newClone  | address | undefined |
+
+### PositionCut
+
+```solidity
+event PositionCut(address indexed manager, address indexed validator, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| manager `indexed` | address | undefined |
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### PositionOpened
+
+```solidity
+event PositionOpened(address indexed manager, address indexed validator, uint256 indexed weeksDuration, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| manager `indexed` | address | undefined |
+| validator `indexed` | address | undefined |
+| weeksDuration `indexed` | uint256 | undefined |
+| amount  | uint256 | undefined |
+
+### PositionRewardClaimed
+
+```solidity
+event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| manager `indexed` | address | undefined |
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### PositionTopUp
+
+```solidity
+event PositionTopUp(address indexed manager, address indexed validator, uint256 indexed topUpIndex, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| manager `indexed` | address | undefined |
+| validator `indexed` | address | undefined |
+| topUpIndex `indexed` | uint256 | undefined |
+| amount  | uint256 | undefined |
+
+
+

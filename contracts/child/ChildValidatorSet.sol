@@ -15,7 +15,7 @@ import "./modules/CVSDelegation.sol";
 
 import "./h_modules/PowerExponent.sol";
 import "./h_modules/APR.sol";
-import "./h_modules/DelegatorVesting.sol";
+import "./h_modules/ExtendedDelegation.sol";
 import "./h_modules/ExtendedStaking.sol";
 import "./h_modules/VestManager.sol";
 import "./h_modules/Vesting.sol";
@@ -35,7 +35,7 @@ contract ChildValidatorSet is
     PowerExponent,
     CVSDelegation,
     ExtendedStaking,
-    DelegatorVesting
+    ExtendedDelegation
 {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;

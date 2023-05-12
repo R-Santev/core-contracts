@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface IDelegatorVesting {
+interface IDelegationVesting {
     event PositionOpened(
         address indexed manager,
         address indexed validator,
