@@ -1,31 +1,41 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
+
 import "../interfaces/IChildValidatorSetBase.sol";
+
+import "./System.sol";
+
 import "./modules/CVSStorage.sol";
 import "./modules/CVSAccessControl.sol";
 import "./modules/CVSWithdrawal.sol";
 import "./modules/CVSStaking.sol";
 import "./modules/CVSDelegation.sol";
-import "./System.sol";
 
 import "./h_modules/PowerExponent.sol";
+import "./h_modules/APR.sol";
+import "./h_modules/ExtendedDelegation.sol";
+import "./h_modules/ExtendedStaking.sol";
+import "./h_modules/VestManager.sol";
+import "./h_modules/Vesting.sol";
 
 import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
 import "../libs/SafeMathInt.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 
 // solhint-disable max-states-count
 contract ChildValidatorSet is
     IChildValidatorSetBase,
+    System,
+    APR,
     CVSStorage,
     CVSAccessControl,
     CVSWithdrawal,
-    CVSStaking,
-    CVSDelegation,
     PowerExponent,
-    System
+    CVSDelegation,
+    ExtendedStaking,
+    ExtendedDelegation
 {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
@@ -75,7 +85,8 @@ contract ChildValidatorSet is
                 blsKey: validators[i].pubkey,
                 stake: validators[i].stake,
                 commission: 0,
-                withdrawableRewards: 0,
+                totalRewards: 0,
+                takenRewards: 0,
                 active: true
             });
             _validators.insert(validators[i].addr, validator);
@@ -85,16 +96,15 @@ contract ChildValidatorSet is
 
         // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
         powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
+
+        // H_MODIFY: Set base implementation for VestFactory
+        implementation = address(new VestManager());
     }
 
     /**
      * @inheritdoc IChildValidatorSetBase
      */
-    function commitEpoch(
-        uint256 id,
-        Epoch calldata epoch,
-        Uptime calldata uptime
-    ) external onlySystemCall {
+    function commitEpoch(uint256 id, Epoch calldata epoch, Uptime calldata uptime) external onlySystemCall {
         uint256 newEpochId = currentEpochId++;
         require(id == newEpochId, "UNEXPECTED_EPOCH_ID");
         require(epoch.endBlock > epoch.startBlock, "NO_BLOCKS_COMMITTED");
@@ -111,6 +121,7 @@ contract ChildValidatorSet is
         _distributeRewards(epoch, uptime);
         _processQueue();
 
+        // H_MODIFY: Apply new exponent in case it was changed in the latest epoch
         _applyPendingExp();
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
@@ -216,28 +227,49 @@ contract ChildValidatorSet is
     }
 
     function _distributeRewards(Epoch calldata epoch, Uptime calldata uptime) internal {
+        // H_MODIFY: Ensure the max reward tokens are sent
+        uint256 activeStake = totalActiveStake();
+        // TODO: configure how the reward would enter the contract whenever more data from polygon is available
+        // require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
+
         require(uptime.epochId == currentEpochId - 1, "EPOCH_NOT_COMMITTED");
 
         uint256 length = uptime.uptimeData.length;
 
         require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
-        uint256 activeStake = totalActiveStake();
-        uint256 reward = (epochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
+        // H_MODIFY: change the epoch reward calculation
+        // apply the reward factor; participation factor is applied then
+        // base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
+        // and on _distributeValidatorReward for validators
+        // TODO: Reward must be calculated per epoch; apply the changes whenever APR oracles are available
+        uint256 modifiedEpochReward = applyMacro(activeStake);
+        uint256 reward = (modifiedEpochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
 
         for (uint256 i = 0; i < length; ++i) {
             UptimeData memory uptimeData = uptime.uptimeData[i];
             Validator storage validator = _validators.get(uptimeData.validator);
+            RewardPool storage rewardPool = _validators.getDelegationPool(uptimeData.validator);
             // slither-disable-next-line divide-before-multiply
-            uint256 validatorReward = (reward *
-                (validator.stake + _validators.getDelegationPool(uptimeData.validator).supply) *
-                uptimeData.signedBlocks) / (activeStake * uptime.totalBlocks);
+            uint256 validatorReward = (reward * (validator.stake + rewardPool.supply) * uptimeData.signedBlocks) /
+                (activeStake * uptime.totalBlocks);
             (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
                 uptimeData.validator,
                 validatorReward
             );
+
             _distributeValidatorReward(uptimeData.validator, validatorShares);
             _distributeDelegatorReward(uptimeData.validator, delegatorShares);
+
+            // H_MODIFY: Keep history record of the rewardPerShare to be used on reward claim
+            if (delegatorShares > 0) {
+                _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
+            }
+
+            // H_MODIFY: Keep history record of the validator rewards to be used on maturing vesting reward claim
+            if (validatorShares > 0) {
+                _saveValRewardData(uptimeData.validator, uptime.epochId);
+            }
         }
     }
 
@@ -259,11 +291,7 @@ contract ChildValidatorSet is
         _queue.reset();
     }
 
-    function _slashDoubleSigner(
-        address key,
-        uint256 epoch,
-        uint256 pbftRound
-    ) private {
+    function _slashDoubleSigner(address key, uint256 epoch, uint256 pbftRound) private {
         if (doubleSignerSlashes[epoch][pbftRound][key]) {
             return;
         }
@@ -301,7 +329,12 @@ contract ChildValidatorSet is
         require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
         uint256 activeStake = totalActiveStake();
-        uint256 reward = (epochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
+
+        // H_MODIFY: change the epoch reward calculation
+        // apply the reward factor; participation factor is applied then
+        // base + vesting and RSI are applied on claimReward (handled by the position proxy)
+        uint256 modifiedEpochReward = applyMacro(activeStake);
+        uint256 reward = (modifiedEpochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
 
         for (uint256 i = 0; i < length; ++i) {
             // skip reward distribution for slashed validators
@@ -318,24 +351,41 @@ contract ChildValidatorSet is
                 uptimeData.validator,
                 validatorReward
             );
-            validator.withdrawableRewards += validatorShares;
-            emit ValidatorRewardDistributed(uptimeData.validator, validatorReward);
-            _validators.getDelegationPool(uptimeData.validator).distributeReward(delegatorShares);
-            emit DelegatorRewardDistributed(uptimeData.validator, delegatorShares);
+
+            _distributeValidatorReward(uptimeData.validator, validatorShares);
+            // H_MODIFY: Keep history record of the validator rewards to be used on maturing vesting reward claim
+            if (validatorShares > 0) {
+                _saveValRewardData(uptimeData.validator, uptime.epochId);
+            }
+
+            _handleDelegation(uptimeData, uptime, delegatorShares);
         }
 
         _processQueue();
 
+        // H_MODIFY: Apply new exponent in case it was changed in the latest epoch
         _applyPendingExp();
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
     }
 
-    function _calculateValidatorAndDelegatorShares(address validatorAddr, uint256 totalReward)
-        private
-        view
-        returns (uint256, uint256)
-    {
+    function _handleDelegation(UptimeData memory uptimeData, Uptime memory uptime, uint256 delegatorShares) internal {
+        RewardPool storage rewardPool = _validators.getDelegationPool(uptimeData.validator);
+
+        rewardPool.distributeReward(delegatorShares);
+
+        // H_MODIFY: Keep history record of the rewardPerShare to be used in reward claim
+        if (delegatorShares > 0) {
+            _saveEpochRPS(uptimeData.validator, rewardPool.magnifiedRewardPerShare, uptime.epochId);
+        }
+
+        emit DelegatorRewardDistributed(uptimeData.validator, delegatorShares);
+    }
+
+    function _calculateValidatorAndDelegatorShares(
+        address validatorAddr,
+        uint256 totalReward
+    ) private view returns (uint256, uint256) {
         Validator memory validator = _validators.get(validatorAddr);
         uint256 stakedAmount = validator.stake;
         uint256 delegations = _validators.getDelegationPool(validatorAddr).supply;
@@ -357,11 +407,7 @@ contract ChildValidatorSet is
      * @param signature the signed message
      * @param bitmap bitmap of which validators have signed
      */
-    function _checkPubkeyAggregation(
-        bytes32 hash,
-        bytes calldata signature,
-        bytes calldata bitmap
-    ) private view {
+    function _checkPubkeyAggregation(bytes32 hash, bytes calldata signature, bytes calldata bitmap) private view {
         // verify signatures` for provided sig data and sigs bytes
         // slither-disable-next-line low-level-calls,calls-loop
         (bool callSuccess, bytes memory returnData) = VALIDATOR_PKCHECK_PRECOMPILE.staticcall{

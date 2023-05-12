@@ -42,7 +42,8 @@ struct Validator {
     uint256[4] blsKey;
     uint256 stake;
     uint256 commission;
-    uint256 withdrawableRewards;
+    uint256 takenRewards;
+    uint256 totalRewards;
     bool active;
 }
 

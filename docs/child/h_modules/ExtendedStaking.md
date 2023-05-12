@@ -1,4 +1,4 @@
-# CVSStaking
+# ExtendedStaking
 
 
 
@@ -14,6 +14,23 @@
 
 ```solidity
 function ACTIVE_VALIDATOR_SET_SIZE() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### DENOMINATOR
+
+```solidity
+function DENOMINATOR() external view returns (uint256)
 ```
 
 
@@ -43,6 +60,23 @@ function DOMAIN() external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
+
+### EPOCHS_YEAR
+
+```solidity
+function EPOCHS_YEAR() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 ### MAX_COMMISSION
 
@@ -105,6 +139,28 @@ Adds addresses that are allowed to register as validators.
 |---|---|---|
 | whitelistAddreses | address[] | Array of address to whitelist |
 
+### applyMaxReward
+
+```solidity
+function applyMaxReward(uint256 reward) external pure returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### bls
 
 ```solidity
@@ -121,6 +177,22 @@ function bls() external view returns (contract IBLS)
 | Name | Type | Description |
 |---|---|---|
 | _0 | contract IBLS | undefined |
+
+### claimValidatorReward
+
+```solidity
+function claimValidatorReward(uint256 rewardHistoryIndex) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| rewardHistoryIndex | uint256 | undefined |
 
 ### claimValidatorReward
 
@@ -230,6 +302,132 @@ function epochs(uint256) external view returns (uint256 startBlock, uint256 endB
 | endBlock | uint256 | undefined |
 | epochRoot | bytes32 | undefined |
 
+### getBase
+
+```solidity
+function getBase() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getDefaultRSI
+
+```solidity
+function getDefaultRSI() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getMacro
+
+```solidity
+function getMacro() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getMaxRSI
+
+```solidity
+function getMaxRSI() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getRSI
+
+```solidity
+function getRSI() external pure returns (uint256 nominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
+### getUserParams
+
+```solidity
+function getUserParams() external pure returns (uint256 base, uint256 vesting, uint256 rsi)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| base | uint256 | undefined |
+| vesting | uint256 | undefined |
+| rsi | uint256 | undefined |
+
+### getValRewardsValues
+
+```solidity
+function getValRewardsValues(address validator) external view returns (struct StakerVesting.ValReward[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | StakerVesting.ValReward[] | undefined |
+
 ### getValidator
 
 ```solidity
@@ -279,6 +477,28 @@ Gets validator&#39;s unclaimed rewards.
 |---|---|---|
 | _0 | uint256 | Validator&#39;s unclaimed rewards (in MATIC wei) |
 
+### getVestingBonus
+
+```solidity
+function getVestingBonus(uint256 weeksCount) external pure returns (uint256 nominator)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| weeksCount | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+
 ### implementation
 
 ```solidity
@@ -295,6 +515,72 @@ function implementation() external view returns (address)
 | Name | Type | Description |
 |---|---|---|
 | _0 | address | undefined |
+
+### isActivePosition
+
+```solidity
+function isActivePosition(Vesting.VestData position) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| position | Vesting.VestData | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isMaturingPosition
+
+```solidity
+function isMaturingPosition(Vesting.VestData position) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| position | Vesting.VestData | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isStakerInVestingCycle
+
+```solidity
+function isStakerInVestingCycle(address staker) external view returns (bool)
+```
+
+Returns true if the staker is an active vesting position or not all rewards from the latest  active position are matured yet
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | Address of the staker |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
 
 ### minDelegation
 
@@ -329,6 +615,22 @@ function minStake() external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### openStakingPosition
+
+```solidity
+function openStakingPosition(uint256 durationWeeks) external payable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| durationWeeks | uint256 | undefined |
 
 ### owner
 
@@ -497,6 +799,33 @@ Stakes sent amount. Claims rewards beforehand.
 
 
 
+### stakePositions
+
+```solidity
+function stakePositions(address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| duration | uint256 | undefined |
+| start | uint256 | undefined |
+| end | uint256 | undefined |
+| base | uint256 | undefined |
+| vestBonus | uint256 | undefined |
+| rsiBonus | uint256 | undefined |
+
 ### totalStake
 
 ```solidity
@@ -567,6 +896,31 @@ Unstakes amount for sender. Claims rewards beforehand.
 | Name | Type | Description |
 |---|---|---|
 | amount | uint256 | Amount to unstake |
+
+### valRewards
+
+```solidity
+function valRewards(address, uint256) external view returns (uint256 totalReward, uint256 epoch, uint256 timestamp)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| totalReward | uint256 | undefined |
+| epoch | uint256 | undefined |
+| timestamp | uint256 | undefined |
 
 ### whitelist
 

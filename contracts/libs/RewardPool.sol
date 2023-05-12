@@ -44,6 +44,8 @@ library RewardPoolLib {
         pool.magnifiedRewardCorrections[account] -= (pool.magnifiedRewardPerShare * share).toInt256Safe();
     }
 
+    // TODO: on cutPosition set top-up because balance and supply are changed
+
     /**
      * @notice decrements the balance of a specific pool member
      * @param pool the RewardPool of the account to decrement the balance of
@@ -81,6 +83,10 @@ library RewardPoolLib {
         return (pool.balances[account] * pool.supply) / pool.virtualSupply;
     }
 
+    function correctionOf(RewardPool storage pool, address account) internal view returns (int256) {
+        return pool.magnifiedRewardCorrections[account];
+    }
+
     /**
      * @notice returns the historical total rewards earned by an account in a specific pool
      * @param pool the RewardPool to query the total from
@@ -110,5 +116,33 @@ library RewardPoolLib {
      */
     function magnitude() private pure returns (uint256) {
         return 1e18;
+    }
+
+    function rewardsEarned(uint256 rps, uint256 balance, int256 correction) internal pure returns (uint256) {
+        int256 magnifiedRewards = (rps * balance).toInt256Safe();
+        uint256 correctedRewards = (magnifiedRewards + correction).toUint256Safe();
+        return correctedRewards / magnitude();
+    }
+
+    function claimableRewards(
+        RewardPool storage pool,
+        address account,
+        uint256 rps,
+        uint256 balance,
+        int256 correction
+    ) internal view returns (uint256) {
+        if (pool.claimedRewards[account] >= rewardsEarned(rps, balance, correction)) return 0;
+        return rewardsEarned(rps, balance, correction) - pool.claimedRewards[account];
+    }
+
+    function claimRewards(
+        RewardPool storage pool,
+        address account,
+        uint256 rps,
+        uint256 balance,
+        int256 correction
+    ) internal returns (uint256 reward) {
+        reward = claimableRewards(pool, account, rps, balance, correction);
+        pool.claimedRewards[account] += reward;
     }
 }

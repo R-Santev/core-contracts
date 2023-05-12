@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "../../interfaces/modules/ICVSStaking.sol";
 import "./CVSStorage.sol";
 import "./CVSAccessControl.sol";
 import "./CVSWithdrawal.sol";
+
 import "../../interfaces/Errors.sol";
+import "../../interfaces/modules/ICVSStaking.sol";
+
+import "./../h_modules/Vesting.sol";
 
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
@@ -31,7 +34,7 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
 
         _validators.insert(
             msg.sender,
-            Validator({blsKey: pubkey, stake: 0, commission: 0, withdrawableRewards: 0, active: true})
+            Validator({blsKey: pubkey, stake: 0, commission: 0, totalRewards: 0, takenRewards: 0, active: true})
         );
         _removeFromWhitelist(msg.sender);
 
@@ -41,7 +44,7 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
     /**
      * @inheritdoc ICVSStaking
      */
-    function stake() external payable onlyValidator {
+    function stake() public payable virtual onlyValidator {
         int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
         if (msg.value.toInt256Safe() + totalValidatorStake < int256(minStake))
             revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
@@ -52,8 +55,10 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
 
     /**
      * @inheritdoc ICVSStaking
+     * @dev Oveerriden by StakerVesting contract
      */
-    function unstake(uint256 amount) external {
+    //
+    function unstake(uint256 amount) public virtual {
         int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
         int256 amountInt = amount.toInt256Safe();
         if (amountInt > totalValidatorStake) revert StakeRequirement({src: "unstake", msg: "INSUFFICIENT_BALANCE"});
@@ -84,13 +89,25 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
     /**
      * @inheritdoc ICVSStaking
      */
-    function claimValidatorReward() public {
+    function claimValidatorReward() public virtual {
         Validator storage validator = _validators.get(msg.sender);
-        uint256 reward = validator.withdrawableRewards;
-        if (reward == 0) return;
-        validator.withdrawableRewards = 0;
+        uint256 reward = _calcValidatorReward(validator);
+        if (reward == 0) {
+            return;
+        }
+
+        _claimValidatorReward(validator, reward);
+
         _registerWithdrawal(msg.sender, reward);
         emit ValidatorRewardClaimed(msg.sender, reward);
+    }
+
+    function _claimValidatorReward(Validator storage validator, uint256 reward) internal {
+        validator.takenRewards += reward;
+    }
+
+    function _calcValidatorReward(Validator memory validator) internal pure returns (uint256) {
+        return validator.totalRewards - validator.takenRewards;
     }
 
     /**
@@ -117,7 +134,8 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
      * @inheritdoc ICVSStaking
      */
     function getValidatorReward(address validator) external view returns (uint256) {
-        return _validators.get(validator).withdrawableRewards;
+        Validator memory val = _validators.get(validator);
+        return val.totalRewards - val.takenRewards;
     }
 
     /**
@@ -134,9 +152,10 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
         return _validators.totalStakeOf(validator);
     }
 
-    function _distributeValidatorReward(address validator, uint256 reward) internal {
+    function _distributeValidatorReward(address validator, uint256 reward) internal virtual {
         Validator storage _validator = _validators.get(validator);
-        _validator.withdrawableRewards += reward;
+        _validator.totalRewards += reward;
+
         emit ValidatorRewardDistributed(validator, reward);
     }
 }

@@ -44,10 +44,15 @@ abstract contract CVSStorage is ICVSStorage {
     // Initial Voting Power exponent to be ^0.85
     PowerExponentStore public powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
 
+    //base implemetantion to be used by proxies
+    address public implementation;
+
     /**
      * @inheritdoc ICVSStorage
      */
-    function getValidator(address validator)
+    function getValidator(
+        address validator
+    )
         external
         view
         returns (
@@ -64,7 +69,7 @@ abstract contract CVSStorage is ICVSStorage {
         stake = v.stake;
         totalStake = v.stake + _validators.getDelegationPool(validator).supply;
         commission = v.commission;
-        withdrawableRewards = v.withdrawableRewards;
+        withdrawableRewards = v.totalRewards - v.takenRewards;
         active = v.active;
     }
 

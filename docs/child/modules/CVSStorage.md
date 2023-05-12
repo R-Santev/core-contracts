@@ -219,6 +219,23 @@ Gets validator by address.
 | withdrawableRewards | uint256 | withdrawable rewards |
 | active | bool | activity status |
 
+### implementation
+
+```solidity
+function implementation() external view returns (address)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### minDelegation
 
 ```solidity
@@ -252,6 +269,24 @@ function minStake() external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### powerExponent
+
+```solidity
+function powerExponent() external view returns (uint128 value, uint128 pendingValue)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| value | uint128 | undefined |
+| pendingValue | uint128 | undefined |
 
 ### whitelist
 

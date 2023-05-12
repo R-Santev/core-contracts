@@ -3,8 +3,15 @@ import "@openzeppelin/hardhat-upgrades";
 import "@primitivefi/hardhat-dodoc";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-
 dotenv.config();
+
+// eslint-disable-next-line node/no-unsupported-features/es-builtins, no-extend-native
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
+// eslint-disable-next-line import/first
+import "./tasks";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -46,6 +53,7 @@ const config: HardhatUserConfig = {
       // allow impersonation of smart contracts without modifying balance
       gasPrice: 0,
       hardfork: "berlin",
+      allowUnlimitedContractSize: true,
     },
   },
   gasReporter: {
