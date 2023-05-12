@@ -3,9 +3,9 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import "../modules/CVSStorage.sol";
-
 import "./VestManager.sol";
+
+import "../modules/CVSStorage.sol";
 
 abstract contract VestFactory is CVSStorage {
     event NewClone(address indexed owner, address newClone);

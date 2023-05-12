@@ -50,6 +50,9 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         int256 correction;
     }
 
+    // validator => position => vesting user data
+    mapping(address => mapping(address => VestData)) public vestings;
+
     // validator => user => top-up data
     mapping(address => mapping(address => AccountPoolParams[])) public poolParamsChanges;
 

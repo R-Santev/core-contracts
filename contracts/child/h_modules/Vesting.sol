@@ -9,17 +9,13 @@
 
 pragma solidity 0.8.17;
 
-import "hardhat/console.sol";
+import "./APR.sol";
 
 import "../../interfaces/Errors.sol";
-import "./APR.sol";
 
 error NoReward();
 
 abstract contract Vesting is APR {
-    // validator => position => vesting user data
-    mapping(address => mapping(address => VestData)) public vestings;
-
     struct VestData {
         uint256 duration;
         uint256 start;
@@ -68,8 +64,6 @@ abstract contract Vesting is APR {
     }
 
     function _burnAmount(uint256 amount) internal {
-        console.log("burning", amount);
-        console.log("balance", address(this).balance);
         payable(address(0)).transfer(amount);
     }
 }

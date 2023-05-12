@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "../../interfaces/modules/ICVSDelegation.sol";
 import "./CVSStorage.sol";
 import "./CVSWithdrawal.sol";
+
 import "../../interfaces/Errors.sol";
+import "../../interfaces/modules/ICVSDelegation.sol";
 
 import "../h_modules/APR.sol";
 

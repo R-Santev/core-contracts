@@ -5,10 +5,12 @@ import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
 dotenv.config();
 
+// eslint-disable-next-line node/no-unsupported-features/es-builtins, no-extend-native
 BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
+// eslint-disable-next-line import/first
 import "./tasks";
 
 const config: HardhatUserConfig = {

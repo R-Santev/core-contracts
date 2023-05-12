@@ -7,10 +7,9 @@ import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import * as mcl from "../../ts/mcl";
 // eslint-disable-next-line camelcase
-import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegatorVesting } from "../../typechain-types";
+import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegationVesting } from "../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
 import { getValidatorReward, isActivePosition } from "./helpers";
-import { log } from "console";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -1862,7 +1861,6 @@ describe.only("ChildValidatorSet", () => {
         const balanceBefore = await accounts[4].getBalance();
         const delegatedAmount = await childValidatorSet.delegationOf(validator, manager.address);
         manager.cutPosition(accounts[2].address, delegatedAmount);
-        log("here");
 
         // Commit one more epoch so withdraw to be available
         await commitEpoch(systemChildValidatorSet, accounts);
@@ -2730,9 +2728,7 @@ describe.only("ChildValidatorSet", () => {
 
         // calculate up to which epoch rewards are matured
         const valRewardsRecords = await childValidatorSet.getValRewardsValues(staker.address);
-        log("valRewardsRecords", valRewardsRecords);
         const valRewardRecordIndex = findProperRPSIndex(valRewardsRecords, position.end.sub(position.duration.div(2)));
-        log("valRewardRecordIndex", valRewardRecordIndex);
 
         // claim reward
         await expect(stakerChildValidatorSet["claimValidatorReward(uint256)"](valRewardRecordIndex)).to.emit(
@@ -2858,7 +2854,7 @@ function findProperRPSIndex<T extends RewardParams>(arr: T[], timestamp: BigNumb
   return closestIndex;
 }
 
-function findAccountParamsIndex(arr: DelegatorVesting.AccountPoolParamsStructOutput[], epochNum: BigNumber): number {
+function findAccountParamsIndex(arr: DelegationVesting.AccountPoolParamsStructOutput[], epochNum: BigNumber): number {
   let left = 0;
   let right = arr.length - 1;
   let closestEpoch: null | BigNumber = null;

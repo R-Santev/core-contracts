@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "hardhat/console.sol";
-
 import "../interfaces/IRewardPool.sol";
 import "../interfaces/IValidator.sol";
 
@@ -133,8 +131,6 @@ library RewardPoolLib {
         uint256 balance,
         int256 correction
     ) internal view returns (uint256) {
-        console.log("rewardsEarned", rewardsEarned(rps, balance, correction));
-        console.log("claimedRewards", pool.claimedRewards[account]);
         if (pool.claimedRewards[account] >= rewardsEarned(rps, balance, correction)) return 0;
         return rewardsEarned(rps, balance, correction) - pool.claimedRewards[account];
     }

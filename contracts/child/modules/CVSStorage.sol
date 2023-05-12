@@ -44,8 +44,6 @@ abstract contract CVSStorage is ICVSStorage {
     // Initial Voting Power exponent to be ^0.85
     PowerExponentStore public powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
 
-    // VestFactory variables
-
     //base implemetantion to be used by proxies
     address public implementation;
 
