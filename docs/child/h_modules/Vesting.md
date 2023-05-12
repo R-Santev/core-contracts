@@ -236,34 +236,6 @@ function isMaturingPosition(Vesting.VestData position) external view returns (bo
 |---|---|---|
 | _0 | bool | undefined |
 
-### vestings
-
-```solidity
-function vestings(address, address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-| _1 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| duration | uint256 | undefined |
-| start | uint256 | undefined |
-| end | uint256 | undefined |
-| base | uint256 | undefined |
-| vestBonus | uint256 | undefined |
-| rsiBonus | uint256 | undefined |
-
 
 
 
