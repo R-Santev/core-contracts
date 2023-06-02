@@ -24,6 +24,8 @@ import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
 import "../libs/SafeMathInt.sol";
 
+// TODO: setup use of reward account that would handle the amounts of rewards
+
 // solhint-disable max-states-count
 contract ChildValidatorSet is
     IChildValidatorSetBase,
