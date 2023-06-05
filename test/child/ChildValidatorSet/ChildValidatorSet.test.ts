@@ -5,11 +5,11 @@ import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
-import * as mcl from "../../ts/mcl";
+import * as mcl from "../../../ts/mcl";
 // eslint-disable-next-line camelcase
-import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegationVesting } from "../../typechain-types";
-import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
-import { getValidatorReward, isActivePosition } from "./helpers";
+import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegationVesting } from "../../../typechain-types";
+import { alwaysFalseBytecode, alwaysTrueBytecode } from "../../constants";
+import { getValidatorReward, isActivePosition } from "../helpers";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;

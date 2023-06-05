@@ -1196,6 +1196,24 @@ event PositionTopUp(address indexed manager, address indexed validator, uint256 
 | topUpIndex `indexed` | uint256 | undefined |
 | amount  | uint256 | undefined |
 
+### Transfer
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| from `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| value  | uint256 | undefined |
+
 ### Undelegated
 
 ```solidity
