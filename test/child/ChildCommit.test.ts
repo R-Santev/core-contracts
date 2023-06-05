@@ -1,12 +1,14 @@
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import * as mcl from "../../ts/mcl";
-import { BigNumberish } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
+// eslint-disable-next-line node/no-extraneous-import
+import { expect } from "chai";
 
 import { BLS, ChildValidatorSet } from "../../typechain-types";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
-const CHAIN_ID = 187;
+const CHAIN_ID = 31337;
 
 interface ValidatorInit {
   addr: string;
@@ -15,27 +17,19 @@ interface ValidatorInit {
   stake: BigNumberish;
 }
 
-describe.only("ChildValidatorSet", () => {
-  const week = 60 * 60 * 24 * 7;
-
+describe("ChildValidatorSet hereeee", () => {
   let bls: BLS,
     // eslint-disable-next-line no-unused-vars
-    rootValidatorSetAddress: string,
     governance: string,
     childValidatorSet: ChildValidatorSet,
     systemChildValidatorSet: ChildValidatorSet,
-    validatorSetSize: number,
     // eslint-disable-next-line no-unused-vars
-    validatorStake: BigNumber,
     epochReward: BigNumber,
     minStake: number,
     minDelegation: number,
     id: number,
     epoch: any,
     uptime: any,
-    doubleSignerSlashingInput: any,
-    childValidatorSetBalance: BigNumber,
-    chainId: number,
     validatorInit: ValidatorInit,
     validatorInitTwo: ValidatorInit,
     validatorInitThree: ValidatorInit,
@@ -43,6 +37,9 @@ describe.only("ChildValidatorSet", () => {
     accounts: any[]; // we use any so we can access address directly from object
 
   before(async () => {
+    await mcl.init();
+    accounts = await ethers.getSigners();
+    console.log("accounts", accounts[0].address);
     governance = accounts[0].address;
     epochReward = ethers.utils.parseEther("0.0000001");
     minStake = 10000;
@@ -52,9 +49,6 @@ describe.only("ChildValidatorSet", () => {
     childValidatorSet = await ChildValidatorSet.deploy();
 
     await childValidatorSet.deployed();
-
-    const network = await ethers.getDefaultProvider().getNetwork();
-    chainId = network.chainId;
 
     bls = await (await ethers.getContractFactory("BLS")).deploy();
     await bls.deployed();
@@ -102,14 +96,44 @@ describe.only("ChildValidatorSet", () => {
     );
   });
 
-  it("should commitEpoch", async () => {});
+  it("should commitEpoch", async () => {
+    id = 1;
+    epoch = {
+      startBlock: BigNumber.from(1),
+      endBlock: BigNumber.from(10),
+      epochRoot: ethers.constants.HashZero,
+    };
+
+    const currentEpochId = await childValidatorSet.currentEpochId();
+    uptime = {
+      epochId: currentEpochId,
+      uptimeData: [
+        { validator: accounts[0].address, signedBlocks: 8 },
+        { validator: accounts[1].address, signedBlocks: 8 },
+        { validator: accounts[2].address, signedBlocks: 8 },
+        { validator: accounts[3].address, signedBlocks: 8 },
+      ],
+      totalBlocks: 8,
+    };
+
+    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime);
+
+    await expect(tx)
+      .to.emit(childValidatorSet, "NewEpoch")
+      .withArgs(currentEpochId, epoch.startBlock, epoch.endBlock, ethers.utils.hexlify(epoch.epochRoot));
+
+    const storedEpoch: any = await childValidatorSet.epochs(1);
+    expect(storedEpoch.startBlock).to.equal(epoch.startBlock);
+    expect(storedEpoch.endBlock).to.equal(epoch.endBlock);
+    expect(storedEpoch.epochRoot).to.equal(ethers.utils.hexlify(epoch.epochRoot));
+  });
 });
 
-function createValidatorInit(accounts: any): ValidatorInit {
+function createValidatorInit(account: any): ValidatorInit {
   const keyPair = mcl.newKeyPair();
-  const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, accounts[0].address, keyPair.secret).signature;
+  const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, account.address, keyPair.secret).signature;
   const validatorInit = {
-    addr: accounts[0].address,
+    addr: account.address,
     pubkey: mcl.g2ToHex(keyPair.pubkey),
     signature: mcl.g1ToHex(signature),
     stake: ethers.BigNumber.from("0xd3c21bcecceda1000000"),
