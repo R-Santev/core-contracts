@@ -24,6 +24,8 @@ import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
 import "../libs/SafeMathInt.sol";
 
+// TODO: setup use of reward account that would handle the amounts of rewards
+
 // solhint-disable max-states-count
 contract ChildValidatorSet is
     IChildValidatorSetBase,
@@ -243,8 +245,7 @@ contract ChildValidatorSet is
         // base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
         // and on _distributeValidatorReward for validators
         // TODO: Reward must be calculated per epoch; apply the changes whenever APR oracles are available
-        uint256 modifiedEpochReward = applyMacro(activeStake);
-        uint256 reward = (modifiedEpochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
+        uint256 reward = calcReward(epoch, activeStake);
 
         for (uint256 i = 0; i < length; ++i) {
             UptimeData memory uptimeData = uptime.uptimeData[i];
@@ -439,6 +440,15 @@ contract ChildValidatorSet is
             }
         }
         return true;
+    }
+
+    function calcReward(Epoch calldata epoch, uint256 activeStake) internal view returns (uint256) {
+        uint256 modifiedEpochReward = applyMacro(activeStake);
+        uint256 blocksNum = epoch.endBlock - epoch.startBlock;
+        uint256 nominator = modifiedEpochReward * blocksNum * 100;
+        uint256 denominator = epochSize * 100;
+
+        return nominator / denominator;
     }
 
     // slither-disable-next-line unused-state,naming-convention
