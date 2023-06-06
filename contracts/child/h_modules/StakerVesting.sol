@@ -78,9 +78,9 @@ abstract contract StakerVesting is Vesting, CVSStorage {
     /**
      * Handles the logic to be executed when a validator in vesting position stakes
      */
-    function _handleStake(uint256 balance) internal {
+    function _handleStake(uint256 oldBalance) internal {
         uint256 duration = stakePositions[msg.sender].duration;
-        uint256 durationIncrease = _calculateDurationIncrease(balance, duration);
+        uint256 durationIncrease = _calculateDurationIncrease(oldBalance, duration);
         stakePositions[msg.sender].duration = duration + durationIncrease;
         stakePositions[msg.sender].end = stakePositions[msg.sender].end + durationIncrease;
         stakePositions[msg.sender].rsiBonus = 0;
@@ -123,8 +123,7 @@ abstract contract StakerVesting is Vesting, CVSStorage {
         valRewards[validator].push(rewardData);
     }
 
-    function _calculateDurationIncrease(uint256 balance, uint256 duration) private returns (uint256) {
-        uint256 oldBalance = balance - msg.value;
+    function _calculateDurationIncrease(uint256 oldBalance, uint256 duration) private returns (uint256) {
         // duration increase must not be bigger than double
         if (msg.value >= oldBalance) {
             return duration;

@@ -1,14 +1,13 @@
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
 import * as mcl from "../../../ts/mcl";
+// eslint-disable-next-line node/no-extraneous-import
 import { BigNumber, BigNumberish } from "ethers";
 // eslint-disable-next-line node/no-extraneous-import
 import { expect } from "chai";
 
 import { BLS, ChildValidatorSet } from "../../../typechain-types";
-
-const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
-const CHAIN_ID = 31337;
+import { genValSignature } from "./helper";
 
 interface ValidatorInit {
   addr: string;
@@ -17,7 +16,7 @@ interface ValidatorInit {
   stake: BigNumberish;
 }
 
-describe("ChildValidatorSet hereeee", () => {
+describe("ChildValidatorSet Initial Setup", () => {
   let bls: BLS,
     // eslint-disable-next-line no-unused-vars
     governance: string,
@@ -39,7 +38,6 @@ describe("ChildValidatorSet hereeee", () => {
   before(async () => {
     await mcl.init();
     accounts = await ethers.getSigners();
-    console.log("accounts", accounts[0].address);
     governance = accounts[0].address;
     epochReward = ethers.utils.parseEther("0.0000001");
     minStake = 10000;
@@ -77,8 +75,6 @@ describe("ChildValidatorSet hereeee", () => {
       method: "hardhat_impersonateAccount",
       params: ["0x0000000000000000000000000000000000001001"],
     });
-
-    console.log("THEREEEE", await ethers.provider.getBalance(childValidatorSet.address));
 
     const systemSigner = await ethers.getSigner("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
     systemChildValidatorSet = childValidatorSet.connect(systemSigner);
@@ -131,7 +127,7 @@ describe("ChildValidatorSet hereeee", () => {
 
 function createValidatorInit(account: any): ValidatorInit {
   const keyPair = mcl.newKeyPair();
-  const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, account.address, keyPair.secret).signature;
+  const signature = genValSignature(account, keyPair);
   const validatorInit = {
     addr: account.address,
     pubkey: mcl.g2ToHex(keyPair.pubkey),

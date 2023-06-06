@@ -29,6 +29,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
 
         VestData memory position = stakePositions[msg.sender];
         if (isActivePosition(position)) {
+            // stakeOf still shows the old balance because the new amount will be applied on commitEpoch
             _handleStake(_validators.stakeOf(msg.sender));
         }
     }
