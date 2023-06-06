@@ -3,12 +3,10 @@ import "@openzeppelin/hardhat-upgrades";
 import "@primitivefi/hardhat-dodoc";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/config";
-dotenv.config();
+// Fix BigInt serialization: https://github.com/GoogleChromeLabs/jsbi/issues/30
+import "./big-int-fix.ts";
 
-// eslint-disable-next-line node/no-unsupported-features/es-builtins, no-extend-native
-BigInt.prototype.toJSON = function () {
-  return this.toString();
-};
+dotenv.config();
 
 // eslint-disable-next-line import/first
 import "./tasks";

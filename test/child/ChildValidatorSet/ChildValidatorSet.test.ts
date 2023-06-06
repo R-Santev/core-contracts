@@ -5,11 +5,12 @@ import { expect } from "chai";
 import { BigNumber, BigNumberish } from "ethers";
 import * as hre from "hardhat";
 import { ethers } from "hardhat";
-import * as mcl from "../../ts/mcl";
+import * as mcl from "../../../ts/mcl";
 // eslint-disable-next-line camelcase
-import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegationVesting } from "../../typechain-types";
-import { alwaysFalseBytecode, alwaysTrueBytecode } from "../constants";
-import { getValidatorReward, isActivePosition } from "./helpers";
+import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegationVesting } from "../../../typechain-types";
+import { alwaysFalseBytecode, alwaysTrueBytecode } from "../../constants";
+import { getValidatorReward, isActivePosition } from "../helpers";
+import { commitEpoch, getUserManager } from "./helper";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -17,7 +18,7 @@ const CHAIN_ID = 31337;
 const MAX_COMMISSION = 100;
 const DOUBLE_SIGNING_SLASHING_PERCENT = 10;
 
-describe.only("ChildValidatorSet", () => {
+describe("ChildValidatorSet", () => {
   const week = 60 * 60 * 24 * 7;
 
   let bls: BLS,
@@ -92,8 +93,6 @@ describe.only("ChildValidatorSet", () => {
       method: "hardhat_impersonateAccount",
       params: ["0x0000000000000000000000000000000000001001"],
     });
-
-    console.log("THEREEEE", await ethers.provider.getBalance(childValidatorSet.address));
 
     const systemSigner = await ethers.getSigner("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
     systemChildValidatorSet = childValidatorSet.connect(systemSigner);
@@ -1711,7 +1710,7 @@ describe.only("ChildValidatorSet", () => {
         ).to.not.be.reverted;
 
         // Commit an epoch so rewards to be distributed
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
       });
 
       it("Should revert when active position", async () => {
@@ -1800,7 +1799,7 @@ describe.only("ChildValidatorSet", () => {
         const position = await childValidatorSet.vestings(validator, manager.address);
 
         // clear pending withdrawals
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await manager.withdraw(user.address);
 
         // ensure position is active
@@ -1835,7 +1834,7 @@ describe.only("ChildValidatorSet", () => {
         // check if amount is properly slashed
         const balanceBefore = await user.getBalance();
         // commit Epoch so reward is available for withdrawal
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await manager.withdraw(user.address);
         const balanceAfter = await user.getBalance();
         // cut half of the requested amount because half of the vesting period is still not passed
@@ -1847,7 +1846,7 @@ describe.only("ChildValidatorSet", () => {
         const validator = accounts[2].address;
 
         // commit Epoch so reward is made
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const reward = await childValidatorSet.getPositionReward(validator, manager.address);
 
@@ -1863,7 +1862,7 @@ describe.only("ChildValidatorSet", () => {
         manager.cutPosition(accounts[2].address, delegatedAmount);
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await manager.withdraw(accounts[4].address);
 
         const balanceAfter = await accounts[4].getBalance();
@@ -1940,7 +1939,7 @@ describe.only("ChildValidatorSet", () => {
 
         // enter the active state
         await time.increase(1);
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         expect(await isActivePosition(childValidatorSet, validator, manager)).to.be.true;
 
@@ -1974,7 +1973,7 @@ describe.only("ChildValidatorSet", () => {
 
       it("increase duration no more than 100%", async () => {
         // otherwise new top up can't be made
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const manager = await getUserManager(childValidatorSet, accounts[4], VestManagerFactory);
         const validator = accounts[2].address;
@@ -2012,7 +2011,7 @@ describe.only("ChildValidatorSet", () => {
         const duration = 1; // 1 week
         await manager.openDelegatorPosition(validator, duration, { value: minDelegation });
         // commit epoch, so reward is mined
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         return { user, manager, validator };
       }
@@ -2037,7 +2036,7 @@ describe.only("ChildValidatorSet", () => {
         expect(await isActivePosition(childValidatorSet, validator, manager)).to.be.true;
 
         // reward to be accumulated
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         // withdraw previous amounts
         await manager.withdraw(accounts[4].address);
 
@@ -2065,7 +2064,7 @@ describe.only("ChildValidatorSet", () => {
         const duration = 1; // 1 week
         await manager.openDelegatorPosition(validator, duration, { value: minDelegation });
         // commit epoch
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         // enter the matured state
         await time.increase(2 * week);
 
@@ -2080,7 +2079,7 @@ describe.only("ChildValidatorSet", () => {
           .withArgs("vesting", "INVALID_EPOCH");
 
         // commit epoch
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         await expect(manager.claimPositionReward(validator, epochNum + 1, topUpIndex))
           .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
@@ -2113,7 +2112,7 @@ describe.only("ChildValidatorSet", () => {
         await time.increase(1 * week + 1);
 
         // comit epoch, so more reward is added that must not be claimed now
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // prepare params for call
         const position = await childValidatorSet.vestings(validator, manager.address);
@@ -2133,7 +2132,7 @@ describe.only("ChildValidatorSet", () => {
         );
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
           [user.address, childValidatorSet.address],
           [expectedReward, expectedReward.mul(-1)]
@@ -2166,7 +2165,7 @@ describe.only("ChildValidatorSet", () => {
         await time.increase(2 * week + 1);
 
         // comit epoch, so more reward is added that must be without bonus
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const additionalReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(
           baseReward
@@ -2202,7 +2201,7 @@ describe.only("ChildValidatorSet", () => {
         );
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
           [user.address, childValidatorSet.address],
           [expectedFinalReward, expectedFinalReward.mul(-1)]
@@ -2226,7 +2225,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const topUpRewardsTimestamp = await time.latest();
         const position = await childValidatorSet.vestings(validator, manager.address);
@@ -2262,7 +2261,7 @@ describe.only("ChildValidatorSet", () => {
         await time.increase(2 * week + toBeMatured.toNumber() + 1);
 
         // comit epoch, so more reward is added that must not be claimed now
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // prepare params for call
         const end = position.end;
@@ -2279,7 +2278,7 @@ describe.only("ChildValidatorSet", () => {
         );
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
           [user.address, childValidatorSet.address],
           [expectedReward, expectedReward.mul(-1)]
@@ -2300,7 +2299,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
         const expectedBaseReward = base
@@ -2333,7 +2332,7 @@ describe.only("ChildValidatorSet", () => {
         await time.increase(4 * week + 1);
 
         // comit epoch, so more reward is added that must be without bonus
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const additionalReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(
           baseReward.add(topUpReward)
@@ -2366,7 +2365,7 @@ describe.only("ChildValidatorSet", () => {
         );
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
           [user.address, childValidatorSet.address],
           [expectedFinalReward, expectedFinalReward.mul(-1)]
@@ -2379,7 +2378,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const topUpRewardsTimestamp = await time.latest();
         const position = await childValidatorSet.vestings(validator, manager.address);
@@ -2390,7 +2389,7 @@ describe.only("ChildValidatorSet", () => {
         await time.increase(2 * week + toBeMatured.toNumber() + 1);
 
         // comit epoch, so more reward is added that must not be claimed now
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // prepare params for call
         const end = position.end;
@@ -2414,7 +2413,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const position = await childValidatorSet.vestings(validator, manager.address);
 
@@ -2422,14 +2421,14 @@ describe.only("ChildValidatorSet", () => {
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // enter the maturing state
         // two week is the duration + the needed time for the top-up to be matured
         await time.increase(4 * week + 1);
 
         // comit epoch, so more reward is added that must not be claimed now
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // prepare params for call
         const end = position.end;
@@ -2450,18 +2449,18 @@ describe.only("ChildValidatorSet", () => {
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         const position = await childValidatorSet.vestings(validator, manager.address);
 
         // comit epoch
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // add another top-up
         await manager.topUpPosition(validator, { value: minDelegation });
 
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // enter the maturing state
         // reward to be matured
@@ -2502,9 +2501,9 @@ describe.only("ChildValidatorSet", () => {
         // top-up
         await manager.topUpPosition(validator, { value: minDelegation });
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         // comit epoch, so more reward is added that must be without bonus
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // prepare params for call
         position = await childValidatorSet.vestings(validator, manager.address);
@@ -2521,7 +2520,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.claimPositionReward(validator, epochNum, topUpIndex);
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
           [user.address, childValidatorSet.address],
           [reward, reward.mul(-1)]
@@ -2550,9 +2549,9 @@ describe.only("ChildValidatorSet", () => {
         // top-up
         await manager.topUpPosition(validator, { value: minDelegation });
         // more rewards to be distributed but with the top-up data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         // comit epoch, so more reward is added that must be without bonus
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // prepare params for call
         position = await childValidatorSet.vestings(validator, manager.address);
@@ -2569,7 +2568,7 @@ describe.only("ChildValidatorSet", () => {
         await manager.claimPositionReward(validator, epochNum, topUpIndex);
 
         // Commit one more epoch so withdraw to be available
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await expect(await manager.withdraw(user.address)).to.changeEtherBalances(
           [user.address, childValidatorSet.address],
           [reward, reward.mul(-1)]
@@ -2577,11 +2576,11 @@ describe.only("ChildValidatorSet", () => {
 
         time.increase(2 * week);
 
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         expect(await manager.claimPositionReward(validator, epochNum + 1, topUpIndex + 1)).to.not.be.reverted;
 
         time.increase(2 * week);
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         expect(await manager.claimPositionReward(validator, epochNum + 1, topUpIndex + 1)).to.not.be.reverted;
       });
@@ -2616,7 +2615,7 @@ describe.only("ChildValidatorSet", () => {
         expect(vestingData.rsiBonus).to.be.equal(await childValidatorSet.getRSI());
 
         // commit epoch so the balance is increased
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // check is balance = min delegation
         expect(await stakerChildValidatorSet.totalStakeOf(staker.address)).to.be.equal(minDelegation);
@@ -2642,7 +2641,7 @@ describe.only("ChildValidatorSet", () => {
         expect(vestingData.rsiBonus).to.be.equal(0);
 
         // commit epoch so the balance is increased
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // check is balance = min delegation
         expect(await stakerChildValidatorSet.totalStakeOf(staker.address)).to.be.equal(minDelegation * 2);
@@ -2662,7 +2661,7 @@ describe.only("ChildValidatorSet", () => {
       }
 
       it("should decrease staking position", async () => {
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         const reward = await getValidatorReward(childValidatorSet, staker.address);
         const unstakeAmount = ethers.BigNumber.from(minDelegation).div(2);
         const { burnedAmount } = await decreasePosition(unstakeAmount);
@@ -2674,7 +2673,7 @@ describe.only("ChildValidatorSet", () => {
       });
 
       it("should delete position data when full amount removed", async () => {
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         const reward = await getValidatorReward(childValidatorSet, staker.address);
         const validator = await stakerChildValidatorSet.getValidator(staker.address);
         const unstakeAmount = validator.stake;
@@ -2691,16 +2690,16 @@ describe.only("ChildValidatorSet", () => {
     describe("claim position reward", async () => {
       it("can't claim when active", async () => {
         // clear valdiator stake data
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         expect((await stakerChildValidatorSet.getValidator(staker.address)).stake).to.be.equal(0);
 
         // setup staking position
         await registerValidator(childValidatorSet, staker);
         await stakerChildValidatorSet.openStakingPosition(vestingDurationWeeks, { value: minDelegation });
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // ensure there is available reward
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         const reward = await getValidatorReward(childValidatorSet, staker.address);
         expect(reward).to.be.gt(0);
 
@@ -2720,7 +2719,7 @@ describe.only("ChildValidatorSet", () => {
         const position = await stakerChildValidatorSet.stakePositions(staker.address);
         const nextTimestamp = position.end.sub(1);
         await time.setNextBlockTimestamp(nextTimestamp.toNumber());
-        await commitEpoch(systemChildValidatorSet, accounts);
+        await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // enter maturing state
         const nextTimestampOne = position.end.add(position.duration.div(2));
@@ -2757,50 +2756,6 @@ describe.only("ChildValidatorSet", () => {
     });
   });
 });
-
-// eslint-disable-next-line no-unused-vars
-async function commitEpoch(systemChildValidatorSet: ChildValidatorSet, accounts: any[]): Promise<BigNumberish> {
-  const currentEpochId = await systemChildValidatorSet.currentEpochId();
-
-  const previousEpoch = await systemChildValidatorSet.epochs(currentEpochId.sub(1));
-  const startBlock = previousEpoch.endBlock.add(1);
-  const validatorSet = await systemChildValidatorSet.getCurrentValidatorSet();
-
-  const newEpoch = {
-    startBlock,
-    endBlock: startBlock.add(63),
-    epochRoot: ethers.utils.randomBytes(32),
-    validatorSet: validatorSet,
-  };
-
-  const newUptime = {
-    epochId: currentEpochId,
-    uptimeData: [
-      { validator: accounts[0].address, signedBlocks: 64 },
-      { validator: accounts[2].address, signedBlocks: 64 },
-      { validator: accounts[9].address, signedBlocks: 64 },
-    ],
-    totalBlocks: 64,
-  };
-
-  await systemChildValidatorSet.commitEpoch(currentEpochId, newEpoch, newUptime);
-
-  return currentEpochId;
-}
-
-async function getUserManager(
-  childValidatorSet: ChildValidatorSet,
-  account: any,
-  VestManagerFactory: any
-): Promise<VestManager> {
-  // Find user vesting position based on the emited  events
-  const filter = childValidatorSet.filters.NewClone(account.address);
-  const positionAddr = (await childValidatorSet.queryFilter(filter))[0].args.newClone;
-
-  const manager = VestManagerFactory.attach(positionAddr);
-
-  return manager.connect(account);
-}
 
 async function claimRewards(childValidatorSet: ChildValidatorSet, manager: VestManager, validator: string) {
   const position = await childValidatorSet.vestings(validator, manager.address);

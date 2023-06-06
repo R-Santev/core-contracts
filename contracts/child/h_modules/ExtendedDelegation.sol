@@ -67,7 +67,7 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         emit PositionTopUp(msg.sender, validator, poolParamsChanges[validator][msg.sender].length - 1, msg.value);
     }
 
-    function cutPosition(address validator, uint256 amount) external override onlyManager {
+    function cutPosition(address validator, uint256 amount) external onlyManager {
         RewardPool storage delegation = _validators.getDelegationPool(validator);
         uint256 delegatedAmount = delegation.balanceOf(msg.sender);
 
@@ -78,10 +78,12 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         if (amountAfterUndelegate < minDelegation && amountAfterUndelegate != 0)
             revert StakeRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
 
-        amount = _cutPosition(validator, delegation, amount, amountAfterUndelegate);
         int256 amountInt = amount.toInt256Safe();
-
         _queue.insert(validator, 0, amountInt * -1);
+        // emit here so the amount is correct value (before the cut)
+        _syncUnstake(validator, amount);
+
+        amount = _cutPosition(validator, delegation, amount, amountAfterUndelegate);
         _registerWithdrawal(msg.sender, amount);
 
         emit PositionCut(msg.sender, validator, amount);

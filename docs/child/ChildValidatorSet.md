@@ -2028,6 +2028,24 @@ event Staked(address indexed validator, uint256 amount)
 | validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
+### Transfer
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| from `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| value  | uint256 | undefined |
+
 ### Undelegated
 
 ```solidity

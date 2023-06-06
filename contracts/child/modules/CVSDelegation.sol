@@ -8,13 +8,14 @@ import "../../interfaces/Errors.sol";
 import "../../interfaces/modules/ICVSDelegation.sol";
 
 import "../h_modules/APR.sol";
+import "../h_modules/StakeSyncer.sol";
 
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/RewardPool.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawal {
+abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawal, StakeSyncer {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using RewardPoolLib for RewardPool;
@@ -50,6 +51,7 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
 
         int256 amountInt = amount.toInt256Safe();
         _queue.insert(validator, 0, amountInt * -1);
+        _syncUnstake(validator, amount);
 
         _registerWithdrawal(msg.sender, amount);
         emit Undelegated(msg.sender, validator, amount);
@@ -97,8 +99,13 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
 
     function _delegate(address delegator, address validator, uint256 amount) internal {
         if (!_validators.get(validator).active) revert Unauthorized("INVALID_VALIDATOR");
+        // TODO: queued delegation is not handled on commitEpoch because the delegated balance
+        // is directly taken from the delegation pool. This means that new delegation is immediately applied
+        // while new stake is applied at the end of an epoch
+        // Fix it.
         _queue.insert(validator, 0, amount.toInt256Safe());
         _validators.getDelegationPool(validator).deposit(delegator, amount);
+        _syncStake(validator, amount);
         emit Delegated(delegator, validator, amount);
     }
 

@@ -22,6 +22,7 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "TS_NODE_TRANSPILE_ONLY=1 npx hardhat test --parallel",
+    "test:h": "npx hardhat test ./test/child/childValidatorSet/*.test.ts",
     "test:gas": "TS_NODE_TRANSPILE_ONLY=1 REPORT_GAS=true npx hardhat test",
     "test:types": "npx hardhat test --parallel",
     "test:all": "REPORT_GAS=true npx hardhat test",
@@ -46,7 +47,7 @@
     "merkletreejs": "^0.3.9"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.1",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@openzeppelin/hardhat-upgrades": "^1.22.1",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
@@ -61,7 +62,6 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^5.2.0",
-    "ethers": "^5.7.2",
     "husky": "^8.0.3",
     "prettier": "^2.8.3",
     "prettier-plugin-solidity": "^1.1.2",
