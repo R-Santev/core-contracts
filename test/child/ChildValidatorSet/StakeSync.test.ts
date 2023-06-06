@@ -63,11 +63,6 @@ describe("ChildValidatorSet StakeSyncer", () => {
     const systemSigner = await ethers.getSigner("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE");
     const systemChildValidatorSet = childValidatorSet.connect(systemSigner);
 
-    // validatorInit = createValidatorInit(accounts[0]);
-    // validatorInitTwo = createValidatorInit(accounts[1]);
-    // validatorInitThree = createValidatorInit(accounts[2]);
-    // validatorInitFour = createValidatorInit(accounts[3]);
-
     await systemChildValidatorSet.initialize(
       { epochReward, minStake, minDelegation, epochSize: 64 },
       [],

@@ -83,7 +83,6 @@ export async function getUserManager(
   // Find user vesting position based on the emited  events
   const filter = childValidatorSet.filters.NewClone(account.address);
   const positionAddr = (await childValidatorSet.queryFilter(filter))[0].args.newClone;
-
   const manager = VestManagerFactory.attach(positionAddr);
 
   return manager.connect(account);
