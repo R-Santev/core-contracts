@@ -9,12 +9,13 @@ import "../../interfaces/Errors.sol";
 import "../../interfaces/modules/ICVSStaking.sol";
 
 import "./../h_modules/Vesting.sol";
+import "../h_modules/StakeSyncer.sol";
 
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWithdrawal {
+abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWithdrawal, StakeSyncer {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using SafeMathUint for uint256;
@@ -50,6 +51,7 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
             revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
         claimValidatorReward();
         _queue.insert(msg.sender, int256(msg.value), 0);
+        _syncStake(msg.sender, msg.value);
         emit Staked(msg.sender, msg.value);
     }
 

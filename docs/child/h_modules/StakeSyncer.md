@@ -4,7 +4,7 @@
 
 > StakeSyncer
 
-This contract is used to emit a specific event on stake, unstake, delegate and udelegate; Child chain listen for this event to sync the state of the validators
+This contract is used to emit a specific event on stake, unstake, delegate and undelegate; Child chain listen for this event to sync the state of the validators
 
 
 

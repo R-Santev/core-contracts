@@ -8,7 +8,7 @@ import { expect } from "chai";
 
 // eslint-disable-next-line node/no-extraneous-import
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { commitEpoch, genCommitEpochInput, generateValBls, initValidators, setupVestManager } from "./helper";
+import { commitEpoch, generateValBls, initValidators, setupVestManager } from "./helper";
 
 describe("ChildValidatorSet StakeSyncer", () => {
   const epochReward = ethers.utils.parseEther("0.0000001");
@@ -85,26 +85,30 @@ describe("ChildValidatorSet StakeSyncer", () => {
 
   describe("Stake", () => {
     it("emit transfer event from zero addr on stake", async () => {
-      const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
+      const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
-      await validatorChildValidatorSet.stake({ value: minStake });
 
-      const input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await expect(systemChildValidatorSet.commitEpoch(...input))
+      await expect(validatorChildValidatorSet.stake({ value: minStake }))
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+
+      // ensure getValidatorTotalStake returns the proper staked amount
+      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(totalStake).to.equal(minStake);
     });
 
     it("emit transfer event from zero addr on opening a vested position", async () => {
-      const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
+      const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
 
       const vestingDuration = 12; // weeks
-      await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake });
-      const input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await expect(systemChildValidatorSet.commitEpoch(...input))
+      await expect(validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake }))
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+
+      // ensure getValidatorTotalStake returns the proper staked amount
+      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(totalStake).to.equal(minStake);
     });
 
     it("emit transfer event from zero addr on top-up vested position", async () => {
@@ -112,28 +116,29 @@ describe("ChildValidatorSet StakeSyncer", () => {
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       const vestingDuration = 12; // weeks
       await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake });
-      let input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await systemChildValidatorSet.commitEpoch(...input);
+      await commitEpoch(systemChildValidatorSet, []);
 
-      await validatorChildValidatorSet.stake({ value: minStake * 2 });
-      input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await expect(systemChildValidatorSet.commitEpoch(...input))
+      await expect(validatorChildValidatorSet.stake({ value: minStake * 2 }))
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(ethers.constants.AddressZero, validator.address, minStake * 2);
+
+      // ensure getValidatorTotalStake returns the proper staked amount
+      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(totalStake).to.equal(minStake * 3);
     });
 
     it("emit transfer event to zero addr on unstake", async () => {
       const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       await validatorChildValidatorSet.stake({ value: minStake });
-      let input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await systemChildValidatorSet.commitEpoch(...input);
+      await commitEpoch(systemChildValidatorSet, []);
 
-      await validatorChildValidatorSet.unstake(minStake);
-      input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await expect(systemChildValidatorSet.commitEpoch(...input))
+      await expect(validatorChildValidatorSet.unstake(minStake))
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(validator.address, ethers.constants.AddressZero, minStake);
+      // ensure getValidatorTotalStake returns the proper staked amount
+      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(totalStake).to.equal(0);
     });
 
     it("emit transfer event to zero addr on unstake from vested position", async () => {
@@ -141,13 +146,10 @@ describe("ChildValidatorSet StakeSyncer", () => {
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       const vestingDuration = 12; // weeks
       await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake * 2 });
-      let input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await systemChildValidatorSet.commitEpoch(...input);
+      await commitEpoch(systemChildValidatorSet, []);
 
       const unstakeAmount = ethers.BigNumber.from(minStake).div(3);
-      await validatorChildValidatorSet.unstake(unstakeAmount);
-      input = await genCommitEpochInput(systemChildValidatorSet, []);
-      await expect(systemChildValidatorSet.commitEpoch(...input))
+      await expect(validatorChildValidatorSet.unstake(unstakeAmount))
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(validator.address, ethers.constants.AddressZero, unstakeAmount);
     });
