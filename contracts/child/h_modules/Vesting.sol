@@ -64,6 +64,7 @@ abstract contract Vesting is APR {
     }
 
     function _burnAmount(uint256 amount) internal {
-        payable(address(0)).transfer(amount);
+        (bool success, ) = address(0).call{value: amount}("");
+        require(success, "Failed to burn amount");
     }
 }
