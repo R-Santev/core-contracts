@@ -19,7 +19,6 @@ import "./h_modules/ExtendedDelegation.sol";
 import "./h_modules/ExtendedStaking.sol";
 import "./h_modules/VestManager.sol";
 import "./h_modules/Vesting.sol";
-import "./h_modules/StakeSyncer.sol";
 
 import "../libs/ValidatorStorage.sol";
 import "../libs/ValidatorQueue.sol";
@@ -41,7 +40,6 @@ contract ChildValidatorSet is
     CVSAccessControl,
     CVSWithdrawal,
     PowerExponent,
-    StakeSyncer,
     CVSDelegation,
     ExtendedStaking,
     ExtendedDelegation
@@ -296,13 +294,6 @@ contract ChildValidatorSet is
             validator.stake = (int256(validator.stake) + item.stake).toUint256Safe();
             _validators.insert(validatorAddr, validator);
             _queue.resetIndex(validatorAddr);
-
-            // H_MODIFY: Sync stake change with the node
-            if (item.stake > 0) {
-                _syncStake(validatorAddr, uint256(item.stake));
-            } else if (item.stake < 0) {
-                _syncUnstake(validatorAddr, uint256(item.stake * -1));
-            }
         }
         _queue.reset();
     }

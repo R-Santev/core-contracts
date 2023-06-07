@@ -47,6 +47,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
         claimValidatorReward();
 
         _queue.insert(msg.sender, amountInt * -1, 0);
+        _syncUnstake(msg.sender, amount);
         if (amountAfterUnstake == 0) {
             _validators.get(msg.sender).active = false;
         }

@@ -279,6 +279,28 @@ Gets validator&#39;s unclaimed rewards.
 |---|---|---|
 | _0 | uint256 | Validator&#39;s unclaimed rewards (in MATIC wei) |
 
+### getValidatorTotalStake
+
+```solidity
+function getValidatorTotalStake(address validator) external view returns (uint256)
+```
+
+A function to return the total stake together with the pending stake H_MODIFY: Temporary fix to address the new way the node fetches the validators state It checks for transfer events and sync the stake change with the node But a check is made after every block and the changes are applied from the next epoch Also it doesn&#39;t update the balance of the validator based on the amount emmited in the event but fetches the balance from the contract. That&#39;s why we apply the pending balance here
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Address of the validator |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### implementation
 
 ```solidity
@@ -765,6 +787,24 @@ event Staked(address indexed validator, uint256 amount)
 |---|---|---|
 | validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
+
+### Transfer
+
+```solidity
+event Transfer(address indexed from, address indexed to, uint256 value)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| from `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| value  | uint256 | undefined |
 
 ### Unstaked
 

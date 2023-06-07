@@ -10,9 +10,11 @@ import "../../interfaces/Errors.sol";
 import "../../interfaces/h_modules/IPowerExponent.sol";
 
 import "../../libs/ValidatorStorage.sol";
+import "../../libs/ValidatorQueue.sol";
 
 abstract contract CVSStorage is ICVSStorage {
     using ValidatorStorageLib for ValidatorTree;
+    using ValidatorQueueLib for ValidatorQueue;
 
     bytes32 public constant DOMAIN = keccak256("DOMAIN_CHILD_VALIDATOR_SET");
     uint256 public constant ACTIVE_VALIDATOR_SET_SIZE = 100;
@@ -71,6 +73,31 @@ abstract contract CVSStorage is ICVSStorage {
         commission = v.commission;
         withdrawableRewards = v.totalRewards - v.takenRewards;
         active = v.active;
+    }
+
+    // H_MODIFY: TODO: The function helps having the same state on both contract and node sides but
+    // a problem can still occur. If a change in balance occur at the last block of an epoch
+    // the contract will address the change in the next epoch, but the node will make it at next epoch + 1.
+    // A potential solution is to stop txs at the last block of an epoch
+    // but the solution is temporary so better to handle it in general later when reworking the contracts
+
+    /**
+     * @notice A function to return the total stake together with the pending stake
+     * H_MODIFY: Temporary fix to address the new way the node fetches the validators state
+     * It checks for transfer events and sync the stake change with the node
+     * But a check is made after every block and the changes are applied from the next epoch
+     * Also it doesn't update the balance of the validator based on the amount emmited in the event
+     * but fetches the balance from the contract. That's why we apply the pending balance here
+     * @param validator Address of the validator
+     */
+    function getValidatorTotalStake(address validator) external view returns (uint256) {
+        Validator memory v = _validators.get(validator);
+        int256 currentStake = int256(v.stake + _validators.getDelegationPool(validator).supply);
+        return uint256(currentStake + _getPendingStake(validator));
+    }
+
+    function _getPendingStake(address validator) internal view returns (int256) {
+        return _queue.pendingStake(validator);
     }
 
     function verifyValidatorRegistration(
