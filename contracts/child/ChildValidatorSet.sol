@@ -243,7 +243,9 @@ contract ChildValidatorSet is
 
         uint256 length = uptime.uptimeData.length;
 
-        require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
+        // H_MODIFY: Check is removed because validators that are already not part of the validator set
+        // can receive reward for the last epoch they were part of the validator set
+        // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
         // H_MODIFY: change the epoch reward calculation
         // apply the reward factor; participation factor is applied then
