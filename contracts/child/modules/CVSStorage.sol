@@ -90,10 +90,10 @@ abstract contract CVSStorage is ICVSStorage {
      * but fetches the balance from the contract. That's why we apply the pending balance here
      * @param validator Address of the validator
      */
-    function getValidatorTotalStake(address validator) external view returns (uint256) {
+    function getValidatorTotalStake(address validator) external view returns (uint256 stake, uint256 totalStake) {
         Validator memory v = _validators.get(validator);
-        int256 currentStake = int256(v.stake + _validators.getDelegationPool(validator).supply);
-        return uint256(currentStake + _getPendingStake(validator));
+        stake = uint256(int256(v.stake) + _getPendingStake(validator));
+        totalStake = stake + _validators.getDelegationPool(validator).supply;
     }
 
     function _getPendingStake(address validator) internal view returns (int256) {

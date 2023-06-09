@@ -404,7 +404,7 @@ Gets validator by address.
 ### getValidatorTotalStake
 
 ```solidity
-function getValidatorTotalStake(address validator) external view returns (uint256)
+function getValidatorTotalStake(address validator) external view returns (uint256 stake, uint256 totalStake)
 ```
 
 A function to return the total stake together with the pending stake H_MODIFY: Temporary fix to address the new way the node fetches the validators state It checks for transfer events and sync the stake change with the node But a check is made after every block and the changes are applied from the next epoch Also it doesn&#39;t update the balance of the validator based on the amount emmited in the event but fetches the balance from the contract. That&#39;s why we apply the pending balance here
@@ -421,7 +421,8 @@ A function to return the total stake together with the pending stake H_MODIFY: T
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | undefined |
+| stake | uint256 | undefined |
+| totalStake | uint256 | undefined |
 
 ### getVestingBonus
 
