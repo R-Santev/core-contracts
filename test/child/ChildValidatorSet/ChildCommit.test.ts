@@ -7,7 +7,7 @@ import { BigNumber, BigNumberish } from "ethers";
 import { expect } from "chai";
 
 import { BLS, ChildValidatorSet } from "../../../typechain-types";
-import { genValSignature } from "./helper";
+import { genValSignature, getMaxEpochReward } from "./helper";
 
 interface ValidatorInit {
   addr: string;
@@ -54,13 +54,6 @@ describe("ChildValidatorSet Initial Setup", () => {
     await hre.network.provider.send("hardhat_setBalance", [
       "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE",
       "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-    ]);
-
-    // TODO: remove this once we have a better way to set balance from Polygon
-    // Need othwerwise burn mechanism doesn't work
-    await hre.network.provider.send("hardhat_setBalance", [
-      childValidatorSet.address,
-      "0x2CD76FE086B93CE2F768A00B22A00000000000",
     ]);
 
     await hre.network.provider.send("hardhat_setBalance", [
@@ -112,7 +105,8 @@ describe("ChildValidatorSet Initial Setup", () => {
       totalBlocks: 8,
     };
 
-    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime);
+    const maxReward = await getMaxEpochReward(hre, childValidatorSet);
+    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward });
 
     await expect(tx)
       .to.emit(childValidatorSet, "NewEpoch")

@@ -365,6 +365,28 @@ function getDefaultRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
+### getEpochReward
+
+```solidity
+function getEpochReward(uint256 totalStaked) external pure returns (uint256 reward)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| totalStaked | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
 ### getMacro
 
 ```solidity
@@ -381,6 +403,24 @@ function getMacro() external pure returns (uint256 nominator)
 | Name | Type | Description |
 |---|---|---|
 | nominator | uint256 | undefined |
+
+### getMaxAPR
+
+```solidity
+function getMaxAPR() external pure returns (uint256 nominator, uint256 denominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+| denominator | uint256 | undefined |
 
 ### getMaxRSI
 

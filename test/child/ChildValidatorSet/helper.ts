@@ -8,6 +8,7 @@ import * as mcl from "../../../ts/mcl";
 import { ChildValidatorSet, VestManager } from "../../../typechain-types";
 import { CHAIN_ID, DOMAIN } from "./constants";
 import { ValidatorBLS } from "./types";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 
 export function initValidators(accounts: SignerWithAddress[]) {
   const vals: SignerWithAddress[] = [];
@@ -96,4 +97,19 @@ export async function setupVestManager(childValidatorSet: ChildValidatorSet, del
   const address = event?.args?.newClone;
 
   return VestManagerFactory.attach(address);
+}
+
+export async function getMaxEpochReward(hre: HardhatRuntimeEnvironment, childValidatorSet: ChildValidatorSet) {
+  const totalStake = await childValidatorSet.totalActiveStake();
+  await hre.network.provider.send("hardhat_setBalance", [
+    childValidatorSet.address,
+    formatBigNumberHex(totalStake.toHexString()),
+  ]);
+
+  return childValidatorSet.getEpochReward(totalStake);
+}
+
+// Ethers BigNumber adds leading zeros when using toHexString, so we need to remove them
+function formatBigNumberHex(numHex: string) {
+  return numHex.replace(/^0x0*/, "0x");
 }

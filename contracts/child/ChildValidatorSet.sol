@@ -111,7 +111,7 @@ contract ChildValidatorSet is
     /**
      * @inheritdoc IChildValidatorSetBase
      */
-    function commitEpoch(uint256 id, Epoch calldata epoch, Uptime calldata uptime) external onlySystemCall {
+    function commitEpoch(uint256 id, Epoch calldata epoch, Uptime calldata uptime) external payable onlySystemCall {
         uint256 newEpochId = currentEpochId++;
         require(id == newEpochId, "UNEXPECTED_EPOCH_ID");
         require(epoch.endBlock > epoch.startBlock, "NO_BLOCKS_COMMITTED");
@@ -144,7 +144,7 @@ contract ChildValidatorSet is
         Epoch calldata epoch,
         Uptime calldata uptime,
         DoubleSignerSlashingInput[] calldata inputs
-    ) external {
+    ) external payable {
         uint256 length = inputs.length;
         require(length >= 2, "INVALID_LENGTH");
         // first, assert all blockhashes are unique
@@ -236,9 +236,8 @@ contract ChildValidatorSet is
     function _distributeRewards(Epoch calldata epoch, Uptime calldata uptime) internal {
         // H_MODIFY: Ensure the max reward tokens are sent
         uint256 activeStake = totalActiveStake();
-        // TODO: configure how the reward would enter the contract whenever more data from polygon is available
-        // require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
-
+        // Ensure proper reward amount is sent
+        require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
         require(uptime.epochId == currentEpochId - 1, "EPOCH_NOT_COMMITTED");
 
         uint256 length = uptime.uptimeData.length;
@@ -338,6 +337,8 @@ contract ChildValidatorSet is
         require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
         uint256 activeStake = totalActiveStake();
+        // Ensure proper reward amount is sent
+        require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
 
         // H_MODIFY: change the epoch reward calculation
         // apply the reward factor; participation factor is applied then

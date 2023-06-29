@@ -387,7 +387,7 @@ Claims validator rewards for sender.
 ### commitEpoch
 
 ```solidity
-function commitEpoch(uint256 id, Epoch epoch, Uptime uptime) external nonpayable
+function commitEpoch(uint256 id, Epoch epoch, Uptime uptime) external payable
 ```
 
 
@@ -720,6 +720,28 @@ Look up an epoch by block number. Searches in O(log n) time.
 |---|---|---|
 | _0 | Epoch | Epoch Returns epoch if found, or else, the last epoch |
 
+### getEpochReward
+
+```solidity
+function getEpochReward(uint256 totalStaked) external pure returns (uint256 reward)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| totalStaked | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
 ### getExponent
 
 ```solidity
@@ -754,6 +776,24 @@ function getMacro() external pure returns (uint256 nominator)
 | Name | Type | Description |
 |---|---|---|
 | nominator | uint256 | undefined |
+
+### getMaxAPR
+
+```solidity
+function getMaxAPR() external pure returns (uint256 nominator, uint256 denominator)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| nominator | uint256 | undefined |
+| denominator | uint256 | undefined |
 
 ### getMaxRSI
 

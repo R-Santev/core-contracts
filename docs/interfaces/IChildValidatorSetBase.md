@@ -13,7 +13,7 @@ Validator set genesis contract for Polygon PoS v3. This contract serves the purp
 ### commitEpoch
 
 ```solidity
-function commitEpoch(uint256 id, Epoch epoch, Uptime uptime) external nonpayable
+function commitEpoch(uint256 id, Epoch epoch, Uptime uptime) external payable
 ```
 
 
