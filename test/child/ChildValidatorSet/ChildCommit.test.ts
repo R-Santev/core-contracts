@@ -105,7 +105,7 @@ describe("ChildValidatorSet Initial Setup", () => {
       totalBlocks: 8,
     };
 
-    const maxReward = await getMaxEpochReward(hre, childValidatorSet);
+    const maxReward = await getMaxEpochReward(childValidatorSet);
     const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward });
 
     await expect(tx)

@@ -93,8 +93,8 @@ describe("ChildValidatorSet StakeSyncer", () => {
         .withArgs(ethers.constants.AddressZero, validator.address, minStake);
 
       // ensure getValidatorTotalStake returns the proper staked amount
-      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
-      expect(totalStake).to.equal(minStake);
+      const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(stakeData.totalStake).to.equal(minStake);
     });
 
     it("emit transfer event from zero addr on opening a vested position", async () => {
@@ -107,8 +107,8 @@ describe("ChildValidatorSet StakeSyncer", () => {
         .withArgs(ethers.constants.AddressZero, validator.address, minStake);
 
       // ensure getValidatorTotalStake returns the proper staked amount
-      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
-      expect(totalStake).to.equal(minStake);
+      const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(stakeData.totalStake).to.equal(minStake);
     });
 
     it("emit transfer event from zero addr on top-up vested position", async () => {
@@ -123,8 +123,8 @@ describe("ChildValidatorSet StakeSyncer", () => {
         .withArgs(ethers.constants.AddressZero, validator.address, minStake * 2);
 
       // ensure getValidatorTotalStake returns the proper staked amount
-      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
-      expect(totalStake).to.equal(minStake * 3);
+      const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(stakeData.totalStake).to.equal(minStake * 3);
     });
 
     it("emit transfer event to zero addr on unstake", async () => {
@@ -137,8 +137,8 @@ describe("ChildValidatorSet StakeSyncer", () => {
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(validator.address, ethers.constants.AddressZero, minStake);
       // ensure getValidatorTotalStake returns the proper staked amount
-      const totalStake = await childValidatorSet.getValidatorTotalStake(validator.address);
-      expect(totalStake).to.equal(0);
+      const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(stakeData.totalStake).to.equal(0);
     });
 
     it("emit transfer event to zero addr on unstake from vested position", async () => {
