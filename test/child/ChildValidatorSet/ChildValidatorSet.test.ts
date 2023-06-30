@@ -10,7 +10,7 @@ import * as mcl from "../../../ts/mcl";
 import { BLS, ChildValidatorSet, VestManager__factory, VestManager, DelegationVesting } from "../../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../../constants";
 import { getValidatorReward, isActivePosition } from "../helpers";
-import { commitEpoch, getUserManager } from "./helper";
+import { commitEpoch, getMaxEpochReward, getUserManager } from "./helper";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -216,7 +216,8 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 0,
     };
 
-    await expect(childValidatorSet.commitEpoch(id, epoch, uptime))
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    await expect(childValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward }))
       .to.be.revertedWithCustomError(childValidatorSet, "Unauthorized")
       .withArgs("SYSTEMCALL");
   });
@@ -234,7 +235,10 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 0,
     };
 
-    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime)).to.be.revertedWith("UNEXPECTED_EPOCH_ID");
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward })).to.be.revertedWith(
+      "UNEXPECTED_EPOCH_ID"
+    );
   });
   it("Commit epoch with no blocks committed", async () => {
     id = 1;
@@ -250,7 +254,10 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 0,
     };
 
-    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime)).to.be.revertedWith("NO_BLOCKS_COMMITTED");
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward })).to.be.revertedWith(
+      "NO_BLOCKS_COMMITTED"
+    );
   });
   it("Commit epoch with incomplete epochSize", async () => {
     id = 1;
@@ -266,7 +273,8 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 0,
     };
 
-    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime)).to.be.revertedWith(
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward })).to.be.revertedWith(
       "EPOCH_MUST_BE_DIVISIBLE_BY_EPOCH_SIZE"
     );
   });
@@ -284,28 +292,36 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 0,
     };
 
-    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime)).to.be.revertedWith("EPOCH_NOT_COMMITTED");
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward })).to.be.revertedWith(
+      "EPOCH_NOT_COMMITTED"
+    );
   });
-  it("Commit epoch with invalid length", async () => {
-    id = 1;
-    epoch = {
-      startBlock: 1,
-      endBlock: 64,
-      epochRoot: ethers.utils.randomBytes(32),
-    };
+  // H_MODIFY: Invalid length check is removed from the contract
+  // it("Commit epoch with invalid length", async () => {
+  //   id = 1;
+  //   epoch = {
+  //     startBlock: 1,
+  //     endBlock: 64,
+  //     epochRoot: ethers.utils.randomBytes(32),
+  //   };
 
-    const currentEpochId = await childValidatorSet.currentEpochId();
-    uptime = {
-      epochId: currentEpochId,
-      uptimeData: [
-        { validator: accounts[0].address, signedBlocks: 0 },
-        { validator: accounts[0].address, signedBlocks: 0 },
-      ],
-      totalBlocks: 0,
-    };
+  //   const currentEpochId = await childValidatorSet.currentEpochId();
+  //   uptime = {
+  //     epochId: currentEpochId,
+  //     uptimeData: [
+  //       { validator: accounts[0].address, signedBlocks: 0 },
+  //       { validator: accounts[0].address, signedBlocks: 0 },
+  //     ],
+  //     totalBlocks: 0,
+  //   };
 
-    await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime)).to.be.revertedWith("INVALID_LENGTH");
-  });
+  //   const maxReward = await getMaxEpochReward(childValidatorSet);
+  //   await expect(systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward })).to.be.revertedWith(
+  //     "INVALID_LENGTH"
+  //   );
+  // });
+
   it("Commit epoch", async () => {
     id = 1;
     epoch = {
@@ -323,7 +339,8 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 1,
     };
 
-    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime);
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward });
 
     await expect(tx)
       .to.emit(childValidatorSet, "NewEpoch")
@@ -384,7 +401,8 @@ describe("ChildValidatorSet", () => {
       totalBlocks: 1,
     };
 
-    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime);
+    const maxReward = await getMaxEpochReward(childValidatorSet);
+    const tx = await systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward });
     await expect(tx)
       .to.emit(childValidatorSet, "NewEpoch")
       .withArgs(currentEpochId, epoch.startBlock, epoch.endBlock, ethers.utils.hexlify(epoch.epochRoot));
@@ -486,11 +504,14 @@ describe("ChildValidatorSet", () => {
     it("should be able to process queue", async () => {
       let validator = await childValidatorSet.getValidator(accounts[2].address);
       expect(validator.stake).to.equal(0);
+
+      const maxReward = await getMaxEpochReward(childValidatorSet);
       await expect(
         systemChildValidatorSet.commitEpoch(
           3,
           { startBlock: 129, endBlock: 192, epochRoot: ethers.constants.HashZero },
-          { epochId: 3, uptimeData: [{ validator: accounts[0].address, signedBlocks: 1 }], totalBlocks: 1 }
+          { epochId: 3, uptimeData: [{ validator: accounts[0].address, signedBlocks: 1 }], totalBlocks: 1 },
+          { value: maxReward }
         )
       ).to.not.be.reverted;
       validator = await childValidatorSet.getValidator(accounts[2].address);
@@ -553,6 +574,7 @@ describe("ChildValidatorSet", () => {
     it("should reflect balance after queue processing", async () => {
       let validator = await childValidatorSet.getValidator(accounts[2].address);
       expect(validator.stake).to.equal(minStake * 2);
+      const maxReward = await getMaxEpochReward(childValidatorSet);
       await expect(
         systemChildValidatorSet.commitEpoch(
           4,
@@ -564,7 +586,8 @@ describe("ChildValidatorSet", () => {
               { validator: accounts[2].address, signedBlocks: 1 },
             ],
             totalBlocks: 2,
-          }
+          },
+          { value: maxReward }
         )
       ).to.not.be.reverted;
 
@@ -679,6 +702,8 @@ describe("ChildValidatorSet", () => {
     });
 
     it("Claim delegatorReward with restake", async () => {
+      let maxReward = await getMaxEpochReward(childValidatorSet);
+
       await expect(
         systemChildValidatorSet.commitEpoch(
           5,
@@ -687,10 +712,12 @@ describe("ChildValidatorSet", () => {
             epochId: 5,
             uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
             totalBlocks: 2,
-          }
+          },
+          { value: maxReward }
         )
       ).to.not.be.reverted;
 
+      maxReward = await getMaxEpochReward(childValidatorSet);
       await expect(
         systemChildValidatorSet.commitEpoch(
           6,
@@ -699,7 +726,8 @@ describe("ChildValidatorSet", () => {
             epochId: 6,
             uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
             totalBlocks: 2,
-          }
+          },
+          { value: maxReward }
         )
       ).to.not.be.reverted;
 
@@ -721,6 +749,7 @@ describe("ChildValidatorSet", () => {
     });
 
     it("Claim delegatorReward without restake", async () => {
+      let maxReward = await getMaxEpochReward(childValidatorSet);
       await expect(
         systemChildValidatorSet.commitEpoch(
           7,
@@ -729,10 +758,12 @@ describe("ChildValidatorSet", () => {
             epochId: 7,
             uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
             totalBlocks: 2,
-          }
+          },
+          { value: maxReward }
         )
       ).to.not.be.reverted;
 
+      maxReward = await getMaxEpochReward(childValidatorSet);
       await expect(
         systemChildValidatorSet.commitEpoch(
           8,
@@ -741,7 +772,8 @@ describe("ChildValidatorSet", () => {
             epochId: 8,
             uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
             totalBlocks: 2,
-          }
+          },
+          { value: maxReward }
         )
       ).to.not.be.reverted;
 
@@ -1368,7 +1400,8 @@ describe("ChildValidatorSet", () => {
           totalBlocks: 1,
         };
 
-        await systemChildValidatorSet.commitEpoch(id, epoch, uptime);
+        const maxReward = await getMaxEpochReward(childValidatorSet);
+        await systemChildValidatorSet.commitEpoch(id, epoch, uptime, { value: maxReward });
         id++;
       }
 

@@ -42,7 +42,7 @@ contract APR {
     }
 
     // TODO: fetch from oracles when they are ready
-    function getMaxAPR() internal pure returns (uint256 nominator, uint256 denominator) {
+    function getMaxAPR() public pure returns (uint256 nominator, uint256 denominator) {
         // TODO: Base + vesting and RSI must return the max possible value nere
         uint256 base = getBase();
         uint256 vesting = getVestingBonus(52);
@@ -70,7 +70,7 @@ contract APR {
 
     // TODO: Apply EPOCHS_IN_YEAR everywhere it is needed
 
-    function getEpochReward(uint256 totalStaked) internal pure returns (uint256 reward) {
+    function getEpochReward(uint256 totalStaked) public pure returns (uint256 reward) {
         uint256 nominator;
         uint256 denominator;
 

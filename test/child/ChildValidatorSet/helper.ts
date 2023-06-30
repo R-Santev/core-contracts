@@ -51,7 +51,8 @@ export async function genCommitEpochInput(systemChildValidatorSet: ChildValidato
     totalBlocks: 64,
   };
 
-  return [currentEpochId, newEpoch, newUptime] as const;
+  const maxReward = await getMaxEpochReward(systemChildValidatorSet);
+  return [currentEpochId, newEpoch, newUptime, { value: maxReward }] as const;
 }
 
 /**
@@ -96,4 +97,9 @@ export async function setupVestManager(childValidatorSet: ChildValidatorSet, del
   const address = event?.args?.newClone;
 
   return VestManagerFactory.attach(address);
+}
+
+export async function getMaxEpochReward(childValidatorSet: ChildValidatorSet) {
+  const totalStake = await childValidatorSet.totalActiveStake();
+  return childValidatorSet.getEpochReward(totalStake);
 }
