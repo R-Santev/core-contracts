@@ -237,7 +237,7 @@ contract ChildValidatorSet is
         // H_MODIFY: Ensure the max reward tokens are sent
         uint256 activeStake = totalActiveStake();
         // Ensure proper reward amount is sent
-        require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
+        require(msg.value == getEpochMaxReward(activeStake), "INVALID_REWARD_AMOUNT");
         require(uptime.epochId == currentEpochId - 1, "EPOCH_NOT_COMMITTED");
 
         uint256 length = uptime.uptimeData.length;
@@ -338,7 +338,7 @@ contract ChildValidatorSet is
 
         uint256 activeStake = totalActiveStake();
         // Ensure proper reward amount is sent
-        require(msg.value == getEpochReward(activeStake), "INVALID_REWARD_AMOUNT");
+        require(msg.value == getEpochMaxReward(activeStake), "INVALID_REWARD_AMOUNT");
 
         // H_MODIFY: change the epoch reward calculation
         // apply the reward factor; participation factor is applied then

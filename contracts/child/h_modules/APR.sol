@@ -3,22 +3,75 @@ pragma solidity 0.8.17;
 
 contract APR {
     uint256 public constant DENOMINATOR = 10000;
-    uint256 public constant EPOCHS_YEAR = 31450;
+    uint256 public constant EPOCHS_YEAR = 31500;
+
+    uint256[52] public vestingBonus = [
+        6,
+        16,
+        30,
+        46,
+        65,
+        85,
+        108,
+        131,
+        157,
+        184,
+        212,
+        241,
+        272,
+        304,
+        338,
+        372,
+        407,
+        444,
+        481,
+        520,
+        559,
+        599,
+        641,
+        683,
+        726,
+        770,
+        815,
+        861,
+        907,
+        955,
+        1003,
+        1052,
+        1101,
+        1152,
+        1203,
+        1255,
+        1307,
+        1361,
+        1415,
+        1470,
+        1525,
+        1581,
+        1638,
+        1696,
+        1754,
+        1812,
+        1872,
+        1932,
+        1993,
+        2054,
+        2116,
+        2178
+    ];
 
     // TODO: fetch from oracles when they are ready
     function getBase() public pure returns (uint256 nominator) {
-        return 50000;
+        return 500;
     }
 
-    // TODO: fetch from oracles when they are ready
-    function getVestingBonus(uint256 weeksCount) public pure returns (uint256 nominator) {
-        // Currently represents a week bonus
-        return 1000 * weeksCount;
+    function getVestingBonus(uint256 weeksCount) public view returns (uint256 nominator) {
+        return vestingBonus[weeksCount - 1];
     }
 
     // TODO: fetch from oracles when they are ready
     function getMacro() public pure returns (uint256 nominator) {
-        return 8000;
+        return 7500;
     }
 
     // TODO: fetch from oracles when they are ready
@@ -35,28 +88,19 @@ contract APR {
         return 15000;
     }
 
-    function getUserParams() public pure returns (uint256 base, uint256 vesting, uint256 rsi) {
-        base = getBase();
-        vesting = getVestingBonus(52);
-        rsi = getRSI();
-    }
-
-    // TODO: fetch from oracles when they are ready
-    function getMaxAPR() public pure returns (uint256 nominator, uint256 denominator) {
-        // TODO: Base + vesting and RSI must return the max possible value nere
+    function getMaxAPR() public view returns (uint256 nominator, uint256 denominator) {
+        // TODO: Base + vesting and RSI must return the max possible value here (implement max base)
         uint256 base = getBase();
         uint256 vesting = getVestingBonus(52);
         uint256 rsiBonusFactor = getMaxRSI();
         // TODO: Macro must return the right value for that epoch
         uint256 macroFactor = getMacro();
 
-        uint256 result = ((((((base + vesting) * magnitude()) / 10000) * macroFactor) / 10000) * rsiBonusFactor) /
-            10000;
-
-        return (result, magnitude());
+        nominator = (base + vesting) * macroFactor * rsiBonusFactor;
+        denominator = 10000 * 10000 * 10000;
     }
 
-    function applyMaxReward(uint256 reward) public pure returns (uint256) {
+    function applyMaxReward(uint256 reward) public view returns (uint256) {
         // TODO: Consider setting max base
         uint256 base = getBase();
         uint256 rsi = getMaxRSI();
@@ -70,14 +114,14 @@ contract APR {
 
     // TODO: Apply EPOCHS_IN_YEAR everywhere it is needed
 
-    function getEpochReward(uint256 totalStaked) public pure returns (uint256 reward) {
+    function getEpochMaxReward(uint256 totalStaked) public view returns (uint256 reward) {
         uint256 nominator;
         uint256 denominator;
 
         (nominator, denominator) = getMaxAPR();
 
-        // Divide to 100 because nominator represents a percent value
-        return (totalStaked * nominator) / denominator;
+        // Divide to EPOCHS_YEAR because result is yearly
+        return (totalStaked * nominator) / denominator / EPOCHS_YEAR;
     }
 
     // TODO: Calculate per epoch - currently yearly reward is used
