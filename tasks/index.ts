@@ -2,14 +2,14 @@ import { task } from "hardhat/config";
 // eslint-disable-next-line camelcase, node/no-unpublished-import
 import { ChildValidatorSet__factory } from "../typechain-types";
 
-task("getReward", "Withdraw reward from the pool").setAction(async (_, hre) => {
-  // get signers from hardhat
-  const [signer] = await hre.ethers.getSigners();
-  const contract = ChildValidatorSet__factory.connect("0x0000000000000000000000000000000000000101", signer);
-  const tx = await contract.claimValidatorReward();
-  const res = await tx.wait();
-  console.log(res);
-});
+// task("getReward", "Withdraw reward from the pool").setAction(async (_, hre) => {
+//   // get signers from hardhat
+//   const [signer] = await hre.ethers.getSigners();
+//   const contract = ChildValidatorSet__factory.connect("0x0000000000000000000000000000000000000101", signer);
+//   const tx = await contract.claimValidatorReward();
+//   const res = await tx.wait();
+//   console.log(res);
+// });
 
 task("reward", "Withdraw reward from the pool").setAction(async (_, hre) => {
   // get signers from hardhat

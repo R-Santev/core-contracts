@@ -115,7 +115,7 @@ function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
 ### applyMaxReward
 
 ```solidity
-function applyMaxReward(uint256 reward) external pure returns (uint256)
+function applyMaxReward(uint256 reward) external view returns (uint256)
 ```
 
 
@@ -362,10 +362,10 @@ Gets delegators&#39;s unclaimed rewards with validator.
 |---|---|---|
 | _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
 
-### getEpochReward
+### getEpochMaxReward
 
 ```solidity
-function getEpochReward(uint256 totalStaked) external pure returns (uint256 reward)
+function getEpochMaxReward(uint256 totalStaked) external view returns (uint256 reward)
 ```
 
 
@@ -404,7 +404,7 @@ function getMacro() external pure returns (uint256 nominator)
 ### getMaxAPR
 
 ```solidity
-function getMaxAPR() external pure returns (uint256 nominator, uint256 denominator)
+function getMaxAPR() external view returns (uint256 nominator, uint256 denominator)
 ```
 
 
@@ -452,25 +452,6 @@ function getRSI() external pure returns (uint256 nominator)
 | Name | Type | Description |
 |---|---|---|
 | nominator | uint256 | undefined |
-
-### getUserParams
-
-```solidity
-function getUserParams() external pure returns (uint256 base, uint256 vesting, uint256 rsi)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| base | uint256 | undefined |
-| vesting | uint256 | undefined |
-| rsi | uint256 | undefined |
 
 ### getValidator
 
@@ -525,7 +506,7 @@ A function to return the total stake together with the pending stake H_MODIFY: T
 ### getVestingBonus
 
 ```solidity
-function getVestingBonus(uint256 weeksCount) external pure returns (uint256 nominator)
+function getVestingBonus(uint256 weeksCount) external view returns (uint256 nominator)
 ```
 
 
@@ -673,6 +654,28 @@ Undelegates amount from validator for sender. Claims rewards beforehand.
 |---|---|---|
 | validator | address | Validator to undelegate from |
 | amount | uint256 | The amount to undelegate |
+
+### vestingBonus
+
+```solidity
+function vestingBonus(uint256) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 ### whitelist
 

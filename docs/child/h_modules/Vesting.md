@@ -47,7 +47,7 @@ function EPOCHS_YEAR() external view returns (uint256)
 ### applyMaxReward
 
 ```solidity
-function applyMaxReward(uint256 reward) external pure returns (uint256)
+function applyMaxReward(uint256 reward) external view returns (uint256)
 ```
 
 
@@ -100,10 +100,10 @@ function getDefaultRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
-### getEpochReward
+### getEpochMaxReward
 
 ```solidity
-function getEpochReward(uint256 totalStaked) external pure returns (uint256 reward)
+function getEpochMaxReward(uint256 totalStaked) external view returns (uint256 reward)
 ```
 
 
@@ -142,7 +142,7 @@ function getMacro() external pure returns (uint256 nominator)
 ### getMaxAPR
 
 ```solidity
-function getMaxAPR() external pure returns (uint256 nominator, uint256 denominator)
+function getMaxAPR() external view returns (uint256 nominator, uint256 denominator)
 ```
 
 
@@ -191,29 +191,10 @@ function getRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
-### getUserParams
-
-```solidity
-function getUserParams() external pure returns (uint256 base, uint256 vesting, uint256 rsi)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| base | uint256 | undefined |
-| vesting | uint256 | undefined |
-| rsi | uint256 | undefined |
-
 ### getVestingBonus
 
 ```solidity
-function getVestingBonus(uint256 weeksCount) external pure returns (uint256 nominator)
+function getVestingBonus(uint256 weeksCount) external view returns (uint256 nominator)
 ```
 
 
@@ -275,6 +256,28 @@ function isMaturingPosition(Vesting.VestData position) external view returns (bo
 | Name | Type | Description |
 |---|---|---|
 | _0 | bool | undefined |
+
+### vestingBonus
+
+```solidity
+function vestingBonus(uint256) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 
 

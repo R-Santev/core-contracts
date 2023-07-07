@@ -9,9 +9,13 @@ import { ChildValidatorSet, VestManager } from "../../../typechain-types";
 import { CHAIN_ID, DOMAIN } from "./constants";
 import { ValidatorBLS } from "./types";
 
-export function initValidators(accounts: SignerWithAddress[]) {
+export function initValidators(accounts: SignerWithAddress[], num: number = 4) {
+  if (num > accounts.length) {
+    throw new Error("Too many validators");
+  }
+
   const vals: SignerWithAddress[] = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < num; i++) {
     vals[i] = accounts[i];
   }
 
@@ -101,5 +105,5 @@ export async function setupVestManager(childValidatorSet: ChildValidatorSet, del
 
 export async function getMaxEpochReward(childValidatorSet: ChildValidatorSet) {
   const totalStake = await childValidatorSet.totalActiveStake();
-  return childValidatorSet.getEpochReward(totalStake);
+  return childValidatorSet.getEpochMaxReward(totalStake);
 }
