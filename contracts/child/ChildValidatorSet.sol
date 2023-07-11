@@ -106,6 +106,9 @@ contract ChildValidatorSet is
 
         // H_MODIFY: Set base implementation for VestFactory
         implementation = address(new VestManager());
+
+        // Initialize the APR module
+        APR.initialize();
     }
 
     /**
