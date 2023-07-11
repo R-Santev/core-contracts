@@ -12,7 +12,7 @@ import { generateValBls, initValidators } from "./helper";
 
 import { IChildValidatorSetBase } from "./../../../typechain-types/contracts/child/ChildValidatorSet";
 
-describe("ChildValidatorSet StakeSyncer", () => {
+describe("ChildValidatorSet APR module", () => {
   const epochReward = ethers.utils.parseEther("0.0000001");
   const minStake = ethers.utils.parseEther("1");
   const minDelegation = 10000;
@@ -77,7 +77,7 @@ describe("ChildValidatorSet StakeSyncer", () => {
     return { childValidatorSet, systemChildValidatorSet };
   }
 
-  describe("APR", () => {
+  describe("Reward injecting on commitEpoch", () => {
     // TODO: Ensure proper handling in case staked balance is too small so max potential epoch reward is zero
     it("getEpochMaxReward should properly calculate the max potential reward", async () => {
       const { systemChildValidatorSet } = await loadFixture(presetStateFixture);
