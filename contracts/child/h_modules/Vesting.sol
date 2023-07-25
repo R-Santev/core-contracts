@@ -48,7 +48,7 @@ abstract contract Vesting is APR {
             divider *= 10000;
         }
 
-        return (reward * bonus) / divider;
+        return (reward * bonus) / divider / EPOCHS_YEAR;
     }
 
     /** @param amount Amount of tokens to be slashed

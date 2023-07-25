@@ -675,7 +675,7 @@ describe("ChildValidatorSet", () => {
     });
 
     it("Delegate again with restake", async () => {
-      const delegateAmount = minDelegation + 1;
+      const delegateAmount = ethers.utils.parseEther("1");
       const restake = true;
 
       const tx = await childValidatorSet.connect(accounts[3]).delegate(accounts[2].address, restake, {
@@ -733,6 +733,8 @@ describe("ChildValidatorSet", () => {
 
       const reward = await childValidatorSet.getDelegatorReward(accounts[2].address, accounts[3].address);
 
+      console.log("reward", reward.toString());
+
       // Claim with restake
       const tx = await childValidatorSet.connect(accounts[3]).claimDelegatorReward(accounts[2].address, true);
 
@@ -741,6 +743,8 @@ describe("ChildValidatorSet", () => {
       expect(event?.args?.delegator).to.equal(accounts[3].address);
       expect(event?.args?.validator).to.equal(accounts[2].address);
       expect(event?.args?.restake).to.equal(true);
+
+      console.log("event?.args?.amount", event?.args?.amount.toString());
       expect(event?.args?.amount).to.equal(reward);
 
       await expect(tx)

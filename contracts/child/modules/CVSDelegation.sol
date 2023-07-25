@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "hardhat/console.sol";
 import "./CVSStorage.sol";
 import "./CVSWithdrawal.sol";
 
@@ -59,13 +60,21 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
 
     /**
      * @inheritdoc ICVSDelegation
+     * @notice  Don't execute in case reward after _applyCustomReward() is 0
+     * because pool.claimRewards() will delete the accumulated reward but you will not receive anything
      */
     function claimDelegatorReward(address validator, bool restake) public {
         RewardPool storage pool = _validators.getDelegationPool(validator);
         uint256 reward = pool.claimRewards(msg.sender);
-        if (reward == 0) return;
+
+        console.log("reward: %s", reward);
 
         reward = _applyCustomReward(reward);
+        if (reward == 0) return;
+
+        require(reward > 0, "no reward");
+
+        console.log("reward after custom formula: %s", reward);
 
         if (restake) {
             _delegate(msg.sender, validator, reward);
@@ -90,10 +99,11 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
         return _validators.getDelegationPool(validator).balanceOf(delegator);
     }
 
+    // Continue: properly implement the following func
     /**
      * @inheritdoc ICVSDelegation
      */
-    function getDelegatorReward(address validator, address delegator) external view returns (uint256) {
+    function getDelegatorReward(address validator, address delegator) external view virtual returns (uint256) {
         return _validators.getDelegationPool(validator).claimableRewards(delegator);
     }
 

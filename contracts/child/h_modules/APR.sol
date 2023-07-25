@@ -60,7 +60,7 @@ contract APR {
 
         uint256 bonus = (base + vestBonus) * rsi;
 
-        return (reward * bonus) / (10000 * 10000);
+        return ((reward * bonus) / (10000 * 10000)) / EPOCHS_YEAR;
     }
 
     // TODO: Apply EPOCHS_IN_YEAR everywhere it is needed
@@ -82,20 +82,20 @@ contract APR {
         return (totalStaked * macroFactor) / DENOMINATOR;
     }
 
-    function _applyBaseAPR(uint256 amount) internal pure returns (uint256) {
-        uint256 base = getBase();
-        return (amount * base) / DENOMINATOR;
-    }
-
     function magnitude() internal pure returns (uint256) {
         return 1e18;
     }
 
     function _applyCustomReward(uint256 reward) internal pure returns (uint256) {
-        return _applyBaseAPR(reward);
+        return _applyBaseAPR(reward) / EPOCHS_YEAR;
     }
 
-    function initializeVestingBonus() internal {
+    function _applyBaseAPR(uint256 amount) private pure returns (uint256) {
+        uint256 base = getBase();
+        return (amount * base) / DENOMINATOR;
+    }
+
+    function initializeVestingBonus() private {
         vestingBonus[0] = 6;
         vestingBonus[1] = 16;
         vestingBonus[2] = 30;
