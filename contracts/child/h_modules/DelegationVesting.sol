@@ -185,10 +185,11 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
 
     function _rewardParams(
         address validator,
+        address manager,
         uint256 epochNumber,
         uint256 topUpIndex
     ) internal view returns (uint256 rps, uint256 balance, int256 correction) {
-        VestData memory position = vestings[validator][msg.sender];
+        VestData memory position = vestings[validator][manager];
         uint256 matureEnd = position.end + position.duration;
         uint256 alreadyMatured;
         // If full mature period is finished, the full reward up to the end of the vesting must be matured
@@ -210,7 +211,7 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         }
 
         uint256 rewardPerShare = rpsData.value;
-        (uint256 balanceData, int256 correctionData) = _getAccountParams(validator, epochNumber, topUpIndex);
+        (uint256 balanceData, int256 correctionData) = _getAccountParams(validator, manager, epochNumber, topUpIndex);
 
         return (rewardPerShare, balanceData, correctionData);
     }
@@ -249,14 +250,15 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
 
     function _getAccountParams(
         address validator,
+        address manager,
         uint256 epochNumber,
         uint256 paramsIndex
     ) internal view returns (uint256 balance, int256 correction) {
-        if (paramsIndex >= poolParamsChanges[validator][msg.sender].length) {
+        if (paramsIndex >= poolParamsChanges[validator][manager].length) {
             revert StakeRequirement({src: "vesting", msg: "INVALID_TOP_UP_INDEX"});
         }
 
-        AccountPoolParams memory params = poolParamsChanges[validator][msg.sender][paramsIndex];
+        AccountPoolParams memory params = poolParamsChanges[validator][manager][paramsIndex];
         if (params.epochNum > epochNumber) {
             revert StakeRequirement({src: "vesting", msg: "LATER_TOP_UP"});
         } else if (params.epochNum == epochNumber) {
@@ -264,13 +266,13 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
             // because the balance change is made exactly before the distribution of the reward in this epoch
         } else {
             // This is the case where the balance change is  before the handled epoch (epochNumber)
-            if (paramsIndex == poolParamsChanges[validator][msg.sender].length - 1) {
+            if (paramsIndex == poolParamsChanges[validator][manager].length - 1) {
                 // If it is the last balance change - don't check does the next one can be better
             } else {
                 // If it is not the last balance change - check does the next one can be better
                 // We just need the right account specific pool params for the given RPS, to be able
                 // to properly calculate the reward
-                AccountPoolParams memory nextParamsRecord = poolParamsChanges[validator][msg.sender][paramsIndex + 1];
+                AccountPoolParams memory nextParamsRecord = poolParamsChanges[validator][manager][paramsIndex + 1];
                 if (nextParamsRecord.epochNum <= epochNumber) {
                     // If the next balance change is made in an epoch before the handled one or in the same epoch
                     // and is bigger than the provided balance change - the provided one is not valid.
@@ -281,20 +283,6 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         }
 
         return (params.balance, params.correction);
-    }
-
-    function getPositionReward(address validator, address delegator) external view returns (uint256) {
-        if (isVestManager(delegator)) {
-            VestData memory position = vestings[validator][delegator];
-            return
-                _applyCustomReward(
-                    position,
-                    _validators.getDelegationPool(validator).claimableRewards(delegator),
-                    true
-                );
-        }
-
-        return 0;
     }
 
     function getRPSValues(address validator) external view returns (RPS[] memory) {

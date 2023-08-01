@@ -99,12 +99,12 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
         return _validators.getDelegationPool(validator).balanceOf(delegator);
     }
 
-    // Continue: properly implement the following func
     /**
      * @inheritdoc ICVSDelegation
      */
     function getDelegatorReward(address validator, address delegator) external view virtual returns (uint256) {
-        return _validators.getDelegationPool(validator).claimableRewards(delegator);
+        uint256 reward = _validators.getDelegationPool(validator).claimableRewards(delegator);
+        return _applyCustomReward(reward);
     }
 
     function _delegate(address delegator, address validator, uint256 amount) internal {

@@ -439,29 +439,6 @@ function getMaxRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
-### getPositionReward
-
-```solidity
-function getPositionReward(address validator, address delegator) external view returns (uint256)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| delegator | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### getRPSValues
 
 ```solidity

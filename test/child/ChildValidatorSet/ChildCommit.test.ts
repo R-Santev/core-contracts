@@ -24,8 +24,8 @@ describe("ChildValidatorSet Initial Setup", () => {
     systemChildValidatorSet: ChildValidatorSet,
     // eslint-disable-next-line no-unused-vars
     epochReward: BigNumber,
-    minStake: number,
-    minDelegation: number,
+    minStake: BigNumber,
+    minDelegation: BigNumber,
     id: number,
     epoch: any,
     uptime: any,
@@ -40,8 +40,8 @@ describe("ChildValidatorSet Initial Setup", () => {
     accounts = await ethers.getSigners();
     governance = accounts[0].address;
     epochReward = ethers.utils.parseEther("0.0000001");
-    minStake = 10000;
-    minDelegation = 10000;
+    minStake = ethers.utils.parseEther("1");
+    minDelegation = ethers.utils.parseEther("1");
 
     const ChildValidatorSet = await ethers.getContractFactory("ChildValidatorSet");
     childValidatorSet = await ChildValidatorSet.deploy();

@@ -1,12 +1,12 @@
-# ChildValidatorSet
+# ChildValidatorSetMock
 
 
 
+> ChildValidatorSetMock
 
 
 
-
-
+*Mock contract allowing It just adds read functions to check the state of the contract*
 
 ## Methods
 
@@ -875,6 +875,29 @@ function getRSI() external pure returns (uint256 nominator)
 | Name | Type | Description |
 |---|---|---|
 | nominator | uint256 | undefined |
+
+### getRawDelegatorReward
+
+```solidity
+function getRawDelegatorReward(address validator, address delegator) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 ### getValRewardsValues
 

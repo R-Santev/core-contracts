@@ -79,9 +79,13 @@ contract ChildValidatorSet is
         _transferOwnership(governance);
         __ReentrancyGuard_init();
 
+        require(init.minStake >= 1 ether, "INVALID_MIN_STAKE");
+        require(init.minDelegation >= 1 ether, "INVALID_MIN_DELEGATION");
+
         // slither-disable-next-line events-maths
         epochReward = init.epochReward;
         minStake = init.minStake;
+
         minDelegation = init.minDelegation;
 
         // set BLS contract
@@ -176,6 +180,9 @@ contract ChildValidatorSet is
             }
         }
 
+        // H_MODIFY: Calculate the active stake before slashing
+        uint256 activeStakeBeforeSlash = totalActiveStake();
+
         // get full validator set
         uint256 validatorSetLength = _validators.count < ACTIVE_VALIDATOR_SET_SIZE
             ? _validators.count
@@ -202,7 +209,7 @@ contract ChildValidatorSet is
                 ++i;
             }
         }
-        _endEpochOnSlashingEvent(curEpochId, epoch, uptime, slashingSet);
+        _endEpochOnSlashingEvent(curEpochId, epoch, uptime, slashingSet, activeStakeBeforeSlash);
     }
 
     /**
@@ -321,7 +328,8 @@ contract ChildValidatorSet is
         uint256 id,
         Epoch calldata epoch,
         Uptime calldata uptime,
-        bool[] memory slashingSet
+        bool[] memory slashingSet,
+        uint256 activeStakeBeforeSlash
     ) private {
         uint256 newEpochId = currentEpochId++;
         require(id == newEpochId, "UNEXPECTED_EPOCH_ID");
@@ -339,14 +347,16 @@ contract ChildValidatorSet is
 
         require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
-        uint256 activeStake = totalActiveStake();
         // Ensure proper reward amount is sent
-        require(msg.value == getEpochMaxReward(activeStake), "INVALID_REWARD_AMOUNT");
+        console.log("activeStake: %s", activeStakeBeforeSlash);
+        console.log("msg.value: %s", msg.value);
+        console.log("getEpochMaxReward: %s", getEpochMaxReward(activeStakeBeforeSlash));
+        require(msg.value == getEpochMaxReward(activeStakeBeforeSlash), "INVALID_REWARD_AMOUNT");
 
         // H_MODIFY: change the epoch reward calculation
         // apply the reward factor; participation factor is applied then
         // base + vesting and RSI are applied on claimReward (handled by the position proxy)
-        uint256 modifiedEpochReward = applyMacro(activeStake);
+        uint256 modifiedEpochReward = applyMacro(activeStakeBeforeSlash);
         uint256 reward = (modifiedEpochReward * (epoch.endBlock - epoch.startBlock) * 100) / (epochSize * 100);
 
         for (uint256 i = 0; i < length; ++i) {
@@ -359,11 +369,13 @@ contract ChildValidatorSet is
             // slither-disable-next-line divide-before-multiply
             uint256 validatorReward = (reward *
                 (validator.stake + _validators.getDelegationPool(uptimeData.validator).supply) *
-                uptimeData.signedBlocks) / (activeStake * uptime.totalBlocks);
+                uptimeData.signedBlocks) / (activeStakeBeforeSlash * uptime.totalBlocks);
             (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
                 uptimeData.validator,
                 validatorReward
             );
+
+            // Hydra TODO: Burn amount of tokens that is left after uptime calculations
 
             _distributeValidatorReward(uptimeData.validator, validatorShares);
             // H_MODIFY: Keep history record of the validator rewards to be used on maturing vesting reward claim
