@@ -40,6 +40,7 @@ describe("ChildValidatorSet", () => {
     epochReward: BigNumber,
     minStake: BigNumber,
     minDelegation: BigNumber,
+    epochsInYear: number,
     id: number,
     epoch: any,
     uptime: any,
@@ -64,7 +65,7 @@ describe("ChildValidatorSet", () => {
     epochReward = ethers.utils.parseEther("0.0000001");
     minStake = ethers.utils.parseEther("1");
     minDelegation = ethers.utils.parseEther("1");
-
+    epochsInYear = 31500;
     const ChildValidatorSet = await ethers.getContractFactory("ChildValidatorSetMock");
     childValidatorSet = await ChildValidatorSet.deploy();
 
@@ -2168,7 +2169,8 @@ describe("ChildValidatorSet", () => {
           .add(vestBonus)
           .mul(rsi)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // calculate max reward
         const maxRSI = await childValidatorSet.getMaxRSI();
@@ -2177,7 +2179,8 @@ describe("ChildValidatorSet", () => {
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // enter the maturing state
         await time.increase(1 * week + 1);
@@ -2209,7 +2212,7 @@ describe("ChildValidatorSet", () => {
       it("should properly claim reward when no top-ups and full reward matured", async () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
-        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const baseReward = await childValidatorSet.getRawDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
         const rsi = await childValidatorSet.getRSI();
@@ -2217,7 +2220,8 @@ describe("ChildValidatorSet", () => {
           .add(vestBonus)
           .mul(rsi)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // calculate max reward
         const maxRSI = await childValidatorSet.getMaxRSI();
@@ -2226,7 +2230,8 @@ describe("ChildValidatorSet", () => {
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // enter the maturing state
         await time.increase(2 * week + 1);
@@ -2234,17 +2239,18 @@ describe("ChildValidatorSet", () => {
         // comit epoch, so more reward is added that must be without bonus
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
-        const additionalReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(
+        const additionalReward = (await childValidatorSet.getRawDelegatorReward(validator, manager.address)).sub(
           baseReward
         );
 
-        const expectedAdditionalReward = base.mul(additionalReward).div(10000);
+        const expectedAdditionalReward = base.mul(additionalReward).div(10000).div(epochsInYear);
 
         const maxAdditionalReward = base
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(additionalReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // prepare params for call
         const position = await childValidatorSet.vestings(validator, manager.address);
@@ -2278,7 +2284,7 @@ describe("ChildValidatorSet", () => {
       it("should properly claim reward when top-ups and not full reward matured", async () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
-        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const baseReward = await childValidatorSet.getRawDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
         const rsi = await childValidatorSet.getRSI();
@@ -2286,7 +2292,8 @@ describe("ChildValidatorSet", () => {
           .add(vestBonus)
           .mul(rsi)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // top-up
         await manager.topUpPosition(validator, { value: minDelegation });
@@ -2298,14 +2305,16 @@ describe("ChildValidatorSet", () => {
         const position = await childValidatorSet.vestings(validator, manager.address);
         const toBeMatured = ethers.BigNumber.from(topUpRewardsTimestamp).sub(position.start);
 
-        const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
+        const topUpReward = (await childValidatorSet.getRawDelegatorReward(validator, manager.address)).sub(baseReward);
         // no rsi because top-up is used
         const defaultRSI = await childValidatorSet.getDefaultRSI();
         const expectedTopUpReward = base
           .add(vestBonus)
           .mul(defaultRSI)
           .mul(topUpReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
+
         const expectedReward = expectedBaseReward.add(expectedTopUpReward);
 
         // calculate max reward
@@ -2315,12 +2324,14 @@ describe("ChildValidatorSet", () => {
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
         const maxTopUpReward = base
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(topUpReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
         const maxReward = maxBaseReward.add(maxTopUpReward);
 
         // enter the maturing state
@@ -2355,7 +2366,7 @@ describe("ChildValidatorSet", () => {
       it("should properly claim reward when top-ups and full reward matured", async () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
-        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const baseReward = await childValidatorSet.getRawDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
         const rsi = await childValidatorSet.getRSI();
@@ -2368,17 +2379,21 @@ describe("ChildValidatorSet", () => {
         // more rewards to be distributed but with the top-up data
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
-        const topUpReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(baseReward);
+        const topUpReward = (await childValidatorSet.getRawDelegatorReward(validator, manager.address)).sub(baseReward);
         const expectedBaseReward = base
           .add(vestBonus)
           .mul(rsi)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
+
         const expectedTopUpReward = base
           .add(vestBonus)
           .mul(defaultRSI)
           .mul(topUpReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
+
         const expectedReward = expectedBaseReward.add(expectedTopUpReward);
 
         // calculate max reward
@@ -2388,12 +2403,16 @@ describe("ChildValidatorSet", () => {
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
+
         const maxTopUpReward = base
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(topUpReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
+
         const maxReward = maxBaseReward.add(maxTopUpReward);
         // enter the matured state
         await time.increase(4 * week + 1);
@@ -2401,15 +2420,16 @@ describe("ChildValidatorSet", () => {
         // comit epoch, so more reward is added that must be without bonus
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
-        const additionalReward = (await childValidatorSet.getDelegatorReward(validator, manager.address)).sub(
+        const additionalReward = (await childValidatorSet.getRawDelegatorReward(validator, manager.address)).sub(
           baseReward.add(topUpReward)
         );
-        const expectedAdditionalReward = base.mul(additionalReward).div(10000);
+        const expectedAdditionalReward = base.mul(additionalReward).div(10000).div(epochsInYear);
         const maxAdditionalReward = base
           .add(maxVestBonus)
           .mul(maxRSI)
           .mul(additionalReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         // prepare params for call
         const position = await childValidatorSet.vestings(validator, manager.address);
@@ -2549,7 +2569,7 @@ describe("ChildValidatorSet", () => {
       it("claim only reward made before top-up", async () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
-        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const baseReward = await childValidatorSet.getRawDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
         // Not default RSI because we claim rewards made before top-up
@@ -2558,7 +2578,8 @@ describe("ChildValidatorSet", () => {
           .add(vestBonus)
           .mul(rsi)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         const rewardDistributionTime = await time.latest();
         let position = await childValidatorSet.vestings(validator, manager.address);
@@ -2597,7 +2618,7 @@ describe("ChildValidatorSet", () => {
       it("claim rewards multiple times", async () => {
         const { user, manager, validator } = await loadFixture(setupManagerFixture);
         // calculate reward
-        const baseReward = await childValidatorSet.getDelegatorReward(validator, manager.address);
+        const baseReward = await childValidatorSet.getRawDelegatorReward(validator, manager.address);
         const base = await childValidatorSet.getBase();
         const vestBonus = await childValidatorSet.getVestingBonus(1);
         // Not default RSI because we claim rewards made before top-up
@@ -2606,7 +2627,8 @@ describe("ChildValidatorSet", () => {
           .add(vestBonus)
           .mul(rsi)
           .mul(baseReward)
-          .div(10000 * 10000);
+          .div(10000 * 10000)
+          .div(epochsInYear);
 
         const rewardDistributionTime = await time.latest();
         let position = await childValidatorSet.vestings(validator, manager.address);
