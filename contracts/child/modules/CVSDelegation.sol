@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "hardhat/console.sol";
 import "./CVSStorage.sol";
 import "./CVSWithdrawal.sol";
 
@@ -66,15 +65,8 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
     function claimDelegatorReward(address validator, bool restake) public {
         RewardPool storage pool = _validators.getDelegationPool(validator);
         uint256 reward = pool.claimRewards(msg.sender);
-
-        console.log("reward: %s", reward);
-
         reward = _applyCustomReward(reward);
         if (reward == 0) return;
-
-        require(reward > 0, "no reward");
-
-        console.log("reward after custom formula: %s", reward);
 
         if (restake) {
             _delegate(msg.sender, validator, reward);

@@ -348,9 +348,6 @@ contract ChildValidatorSet is
         require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
         // Ensure proper reward amount is sent
-        console.log("activeStake: %s", activeStakeBeforeSlash);
-        console.log("msg.value: %s", msg.value);
-        console.log("getEpochMaxReward: %s", getEpochMaxReward(activeStakeBeforeSlash));
         require(msg.value == getEpochMaxReward(activeStakeBeforeSlash), "INVALID_REWARD_AMOUNT");
 
         // H_MODIFY: change the epoch reward calculation

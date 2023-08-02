@@ -105,6 +105,5 @@ export async function setupVestManager(childValidatorSet: ChildValidatorSet, del
 
 export async function getMaxEpochReward(childValidatorSet: ChildValidatorSet) {
   const totalStake = await childValidatorSet.totalActiveStake();
-  console.log("test totalStake", totalStake.toString());
   return childValidatorSet.getEpochMaxReward(totalStake);
 }

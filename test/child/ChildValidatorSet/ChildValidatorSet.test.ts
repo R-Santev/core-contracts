@@ -739,8 +739,6 @@ describe("ChildValidatorSet", () => {
 
       const reward = await childValidatorSet.getDelegatorReward(accounts[2].address, accounts[3].address);
 
-      console.log("reward", reward.toString());
-
       // Claim with restake
       const tx = await childValidatorSet.connect(accounts[3]).claimDelegatorReward(accounts[2].address, true);
 
@@ -749,8 +747,6 @@ describe("ChildValidatorSet", () => {
       expect(event?.args?.delegator).to.equal(accounts[3].address);
       expect(event?.args?.validator).to.equal(accounts[2].address);
       expect(event?.args?.restake).to.equal(true);
-
-      console.log("event?.args?.amount", event?.args?.amount.toString());
       expect(event?.args?.amount).to.equal(reward);
 
       await expect(tx)
@@ -851,8 +847,6 @@ describe("ChildValidatorSet", () => {
       doubleSignerSlashingInput[0].signature = signature;
 
       const maxReward = await getMaxEpochReward(childValidatorSet);
-      console.log(" test maxReward", maxReward.toString());
-
       await expect(
         systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
           currentEpochId,
@@ -1501,9 +1495,7 @@ describe("ChildValidatorSet", () => {
         validatorsInfoBeforeCommitSlash.push(await childValidatorSet.getValidator(validators[i]));
       }
 
-      console.log("cicle here start");
       maxReward = await getMaxEpochReward(systemChildValidatorSet);
-      console.log("cicle here maxReward", maxReward.toString());
       const tx = await systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
         currentEpochId,
         blockNumber,
@@ -1513,7 +1505,6 @@ describe("ChildValidatorSet", () => {
         doubleSignerSlashingInput,
         { value: maxReward }
       );
-      console.log("cicle here ends");
 
       await expect(tx)
         .to.emit(childValidatorSet, "NewEpoch")
@@ -1642,7 +1633,6 @@ describe("ChildValidatorSet", () => {
 
     it("undelegate low amount", async () => {
       const delegatedAmount = await childValidatorSet.delegationOf(accounts[2].address, accounts[3].address);
-      console.log(" test delegatedAmount", delegatedAmount.toString());
       await expect(childValidatorSet.connect(accounts[3]).undelegate(accounts[2].address, delegatedAmount.sub(1)))
         .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
         .withArgs("undelegate", "DELEGATION_TOO_LOW");
@@ -2788,9 +2778,7 @@ describe("ChildValidatorSet", () => {
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
         // ensure there is available reward
-        console.log("TEST heree is the case start");
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-        console.log("TEST heree is the case end");
 
         const reward = await getValidatorReward(childValidatorSet, staker.address);
         expect(reward).to.be.gt(0);
