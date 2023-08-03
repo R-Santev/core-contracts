@@ -95,13 +95,7 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         uint256 topUpIndex
     ) public override onlyManager {
         VestData memory vesting = vestings[validator][msg.sender];
-        // If still unused position, there is no reward
-        if (vesting.start == 0) {
-            return;
-        }
-
-        // if the position is still active, there is no matured reward
-        if (isActivePosition(vesting)) {
+        if (noRewardConditions(vesting)) {
             return;
         }
 
@@ -119,7 +113,12 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         }
 
         // distribute the proper vesting reward
-        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(validator, epochNumber, topUpIndex);
+        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(
+            validator,
+            msg.sender,
+            epochNumber,
+            topUpIndex
+        );
         uint256 reward = pool.claimRewards(msg.sender, epochRPS, balance, correction);
         uint256 maxReward = applyMaxReward(reward);
         reward = _applyCustomReward(vesting, reward, rsi);
@@ -145,5 +144,65 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         _registerWithdrawal(msg.sender, sumReward);
 
         emit PositionRewardClaimed(msg.sender, validator, sumReward);
+    }
+
+    function getDelegatorPositionReward(
+        address validator,
+        address delegator,
+        uint256 epochNumber,
+        uint256 topUpIndex
+    ) external view returns (uint256) {
+        VestData memory vesting = vestings[validator][delegator];
+        if (noRewardConditions(vesting)) {
+            return 0;
+        }
+
+        uint256 sumReward;
+        RewardPool storage pool = _validators.getDelegationPool(validator);
+        bool rsi = true;
+        if (_isTopUpMade(validator, delegator)) {
+            rsi = false;
+            RewardParams memory params = beforeTopUpParams[validator][delegator];
+            uint256 rsiReward = pool.claimableRewards(
+                delegator,
+                params.rewardPerShare,
+                params.balance,
+                params.correction
+            );
+            sumReward += _applyCustomReward(vesting, rsiReward, true);
+        }
+
+        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(
+            validator,
+            delegator,
+            epochNumber,
+            topUpIndex
+        );
+        uint256 reward = pool.claimableRewards(msg.sender, epochRPS, balance, correction) - sumReward;
+        reward = _applyCustomReward(vesting, reward, rsi);
+        sumReward += reward;
+
+        // If the full maturing period is finished, withdraw also the reward made after the vesting period
+        if (block.timestamp > vesting.end + vesting.duration) {
+            uint256 additionalReward = pool.claimableRewards(msg.sender) - sumReward;
+            additionalReward = _applyCustomReward(additionalReward);
+            sumReward += additionalReward;
+        }
+
+        return sumReward;
+    }
+
+    function noRewardConditions(VestData memory vesting) private view returns (bool) {
+        // If still unused position, there is no reward
+        if (vesting.start == 0) {
+            return true;
+        }
+
+        // if the position is still active, there is no matured reward
+        if (isActivePosition(vesting)) {
+            return true;
+        }
+
+        return false;
     }
 }

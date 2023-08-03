@@ -12,8 +12,8 @@ import { commitEpoch, generateValBls, initValidators, setupVestManager } from ".
 
 describe("ChildValidatorSet StakeSyncer", () => {
   const epochReward = ethers.utils.parseEther("0.0000001");
-  const minStake = 10000;
-  const minDelegation = 10000;
+  const minStake = ethers.utils.parseEther("1");
+  const minDelegation = ethers.utils.parseEther("1");
 
   let accounts: SignerWithAddress[];
   let validators: SignerWithAddress[];
@@ -118,13 +118,13 @@ describe("ChildValidatorSet StakeSyncer", () => {
       await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake });
       await commitEpoch(systemChildValidatorSet, []);
 
-      await expect(validatorChildValidatorSet.stake({ value: minStake * 2 }))
+      await expect(validatorChildValidatorSet.stake({ value: minStake.mul(2) }))
         .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake * 2);
+        .withArgs(ethers.constants.AddressZero, validator.address, minStake.mul(2));
 
       // ensure getValidatorTotalStake returns the proper staked amount
       const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
-      expect(stakeData.totalStake).to.equal(minStake * 3);
+      expect(stakeData.totalStake).to.equal(minStake.mul(3));
     });
 
     it("emit transfer event to zero addr on unstake", async () => {
@@ -145,7 +145,7 @@ describe("ChildValidatorSet StakeSyncer", () => {
       const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       const vestingDuration = 12; // weeks
-      await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake * 2 });
+      await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake.mul(2) });
       await commitEpoch(systemChildValidatorSet, []);
 
       const unstakeAmount = ethers.BigNumber.from(minStake).div(3);

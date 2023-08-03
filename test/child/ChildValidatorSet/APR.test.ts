@@ -15,7 +15,7 @@ import { IChildValidatorSetBase } from "./../../../typechain-types/contracts/chi
 describe("ChildValidatorSet APR module", () => {
   const epochReward = ethers.utils.parseEther("0.0000001");
   const minStake = ethers.utils.parseEther("1");
-  const minDelegation = 10000;
+  const minDelegation = ethers.utils.parseEther("1");
 
   let accounts: SignerWithAddress[];
   let validators: SignerWithAddress[];

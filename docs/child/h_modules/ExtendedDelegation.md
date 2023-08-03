@@ -182,7 +182,7 @@ function bls() external view returns (contract IBLS)
 function claimDelegatorReward(address validator, bool restake) external nonpayable
 ```
 
-Claims delegator rewards for sender.
+Don&#39;t execute in case reward after _applyCustomReward() is 0 because pool.claimRewards() will delete the accumulated reward but you will not receive anything
 
 
 
@@ -422,6 +422,31 @@ function getDefaultRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
+### getDelegatorPositionReward
+
+```solidity
+function getDelegatorPositionReward(address validator, address delegator, uint256 epochNumber, uint256 topUpIndex) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+| epochNumber | uint256 | undefined |
+| topUpIndex | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### getDelegatorReward
 
 ```solidity
@@ -518,29 +543,6 @@ function getMaxRSI() external pure returns (uint256 nominator)
 | Name | Type | Description |
 |---|---|---|
 | nominator | uint256 | undefined |
-
-### getPositionReward
-
-```solidity
-function getPositionReward(address validator, address delegator) external view returns (uint256)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| delegator | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
 
 ### getRPSValues
 

@@ -59,13 +59,14 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
 
     /**
      * @inheritdoc ICVSDelegation
+     * @notice  Don't execute in case reward after _applyCustomReward() is 0
+     * because pool.claimRewards() will delete the accumulated reward but you will not receive anything
      */
     function claimDelegatorReward(address validator, bool restake) public {
         RewardPool storage pool = _validators.getDelegationPool(validator);
         uint256 reward = pool.claimRewards(msg.sender);
-        if (reward == 0) return;
-
         reward = _applyCustomReward(reward);
+        if (reward == 0) return;
 
         if (restake) {
             _delegate(msg.sender, validator, reward);
@@ -93,8 +94,9 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
     /**
      * @inheritdoc ICVSDelegation
      */
-    function getDelegatorReward(address validator, address delegator) external view returns (uint256) {
-        return _validators.getDelegationPool(validator).claimableRewards(delegator);
+    function getDelegatorReward(address validator, address delegator) external view virtual returns (uint256) {
+        uint256 reward = _validators.getDelegationPool(validator).claimableRewards(delegator);
+        return _applyCustomReward(reward);
     }
 
     function _delegate(address delegator, address validator, uint256 amount) internal {
