@@ -85,7 +85,6 @@ contract ChildValidatorSet is
         // slither-disable-next-line events-maths
         epochReward = init.epochReward;
         minStake = init.minStake;
-
         minDelegation = init.minDelegation;
 
         // set BLS contract
