@@ -5,8 +5,8 @@ import "./../child/ChildValidatorSet.sol";
 
 /**
  * @title ChildValidatorSetMock
- * @dev Mock contract allowing
- * It just adds read functions to check the state of the contract
+ * @dev Mock contract allowing improved testing of ChildValidatorSet
+ * It just adds read functions to check the state of the ChildValidatorSet contract
  */
 contract ChildValidatorSetMock is ChildValidatorSet {
     using ValidatorStorageLib for ValidatorTree;
