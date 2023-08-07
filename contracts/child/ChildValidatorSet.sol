@@ -105,7 +105,7 @@ contract ChildValidatorSet is
         }
 
         // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
-        powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
+        powerExponent = PowerExponentStore({value: 5000, pendingValue: 0});
 
         // H_MODIFY: Set base implementation for VestFactory
         implementation = address(new VestManager());

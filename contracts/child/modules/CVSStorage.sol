@@ -43,8 +43,8 @@ abstract contract CVSStorage is ICVSStorage {
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;
 
-    // Initial Voting Power exponent to be ^0.85
-    PowerExponentStore public powerExponent = PowerExponentStore({value: 8500, pendingValue: 0});
+    // Initial Voting Power exponent to be ^0.5
+    PowerExponentStore public powerExponent = PowerExponentStore({value: 5000, pendingValue: 0});
 
     //base implemetantion to be used by proxies
     address public implementation;
