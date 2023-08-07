@@ -87,5 +87,13 @@ describe("ChildValidatorSet APR module", () => {
 
       expect(epochReward).to.equal(maxEpochReward);
     });
+    it("returns reward higher than zero when min stake only", async () => {
+      // systemChildValidatorSet is needed to call the function only
+      const { systemChildValidatorSet } = await loadFixture(presetStateFixture);
+      const totalStake = ethers.utils.parseEther("1");
+      const epochReward = await systemChildValidatorSet.getEpochMaxReward(totalStake);
+
+      expect(epochReward).to.gt(0);
+    });
   });
 });
