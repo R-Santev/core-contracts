@@ -17,7 +17,7 @@ contract PowerExponent is IPowerExponent, CVSStorage, CVSAccessControl {
      * @inheritdoc IPowerExponent
      */
     function updateExponent(uint256 newValue) external onlyOwner {
-        require(newValue > 5000 && newValue < 10000, "0.5 <= Exponent <= 1");
+        require(newValue > 4999 && newValue < 10001, "0.5 <= Exponent <= 1");
 
         powerExponent.pendingValue = uint128(newValue);
     }

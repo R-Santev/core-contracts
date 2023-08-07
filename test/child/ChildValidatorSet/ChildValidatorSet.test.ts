@@ -117,11 +117,11 @@ describe("ChildValidatorSet", () => {
   describe("Voting Power Exponent", async () => {
     it("initial value must be", async () => {
       const powerExp = await childValidatorSet.powerExponent();
-      expect(powerExp.value).to.equal(8500);
+      expect(powerExp.value).to.equal(5000);
       expect(powerExp.pendingValue).to.equal(0);
 
       const powerExpRes = await childValidatorSet.getExponent();
-      expect(powerExpRes.numerator).to.equal(8500);
+      expect(powerExpRes.numerator).to.equal(5000);
       expect(powerExpRes.denominator).to.equal(10000);
     });
   });
