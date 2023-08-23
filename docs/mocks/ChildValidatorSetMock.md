@@ -6,7 +6,7 @@
 
 
 
-*Mock contract allowing It just adds read functions to check the state of the contract*
+*Mock contract allowing improved testing of ChildValidatorSet It just adds read functions to check the state of the ChildValidatorSet contract*
 
 ## Methods
 
