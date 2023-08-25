@@ -47,7 +47,7 @@ abstract contract CVSStorage is ICVSStorage {
     address public implementation;
 
     // Liquid Staking token given to stakers and delegators
-    address public liquidToken;
+    address internal _liquidToken;
 
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;

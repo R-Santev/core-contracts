@@ -35,7 +35,15 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
 
         _validators.insert(
             msg.sender,
-            Validator({blsKey: pubkey, stake: 0, commission: 0, totalRewards: 0, takenRewards: 0, active: true})
+            Validator({
+                blsKey: pubkey,
+                stake: 0,
+                liquidDebt: 0,
+                commission: 0,
+                totalRewards: 0,
+                takenRewards: 0,
+                active: true
+            })
         );
         _removeFromWhitelist(msg.sender);
 

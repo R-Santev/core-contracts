@@ -4,9 +4,14 @@ pragma solidity 0.8.17;
 import "./../modules/CVSStorage.sol";
 import "../../libs/ValidatorStorage.sol";
 import "./../../interfaces/ILiquidityToken.sol";
+import "./../../interfaces/h_modules/ILiquidStaking.sol";
 
-abstract contract LiquidStaking is CVSStorage {
+abstract contract LiquidStaking is CVSStorage, ILiquidStaking {
     using ValidatorStorageLib for ValidatorTree;
+
+    function liquidToken() external view override returns (address) {
+        return _liquidToken;
+    }
 
     function _onStake(address staker, uint256 stakedAmount) internal {
         _mintTokens(staker, stakedAmount);
@@ -23,19 +28,19 @@ abstract contract LiquidStaking is CVSStorage {
         _burnTokens(staker, unstakedAmount);
     }
 
-    function _onDelegate(address staker, uint256 stakedAmount) internal {
-        _mintTokens(staker, stakedAmount);
+    function _onDelegate(address delegator, uint256 stakedAmount) internal {
+        _mintTokens(delegator, stakedAmount);
     }
 
-    function _onUndelegate(address staker, uint256 unstakedAmount) internal {
-        _burnTokens(staker, unstakedAmount);
+    function _onUndelegate(address delegator, uint256 unstakedAmount) internal {
+        _burnTokens(delegator, unstakedAmount);
     }
 
     function _mintTokens(address account, uint256 amount) private {
-        ILiquidityToken(liquidToken).mint(account, amount);
+        ILiquidityToken(_liquidToken).mint(account, amount);
     }
 
     function _burnTokens(address account, uint256 amount) private {
-        ILiquidityToken(liquidToken).burn(account, amount);
+        ILiquidityToken(_liquidToken).burn(account, amount);
     }
 }
