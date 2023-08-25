@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./StakerVesting.sol";
+import "./LiquidStaking.sol";
 
 import "./../modules/CVSStaking.sol";
 
@@ -9,7 +10,7 @@ import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract ExtendedStaking is StakerVesting, CVSStaking {
+abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using SafeMathUint for uint256;
@@ -26,6 +27,8 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking {
      */
     function stake() public payable override onlyValidator {
         super.stake();
+
+        LiquidStaking.onStake(msg.sender, msg.value);
 
         VestData memory position = stakePositions[msg.sender];
         if (isActivePosition(position)) {
