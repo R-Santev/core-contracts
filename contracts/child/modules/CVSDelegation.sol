@@ -9,13 +9,14 @@ import "../../interfaces/modules/ICVSDelegation.sol";
 
 import "../h_modules/APR.sol";
 import "../h_modules/StakeSyncer.sol";
+import "../h_modules/LiquidStaking.sol";
 
 import "../../libs/ValidatorStorage.sol";
 import "../../libs/ValidatorQueue.sol";
 import "../../libs/RewardPool.sol";
 import "../../libs/SafeMathInt.sol";
 
-abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawal, StakeSyncer {
+abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawal, StakeSyncer, LiquidStaking {
     using ValidatorStorageLib for ValidatorTree;
     using ValidatorQueueLib for ValidatorQueue;
     using RewardPoolLib for RewardPool;
@@ -108,6 +109,7 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
         _queue.insert(validator, 0, amount.toInt256Safe());
         _validators.getDelegationPool(validator).deposit(delegator, amount);
         _syncStake(validator, amount);
+        LiquidStaking._onDelegate(delegator, amount);
         emit Delegated(delegator, validator, amount);
     }
 

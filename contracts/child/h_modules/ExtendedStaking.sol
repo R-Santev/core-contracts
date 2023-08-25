@@ -28,7 +28,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
     function stake() public payable override onlyValidator {
         super.stake();
 
-        LiquidStaking.onStake(msg.sender, msg.value);
+        LiquidStaking._onStake(msg.sender, msg.value);
 
         VestData memory position = stakePositions[msg.sender];
         if (isActivePosition(position)) {
@@ -51,6 +51,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
 
         _queue.insert(msg.sender, amountInt * -1, 0);
         _syncUnstake(msg.sender, amount);
+        LiquidStaking._onUnstake(msg.sender, amount);
         if (amountAfterUnstake == 0) {
             _validators.get(msg.sender).active = false;
         }

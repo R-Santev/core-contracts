@@ -41,6 +41,7 @@ struct RewardPool {
 struct Validator {
     uint256[4] blsKey;
     uint256 stake;
+    uint256 liquidDebt;
     uint256 commission;
     uint256 takenRewards;
     uint256 totalRewards;

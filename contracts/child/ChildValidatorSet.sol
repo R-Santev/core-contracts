@@ -94,6 +94,7 @@ contract ChildValidatorSet is
             Validator memory validator = Validator({
                 blsKey: validators[i].pubkey,
                 stake: validators[i].stake,
+                liquidDebt: 0,
                 commission: 0,
                 totalRewards: 0,
                 takenRewards: 0,
@@ -319,6 +320,7 @@ contract ChildValidatorSet is
             100;
         uint256 slashedAmount = (validator.stake * DOUBLE_SIGNING_SLASHING_PERCENT) / 100;
         validator.stake -= slashedAmount;
+        validator.liquidDebt += slashedAmount;
         _validators.totalStake -= slashedAmount;
         emit DoubleSignerSlashed(key, epoch, pbftRound);
     }
