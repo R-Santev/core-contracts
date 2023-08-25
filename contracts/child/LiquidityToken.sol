@@ -5,12 +5,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "./Governed.sol";
+import "./../interfaces/ILiquidityToken.sol";
 
 /**
  * @title LiquidityToken
  * @dev This contract represents the liquidity token for the Hydra staking mechanism.
  */
-contract LiquidityToken is ERC20Upgradeable, Governed {
+contract LiquidityToken is ILiquidityToken, ERC20Upgradeable, Governed {
     /// @notice The role identifier for address(es) that have permission to mint and burn the token.
     bytes32 public constant SUPPLY_CONTROLLER_ROLE = keccak256("SUPPLY_CONTROLLER_ROLE");
 
@@ -34,20 +35,14 @@ contract LiquidityToken is ERC20Upgradeable, Governed {
     }
 
     /**
-     * @notice Mints the specified `amount` of tokens to the given address.
-     * @dev Can only be called by an address with the `SUPPLY_CONTROLLER_ROLE`.
-     * @param to The address to receive the minted tokens.
-     * @param amount The amount of tokens to mint.
+     * @inheritdoc ILiquidityToken
      */
     function mint(address to, uint256 amount) public onlyRole(SUPPLY_CONTROLLER_ROLE) {
         _mint(to, amount);
     }
 
     /**
-     * @notice Burns the specified `amount` of tokens from the given account.
-     * @dev Can only be called by an address with the `SUPPLY_CONTROLLER_ROLE`.
-     * @param account The address from which tokens will be burned.
-     * @param amount The amount of tokens to burn.
+     * @inheritdoc ILiquidityToken
      */
     function burn(address account, uint256 amount) public onlyRole(SUPPLY_CONTROLLER_ROLE) {
         _burn(account, amount);
