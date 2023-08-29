@@ -43,12 +43,13 @@ describe("ChildValidatorSet Initial Setup", () => {
     minStake = ethers.utils.parseEther("1");
     minDelegation = ethers.utils.parseEther("1");
 
-    const liquidToken = await (await ethers.getContractFactory("LiquidityToken")).deploy();
-
     const ChildValidatorSet = await ethers.getContractFactory("ChildValidatorSet");
     childValidatorSet = await ChildValidatorSet.deploy();
 
     await childValidatorSet.deployed();
+
+    const liquidToken = await (await ethers.getContractFactory("LiquidityToken")).deploy();
+    await liquidToken.initialize("Lydra", "LDR", governance, childValidatorSet.address);
 
     bls = await (await ethers.getContractFactory("BLS")).deploy();
     await bls.deployed();

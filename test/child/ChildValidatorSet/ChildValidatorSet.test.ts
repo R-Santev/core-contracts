@@ -810,66 +810,67 @@ describe("ChildValidatorSet", () => {
   });
 
   describe("commitEpochWithDoubleSignerSlashing", async () => {
-    it("failed by invalid length", async () => {
-      id = 9;
-      epoch = {
-        startBlock: 513,
-        endBlock: 577,
-        epochRoot: ethers.utils.randomBytes(32),
-      };
+    // Hydra modification: Removed require
+    // it("failed by invalid length", async () => {
+    //   id = 9;
+    //   epoch = {
+    //     startBlock: 513,
+    //     endBlock: 577,
+    //     epochRoot: ethers.utils.randomBytes(32),
+    //   };
 
-      const currentEpochId = await childValidatorSet.currentEpochId();
+    //   const currentEpochId = await childValidatorSet.currentEpochId();
 
-      uptime = {
-        epochId: currentEpochId,
-        uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
-        totalBlocks: 2,
-      };
+    //   uptime = {
+    //     epochId: currentEpochId,
+    //     uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
+    //     totalBlocks: 2,
+    //   };
 
-      const blockNumber = 0;
-      const pbftRound = 0;
+    //   const blockNumber = 0;
+    //   const pbftRound = 0;
 
-      doubleSignerSlashingInput = [
-        {
-          epochId: 0,
-          eventRoot: ethers.utils.randomBytes(32),
-          currentValidatorSetHash: ethers.utils.randomBytes(32),
-          nextValidatorSetHash: ethers.utils.randomBytes(32),
-          blockHash: ethers.utils.randomBytes(32),
-          bitmap: "0x",
-          signature: "",
-        },
-      ];
-      const signature = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
-          [
-            chainId,
-            blockNumber,
-            doubleSignerSlashingInput[0].blockHash,
-            pbftRound,
-            doubleSignerSlashingInput[0].epochId,
-            doubleSignerSlashingInput[0].eventRoot,
-            doubleSignerSlashingInput[0].currentValidatorSetHash,
-            doubleSignerSlashingInput[0].nextValidatorSetHash,
-          ]
-        )
-      );
-      doubleSignerSlashingInput[0].signature = signature;
+    //   doubleSignerSlashingInput = [
+    //     {
+    //       epochId: 0,
+    //       eventRoot: ethers.utils.randomBytes(32),
+    //       currentValidatorSetHash: ethers.utils.randomBytes(32),
+    //       nextValidatorSetHash: ethers.utils.randomBytes(32),
+    //       blockHash: ethers.utils.randomBytes(32),
+    //       bitmap: "0x",
+    //       signature: "",
+    //     },
+    //   ];
+    //   const signature = ethers.utils.keccak256(
+    //     ethers.utils.defaultAbiCoder.encode(
+    //       ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
+    //       [
+    //         chainId,
+    //         blockNumber,
+    //         doubleSignerSlashingInput[0].blockHash,
+    //         pbftRound,
+    //         doubleSignerSlashingInput[0].epochId,
+    //         doubleSignerSlashingInput[0].eventRoot,
+    //         doubleSignerSlashingInput[0].currentValidatorSetHash,
+    //         doubleSignerSlashingInput[0].nextValidatorSetHash,
+    //       ]
+    //     )
+    //   );
+    //   doubleSignerSlashingInput[0].signature = signature;
 
-      const maxReward = await getMaxEpochReward(childValidatorSet);
-      await expect(
-        systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
-          currentEpochId,
-          blockNumber,
-          pbftRound,
-          epoch,
-          uptime,
-          doubleSignerSlashingInput,
-          { value: maxReward }
-        )
-      ).to.be.revertedWith("INVALID_LENGTH");
-    });
+    //   const maxReward = await getMaxEpochReward(childValidatorSet);
+    //   await expect(
+    //     systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
+    //       currentEpochId,
+    //       blockNumber,
+    //       pbftRound,
+    //       epoch,
+    //       uptime,
+    //       doubleSignerSlashingInput,
+    //       { value: maxReward }
+    //     )
+    //   ).to.be.revertedWith("INVALID_LENGTH");
+    // });
 
     it("failed by blockhash not unique", async () => {
       id = 9;
@@ -1164,83 +1165,84 @@ describe("ChildValidatorSet", () => {
       ).to.be.revertedWith("NO_BLOCKS_COMMITTED");
     });
 
-    it("failed by invalid length", async () => {
-      id = 9;
-      epoch = {
-        startBlock: 513,
-        endBlock: 577,
-        epochRoot: ethers.utils.randomBytes(32),
-      };
+    // Hydra modification: Removed require
+    // it("failed by invalid length", async () => {
+    //   id = 9;
+    //   epoch = {
+    //     startBlock: 513,
+    //     endBlock: 577,
+    //     epochRoot: ethers.utils.randomBytes(32),
+    //   };
 
-      const currentEpochId = await childValidatorSet.currentEpochId();
+    //   const currentEpochId = await childValidatorSet.currentEpochId();
 
-      uptime = {
-        epochId: currentEpochId,
-        uptimeData: [
-          { validator: accounts[2].address, signedBlocks: 1 },
-          { validator: accounts[2].address, signedBlocks: 1 },
-          { validator: accounts[2].address, signedBlocks: 1 },
-        ],
-        totalBlocks: 2,
-      };
+    //   uptime = {
+    //     epochId: currentEpochId,
+    //     uptimeData: [
+    //       { validator: accounts[2].address, signedBlocks: 1 },
+    //       { validator: accounts[2].address, signedBlocks: 1 },
+    //       { validator: accounts[2].address, signedBlocks: 1 },
+    //     ],
+    //     totalBlocks: 2,
+    //   };
 
-      const blockNumber = 0;
-      const pbftRound = 0;
+    //   const blockNumber = 0;
+    //   const pbftRound = 0;
 
-      doubleSignerSlashingInput = [
-        {
-          epochId: currentEpochId,
-          eventRoot: ethers.utils.randomBytes(32),
-          currentValidatorSetHash: ethers.utils.randomBytes(32),
-          nextValidatorSetHash: ethers.utils.randomBytes(32),
-          blockHash: ethers.utils.randomBytes(32),
-          bitmap: "0x",
-          signature: "",
-        },
-        {
-          epochId: currentEpochId,
-          eventRoot: ethers.utils.randomBytes(32),
-          currentValidatorSetHash: ethers.utils.randomBytes(32),
-          nextValidatorSetHash: ethers.utils.randomBytes(32),
-          blockHash: ethers.utils.randomBytes(32),
-          bitmap: "0x",
-          signature: "",
-        },
-      ];
-      for (let i = 0; i < doubleSignerSlashingInput.length; i++) {
-        doubleSignerSlashingInput[i].signature = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(
-            ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
-            [
-              chainId,
-              blockNumber,
-              doubleSignerSlashingInput[i].blockHash,
-              pbftRound,
-              doubleSignerSlashingInput[i].epochId,
-              doubleSignerSlashingInput[i].eventRoot,
-              doubleSignerSlashingInput[i].currentValidatorSetHash,
-              doubleSignerSlashingInput[i].nextValidatorSetHash,
-            ]
-          )
-        );
-      }
+    //   doubleSignerSlashingInput = [
+    //     {
+    //       epochId: currentEpochId,
+    //       eventRoot: ethers.utils.randomBytes(32),
+    //       currentValidatorSetHash: ethers.utils.randomBytes(32),
+    //       nextValidatorSetHash: ethers.utils.randomBytes(32),
+    //       blockHash: ethers.utils.randomBytes(32),
+    //       bitmap: "0x",
+    //       signature: "",
+    //     },
+    //     {
+    //       epochId: currentEpochId,
+    //       eventRoot: ethers.utils.randomBytes(32),
+    //       currentValidatorSetHash: ethers.utils.randomBytes(32),
+    //       nextValidatorSetHash: ethers.utils.randomBytes(32),
+    //       blockHash: ethers.utils.randomBytes(32),
+    //       bitmap: "0x",
+    //       signature: "",
+    //     },
+    //   ];
+    //   for (let i = 0; i < doubleSignerSlashingInput.length; i++) {
+    //     doubleSignerSlashingInput[i].signature = ethers.utils.keccak256(
+    //       ethers.utils.defaultAbiCoder.encode(
+    //         ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
+    //         [
+    //           chainId,
+    //           blockNumber,
+    //           doubleSignerSlashingInput[i].blockHash,
+    //           pbftRound,
+    //           doubleSignerSlashingInput[i].epochId,
+    //           doubleSignerSlashingInput[i].eventRoot,
+    //           doubleSignerSlashingInput[i].currentValidatorSetHash,
+    //           doubleSignerSlashingInput[i].nextValidatorSetHash,
+    //         ]
+    //       )
+    //     );
+    //   }
 
-      await hre.network.provider.send("hardhat_setCode", [
-        "0x0000000000000000000000000000000000002030",
-        alwaysTrueBytecode,
-      ]);
+    //   await hre.network.provider.send("hardhat_setCode", [
+    //     "0x0000000000000000000000000000000000002030",
+    //     alwaysTrueBytecode,
+    //   ]);
 
-      await expect(
-        systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
-          currentEpochId,
-          blockNumber,
-          pbftRound,
-          epoch,
-          uptime,
-          doubleSignerSlashingInput
-        )
-      ).to.be.revertedWith("INVALID_LENGTH");
-    });
+    //   await expect(
+    //     systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
+    //       currentEpochId,
+    //       blockNumber,
+    //       pbftRound,
+    //       epoch,
+    //       uptime,
+    //       doubleSignerSlashingInput
+    //     )
+    //   ).to.be.revertedWith("INVALID_LENGTH");
+    // });
 
     it("success", async () => {
       id = 9;
