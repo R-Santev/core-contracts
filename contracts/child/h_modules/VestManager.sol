@@ -29,9 +29,7 @@ contract VestManager is Initializable, OwnableUpgradeable {
     function openDelegatorPosition(address validator, uint256 durationWeeks) external payable onlyOwner {
         IDelegationVesting(staking).openDelegatorPosition{value: msg.value}(validator, durationWeeks);
 
-        // Send the received liquid tokens to position owner
-        address liquidToken = ILiquidStaking(staking).liquidToken();
-        IERC20(liquidToken).transfer(msg.sender, msg.value);
+        _sendLiquidTokens(msg.sender, msg.value);
     }
 
     function topUpPosition(address validator) external payable onlyOwner {

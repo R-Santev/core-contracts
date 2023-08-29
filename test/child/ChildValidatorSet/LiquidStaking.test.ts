@@ -50,12 +50,6 @@ describe("ChildValidatorSet Liquid Staking", () => {
       "0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE",
       "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
     ]);
-    // TODO: remove this once we have a better way to set balance from Polygon
-    // Need othwerwise burn mechanism doesn't work
-    await hre.network.provider.send("hardhat_setBalance", [
-      childValidatorSet.address,
-      "0x2CD76FE086B93CE2F768A00B22A00000000000",
-    ]);
     await hre.network.provider.send("hardhat_setBalance", [
       "0x0000000000000000000000000000000000001001",
       "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
