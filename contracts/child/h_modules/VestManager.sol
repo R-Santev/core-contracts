@@ -4,12 +4,15 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../../interfaces/modules/ICVSWithdrawal.sol";
 import "../../interfaces/h_modules/IDelegationVesting.sol";
 import "../../interfaces/h_modules/ILiquidStaking.sol";
 
 contract VestManager is Initializable, OwnableUpgradeable {
+    using SafeERC20 for IERC20;
+
     address public staking;
 
     event Claimed(address indexed account, uint256 amount);
@@ -38,9 +41,9 @@ contract VestManager is Initializable, OwnableUpgradeable {
     }
 
     function cutPosition(address validator, uint256 amount) external payable onlyOwner {
-        IDelegationVesting(staking).cutPosition(validator, amount);
-
         _fulfillLiquidTokens(msg.sender, amount);
+
+        IDelegationVesting(staking).cutPosition(validator, amount);
     }
 
     function claimPositionReward(
@@ -62,7 +65,7 @@ contract VestManager is Initializable, OwnableUpgradeable {
      */
     function _sendLiquidTokens(address positionOwner, uint256 amount) private onlyOwner {
         address liquidToken = ILiquidStaking(staking).liquidToken();
-        IERC20(liquidToken).transfer(positionOwner, amount);
+        IERC20(liquidToken).safeTransfer(positionOwner, amount);
     }
 
     /**
@@ -72,6 +75,6 @@ contract VestManager is Initializable, OwnableUpgradeable {
      */
     function _fulfillLiquidTokens(address positionOwner, uint256 amount) private onlyOwner {
         address liquidToken = ILiquidStaking(staking).liquidToken();
-        IERC20(liquidToken).transferFrom(positionOwner, address(this), amount);
+        IERC20(liquidToken).safeTransferFrom(positionOwner, address(this), amount);
     }
 }

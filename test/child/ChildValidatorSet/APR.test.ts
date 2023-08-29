@@ -67,11 +67,14 @@ describe("ChildValidatorSet APR module", () => {
       };
     }
 
+    const liquidToken = await (await ethers.getContractFactory("LiquidityToken")).deploy();
+
     await systemChildValidatorSet.initialize(
       { epochReward, minStake, minDelegation, epochSize: 64 },
       validatorInit,
       bls.address,
-      governance.address
+      governance.address,
+      liquidToken.address
     );
 
     return { childValidatorSet, systemChildValidatorSet };

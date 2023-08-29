@@ -72,7 +72,8 @@ contract ChildValidatorSet is
         InitStruct calldata init,
         ValidatorInit[] calldata validators,
         IBLS newBls,
-        address governance
+        address governance,
+        address liquidToken
     ) external initializer onlySystemCall {
         currentEpochId = 1;
         epochSize = init.epochSize;
@@ -113,6 +114,8 @@ contract ChildValidatorSet is
 
         // Initialize the APR module
         APR.initialize();
+
+        _liquidToken = liquidToken;
     }
 
     /**
