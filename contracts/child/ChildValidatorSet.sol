@@ -87,6 +87,7 @@ contract ChildValidatorSet is
         epochReward = init.epochReward;
         minStake = init.minStake;
         minDelegation = init.minDelegation;
+        _liquidToken = liquidToken;
 
         // set BLS contract
         bls = newBls;
@@ -104,6 +105,8 @@ contract ChildValidatorSet is
             _validators.insert(validators[i].addr, validator);
 
             verifyValidatorRegistration(validators[i].addr, validators[i].signature, validators[i].pubkey);
+
+            LiquidStaking._onStake(validators[i].addr, validators[i].stake);
         }
 
         // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
@@ -114,8 +117,6 @@ contract ChildValidatorSet is
 
         // Initialize the APR module
         APR.initialize();
-
-        _liquidToken = liquidToken;
     }
 
     /**
@@ -255,7 +256,7 @@ contract ChildValidatorSet is
 
         uint256 length = uptime.uptimeData.length;
 
-        // H_MODIFY: Check is removed because validators that are already not part of the validator set
+        // Hydra modification: Check is removed because validators that are already not part of the validator set
         // can receive reward for the last epoch they were part of the validator set
         // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
@@ -349,7 +350,9 @@ contract ChildValidatorSet is
 
         uint256 length = uptime.uptimeData.length;
 
-        require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
+        // Hydra modification: Check is removed because validators that are already not part of the validator set
+        // can receive reward for the last epoch they were part of the validator set
+        // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
         // Ensure proper reward amount is sent
         require(msg.value == getEpochMaxReward(activeStakeBeforeSlash), "INVALID_REWARD_AMOUNT");

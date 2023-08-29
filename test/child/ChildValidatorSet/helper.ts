@@ -30,7 +30,7 @@ export async function commitEpoch(systemChildValidatorSet: ChildValidatorSet, ac
   return input[0];
 }
 
-export async function genCommitEpochInput(systemChildValidatorSet: ChildValidatorSet, accounts: any[]) {
+export async function genCommitEpochInput(systemChildValidatorSet: ChildValidatorSet, validators: any[]) {
   const currentEpochId = await systemChildValidatorSet.currentEpochId();
 
   const previousEpoch = await systemChildValidatorSet.epochs(currentEpochId.sub(1));
@@ -45,7 +45,7 @@ export async function genCommitEpochInput(systemChildValidatorSet: ChildValidato
   };
 
   const valsUptime = [];
-  for (const acc of accounts) {
+  for (const acc of validators) {
     valsUptime.push({ validator: acc.address, signedBlocks: 64 });
   }
 

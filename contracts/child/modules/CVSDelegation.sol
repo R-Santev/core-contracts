@@ -53,6 +53,7 @@ abstract contract CVSDelegation is APR, ICVSDelegation, CVSStorage, CVSWithdrawa
         int256 amountInt = amount.toInt256Safe();
         _queue.insert(validator, 0, amountInt * -1);
         _syncUnstake(validator, amount);
+        LiquidStaking._onUndelegate(msg.sender, amount);
 
         _registerWithdrawal(msg.sender, amount);
         emit Undelegated(msg.sender, validator, amount);
