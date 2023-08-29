@@ -20,6 +20,7 @@ contract MockValidatorStorage {
         Validator memory data = Validator({
             blsKey: blsKey,
             stake: amount,
+            liquidDebt: 0,
             commission: 0,
             totalRewards: 0,
             takenRewards: 0,

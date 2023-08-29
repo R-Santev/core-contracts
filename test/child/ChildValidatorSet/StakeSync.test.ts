@@ -9,6 +9,7 @@ import { expect } from "chai";
 // eslint-disable-next-line node/no-extraneous-import
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { commitEpoch, generateValBls, initValidators, setupVestManager } from "./helper";
+import { LiquidityToken } from "../../../typechain-types";
 
 describe("ChildValidatorSet StakeSyncer", () => {
   const epochReward = ethers.utils.parseEther("0.0000001");
@@ -19,6 +20,7 @@ describe("ChildValidatorSet StakeSyncer", () => {
   let validators: SignerWithAddress[];
   let delegator: SignerWithAddress;
   let governance: SignerWithAddress;
+  let liquidToken: LiquidityToken;
 
   before(async () => {
     // needed for the validators init
@@ -34,6 +36,10 @@ describe("ChildValidatorSet StakeSyncer", () => {
     const ChildValidatorSet = await ethers.getContractFactory("ChildValidatorSet", governance);
     const childValidatorSet = await ChildValidatorSet.deploy();
     await childValidatorSet.deployed();
+
+    const LiquidTokenFactory = await ethers.getContractFactory("LiquidityToken");
+    liquidToken = await LiquidTokenFactory.deploy();
+    await liquidToken.initialize("Liquidity Token", "LQT", governance.address, childValidatorSet.address);
 
     const bls = await (await ethers.getContractFactory("BLS")).deploy();
     await bls.deployed();
@@ -67,7 +73,8 @@ describe("ChildValidatorSet StakeSyncer", () => {
       { epochReward, minStake, minDelegation, epochSize: 64 },
       [],
       bls.address,
-      governance.address
+      governance.address,
+      liquidToken.address
     );
 
     return { childValidatorSet, systemChildValidatorSet };
@@ -244,6 +251,7 @@ describe("ChildValidatorSet StakeSyncer", () => {
       await commitEpoch(systemChildValidatorSet, []);
       const { totalStake } = await childValidatorSet.getValidator(validator.address);
 
+      await liquidToken.connect(delegator).approve(delegatorVestManager.address, minStake);
       await expect(delegatorVestManager.cutPosition(validator.address, minStake))
         .to.emit(childValidatorSet, "Transfer")
         .withArgs(validator.address, ethers.constants.AddressZero, minStake);

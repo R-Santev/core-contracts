@@ -72,7 +72,8 @@ contract ChildValidatorSet is
         InitStruct calldata init,
         ValidatorInit[] calldata validators,
         IBLS newBls,
-        address governance
+        address governance,
+        address liquidToken
     ) external initializer onlySystemCall {
         currentEpochId = 1;
         epochSize = init.epochSize;
@@ -86,6 +87,7 @@ contract ChildValidatorSet is
         epochReward = init.epochReward;
         minStake = init.minStake;
         minDelegation = init.minDelegation;
+        _liquidToken = liquidToken;
 
         // set BLS contract
         bls = newBls;
@@ -94,6 +96,7 @@ contract ChildValidatorSet is
             Validator memory validator = Validator({
                 blsKey: validators[i].pubkey,
                 stake: validators[i].stake,
+                liquidDebt: 0,
                 commission: 0,
                 totalRewards: 0,
                 takenRewards: 0,
@@ -102,6 +105,8 @@ contract ChildValidatorSet is
             _validators.insert(validators[i].addr, validator);
 
             verifyValidatorRegistration(validators[i].addr, validators[i].signature, validators[i].pubkey);
+
+            LiquidStaking._onStake(validators[i].addr, validators[i].stake);
         }
 
         // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
@@ -251,7 +256,7 @@ contract ChildValidatorSet is
 
         uint256 length = uptime.uptimeData.length;
 
-        // H_MODIFY: Check is removed because validators that are already not part of the validator set
+        // Hydra modification: Check is removed because validators that are already not part of the validator set
         // can receive reward for the last epoch they were part of the validator set
         // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
@@ -319,6 +324,7 @@ contract ChildValidatorSet is
             100;
         uint256 slashedAmount = (validator.stake * DOUBLE_SIGNING_SLASHING_PERCENT) / 100;
         validator.stake -= slashedAmount;
+        validator.liquidDebt += slashedAmount;
         _validators.totalStake -= slashedAmount;
         emit DoubleSignerSlashed(key, epoch, pbftRound);
     }
@@ -344,7 +350,9 @@ contract ChildValidatorSet is
 
         uint256 length = uptime.uptimeData.length;
 
-        require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
+        // Hydra modification: Check is removed because validators that are already not part of the validator set
+        // can receive reward for the last epoch they were part of the validator set
+        // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
         // Ensure proper reward amount is sent
         require(msg.value == getEpochMaxReward(activeStakeBeforeSlash), "INVALID_REWARD_AMOUNT");

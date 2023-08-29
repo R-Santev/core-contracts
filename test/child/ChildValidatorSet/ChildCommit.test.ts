@@ -48,6 +48,9 @@ describe("ChildValidatorSet Initial Setup", () => {
 
     await childValidatorSet.deployed();
 
+    const liquidToken = await (await ethers.getContractFactory("LiquidityToken")).deploy();
+    await liquidToken.initialize("Lydra", "LDR", governance, childValidatorSet.address);
+
     bls = await (await ethers.getContractFactory("BLS")).deploy();
     await bls.deployed();
 
@@ -81,7 +84,8 @@ describe("ChildValidatorSet Initial Setup", () => {
       { epochReward, minStake, minDelegation, epochSize: 10 },
       [validatorInit, validatorInitTwo, validatorInitThree, validatorInitFour],
       bls.address,
-      governance
+      governance,
+      liquidToken.address
     );
   });
 

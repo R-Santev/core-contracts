@@ -18,6 +18,7 @@ import {
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../../constants";
 import { getValidatorReward, isActivePosition } from "../helpers";
 import { commitEpoch, getMaxEpochReward, getUserManager } from "./helper";
+import { LiquidityToken } from "../../../typechain-types/contracts/child/Lydra.sol";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -53,7 +54,8 @@ describe("ChildValidatorSet", () => {
       signature: [BigNumberish, BigNumberish];
       stake: BigNumberish;
     },
-    accounts: any[]; // we use any so we can access address directly from object
+    accounts: any[], // we use any so we can access address directly from object
+    liquidToken: LiquidityToken;
 
   before(async () => {
     await mcl.init();
@@ -66,8 +68,13 @@ describe("ChildValidatorSet", () => {
     minStake = ethers.utils.parseEther("1");
     minDelegation = ethers.utils.parseEther("1");
     epochsInYear = 31500;
+
     const ChildValidatorSet = await ethers.getContractFactory("ChildValidatorSetMock");
     childValidatorSet = await ChildValidatorSet.deploy();
+
+    const LiquidTokenFactory = await ethers.getContractFactory("LiquidityToken");
+    liquidToken = await LiquidTokenFactory.deploy();
+    liquidToken.initialize("Liquidity Token", "LQT", governance, childValidatorSet.address);
 
     await childValidatorSet.deployed();
 
@@ -132,7 +139,8 @@ describe("ChildValidatorSet", () => {
         { epochReward, minStake, minDelegation, epochSize: 64 },
         [validatorInit],
         bls.address,
-        governance
+        governance,
+        liquidToken.address
       )
     )
       .to.be.revertedWithCustomError(childValidatorSet, "Unauthorized")
@@ -155,7 +163,8 @@ describe("ChildValidatorSet", () => {
         // eslint-disable-next-line node/no-unsupported-features/es-syntax
         [{ ...validatorInit, addr: accounts[1].address }],
         bls.address,
-        governance
+        governance,
+        liquidToken.address
       )
     )
       .to.be.revertedWithCustomError(childValidatorSet, "InvalidSignature")
@@ -177,7 +186,8 @@ describe("ChildValidatorSet", () => {
       { epochReward, minStake, minDelegation, epochSize: 64 },
       [validatorInit],
       bls.address,
-      governance
+      governance,
+      liquidToken.address
     );
 
     expect(await childValidatorSet.epochReward()).to.equal(epochReward);
@@ -205,7 +215,8 @@ describe("ChildValidatorSet", () => {
         { epochReward, minStake, minDelegation, epochSize: 64 },
         [validatorInit],
         bls.address,
-        governance
+        governance,
+        liquidToken.address
       )
     ).to.be.revertedWith("Initializable: contract is already initialized");
   });
@@ -799,66 +810,67 @@ describe("ChildValidatorSet", () => {
   });
 
   describe("commitEpochWithDoubleSignerSlashing", async () => {
-    it("failed by invalid length", async () => {
-      id = 9;
-      epoch = {
-        startBlock: 513,
-        endBlock: 577,
-        epochRoot: ethers.utils.randomBytes(32),
-      };
+    // Hydra modification: Removed require
+    // it("failed by invalid length", async () => {
+    //   id = 9;
+    //   epoch = {
+    //     startBlock: 513,
+    //     endBlock: 577,
+    //     epochRoot: ethers.utils.randomBytes(32),
+    //   };
 
-      const currentEpochId = await childValidatorSet.currentEpochId();
+    //   const currentEpochId = await childValidatorSet.currentEpochId();
 
-      uptime = {
-        epochId: currentEpochId,
-        uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
-        totalBlocks: 2,
-      };
+    //   uptime = {
+    //     epochId: currentEpochId,
+    //     uptimeData: [{ validator: accounts[2].address, signedBlocks: 1 }],
+    //     totalBlocks: 2,
+    //   };
 
-      const blockNumber = 0;
-      const pbftRound = 0;
+    //   const blockNumber = 0;
+    //   const pbftRound = 0;
 
-      doubleSignerSlashingInput = [
-        {
-          epochId: 0,
-          eventRoot: ethers.utils.randomBytes(32),
-          currentValidatorSetHash: ethers.utils.randomBytes(32),
-          nextValidatorSetHash: ethers.utils.randomBytes(32),
-          blockHash: ethers.utils.randomBytes(32),
-          bitmap: "0x",
-          signature: "",
-        },
-      ];
-      const signature = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
-          [
-            chainId,
-            blockNumber,
-            doubleSignerSlashingInput[0].blockHash,
-            pbftRound,
-            doubleSignerSlashingInput[0].epochId,
-            doubleSignerSlashingInput[0].eventRoot,
-            doubleSignerSlashingInput[0].currentValidatorSetHash,
-            doubleSignerSlashingInput[0].nextValidatorSetHash,
-          ]
-        )
-      );
-      doubleSignerSlashingInput[0].signature = signature;
+    //   doubleSignerSlashingInput = [
+    //     {
+    //       epochId: 0,
+    //       eventRoot: ethers.utils.randomBytes(32),
+    //       currentValidatorSetHash: ethers.utils.randomBytes(32),
+    //       nextValidatorSetHash: ethers.utils.randomBytes(32),
+    //       blockHash: ethers.utils.randomBytes(32),
+    //       bitmap: "0x",
+    //       signature: "",
+    //     },
+    //   ];
+    //   const signature = ethers.utils.keccak256(
+    //     ethers.utils.defaultAbiCoder.encode(
+    //       ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
+    //       [
+    //         chainId,
+    //         blockNumber,
+    //         doubleSignerSlashingInput[0].blockHash,
+    //         pbftRound,
+    //         doubleSignerSlashingInput[0].epochId,
+    //         doubleSignerSlashingInput[0].eventRoot,
+    //         doubleSignerSlashingInput[0].currentValidatorSetHash,
+    //         doubleSignerSlashingInput[0].nextValidatorSetHash,
+    //       ]
+    //     )
+    //   );
+    //   doubleSignerSlashingInput[0].signature = signature;
 
-      const maxReward = await getMaxEpochReward(childValidatorSet);
-      await expect(
-        systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
-          currentEpochId,
-          blockNumber,
-          pbftRound,
-          epoch,
-          uptime,
-          doubleSignerSlashingInput,
-          { value: maxReward }
-        )
-      ).to.be.revertedWith("INVALID_LENGTH");
-    });
+    //   const maxReward = await getMaxEpochReward(childValidatorSet);
+    //   await expect(
+    //     systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
+    //       currentEpochId,
+    //       blockNumber,
+    //       pbftRound,
+    //       epoch,
+    //       uptime,
+    //       doubleSignerSlashingInput,
+    //       { value: maxReward }
+    //     )
+    //   ).to.be.revertedWith("INVALID_LENGTH");
+    // });
 
     it("failed by blockhash not unique", async () => {
       id = 9;
@@ -1153,83 +1165,84 @@ describe("ChildValidatorSet", () => {
       ).to.be.revertedWith("NO_BLOCKS_COMMITTED");
     });
 
-    it("failed by invalid length", async () => {
-      id = 9;
-      epoch = {
-        startBlock: 513,
-        endBlock: 577,
-        epochRoot: ethers.utils.randomBytes(32),
-      };
+    // Hydra modification: Removed require
+    // it("failed by invalid length", async () => {
+    //   id = 9;
+    //   epoch = {
+    //     startBlock: 513,
+    //     endBlock: 577,
+    //     epochRoot: ethers.utils.randomBytes(32),
+    //   };
 
-      const currentEpochId = await childValidatorSet.currentEpochId();
+    //   const currentEpochId = await childValidatorSet.currentEpochId();
 
-      uptime = {
-        epochId: currentEpochId,
-        uptimeData: [
-          { validator: accounts[2].address, signedBlocks: 1 },
-          { validator: accounts[2].address, signedBlocks: 1 },
-          { validator: accounts[2].address, signedBlocks: 1 },
-        ],
-        totalBlocks: 2,
-      };
+    //   uptime = {
+    //     epochId: currentEpochId,
+    //     uptimeData: [
+    //       { validator: accounts[2].address, signedBlocks: 1 },
+    //       { validator: accounts[2].address, signedBlocks: 1 },
+    //       { validator: accounts[2].address, signedBlocks: 1 },
+    //     ],
+    //     totalBlocks: 2,
+    //   };
 
-      const blockNumber = 0;
-      const pbftRound = 0;
+    //   const blockNumber = 0;
+    //   const pbftRound = 0;
 
-      doubleSignerSlashingInput = [
-        {
-          epochId: currentEpochId,
-          eventRoot: ethers.utils.randomBytes(32),
-          currentValidatorSetHash: ethers.utils.randomBytes(32),
-          nextValidatorSetHash: ethers.utils.randomBytes(32),
-          blockHash: ethers.utils.randomBytes(32),
-          bitmap: "0x",
-          signature: "",
-        },
-        {
-          epochId: currentEpochId,
-          eventRoot: ethers.utils.randomBytes(32),
-          currentValidatorSetHash: ethers.utils.randomBytes(32),
-          nextValidatorSetHash: ethers.utils.randomBytes(32),
-          blockHash: ethers.utils.randomBytes(32),
-          bitmap: "0x",
-          signature: "",
-        },
-      ];
-      for (let i = 0; i < doubleSignerSlashingInput.length; i++) {
-        doubleSignerSlashingInput[i].signature = ethers.utils.keccak256(
-          ethers.utils.defaultAbiCoder.encode(
-            ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
-            [
-              chainId,
-              blockNumber,
-              doubleSignerSlashingInput[i].blockHash,
-              pbftRound,
-              doubleSignerSlashingInput[i].epochId,
-              doubleSignerSlashingInput[i].eventRoot,
-              doubleSignerSlashingInput[i].currentValidatorSetHash,
-              doubleSignerSlashingInput[i].nextValidatorSetHash,
-            ]
-          )
-        );
-      }
+    //   doubleSignerSlashingInput = [
+    //     {
+    //       epochId: currentEpochId,
+    //       eventRoot: ethers.utils.randomBytes(32),
+    //       currentValidatorSetHash: ethers.utils.randomBytes(32),
+    //       nextValidatorSetHash: ethers.utils.randomBytes(32),
+    //       blockHash: ethers.utils.randomBytes(32),
+    //       bitmap: "0x",
+    //       signature: "",
+    //     },
+    //     {
+    //       epochId: currentEpochId,
+    //       eventRoot: ethers.utils.randomBytes(32),
+    //       currentValidatorSetHash: ethers.utils.randomBytes(32),
+    //       nextValidatorSetHash: ethers.utils.randomBytes(32),
+    //       blockHash: ethers.utils.randomBytes(32),
+    //       bitmap: "0x",
+    //       signature: "",
+    //     },
+    //   ];
+    //   for (let i = 0; i < doubleSignerSlashingInput.length; i++) {
+    //     doubleSignerSlashingInput[i].signature = ethers.utils.keccak256(
+    //       ethers.utils.defaultAbiCoder.encode(
+    //         ["uint", "uint", "bytes32", "uint", "uint", "bytes32", "bytes32", "bytes32"],
+    //         [
+    //           chainId,
+    //           blockNumber,
+    //           doubleSignerSlashingInput[i].blockHash,
+    //           pbftRound,
+    //           doubleSignerSlashingInput[i].epochId,
+    //           doubleSignerSlashingInput[i].eventRoot,
+    //           doubleSignerSlashingInput[i].currentValidatorSetHash,
+    //           doubleSignerSlashingInput[i].nextValidatorSetHash,
+    //         ]
+    //       )
+    //     );
+    //   }
 
-      await hre.network.provider.send("hardhat_setCode", [
-        "0x0000000000000000000000000000000000002030",
-        alwaysTrueBytecode,
-      ]);
+    //   await hre.network.provider.send("hardhat_setCode", [
+    //     "0x0000000000000000000000000000000000002030",
+    //     alwaysTrueBytecode,
+    //   ]);
 
-      await expect(
-        systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
-          currentEpochId,
-          blockNumber,
-          pbftRound,
-          epoch,
-          uptime,
-          doubleSignerSlashingInput
-        )
-      ).to.be.revertedWith("INVALID_LENGTH");
-    });
+    //   await expect(
+    //     systemChildValidatorSet.commitEpochWithDoubleSignerSlashing(
+    //       currentEpochId,
+    //       blockNumber,
+    //       pbftRound,
+    //       epoch,
+    //       uptime,
+    //       doubleSignerSlashingInput
+    //     )
+    //   ).to.be.revertedWith("INVALID_LENGTH");
+    // });
 
     it("success", async () => {
       id = 9;
@@ -1819,7 +1832,18 @@ describe("ChildValidatorSet", () => {
         const validator = accounts[2].address;
         const balance = await childValidatorSet.delegationOf(validator, manager.address);
 
-        await expect(manager.cutPosition(validator, balance.add(1)))
+        // send one more token so liquid tokens balance is enough
+        await childValidatorSet.connect(accounts[7]).newManager();
+        const user2 = accounts[7];
+        const manager2 = await getUserManager(childValidatorSet, user2, VestManagerFactory);
+        await manager2.openDelegatorPosition(validator, 1, {
+          value: minDelegation,
+        });
+        await liquidToken.connect(user2).transfer(accounts[4].address, 1);
+
+        const balanceToCut = balance.add(1);
+        await liquidToken.connect(accounts[4]).approve(manager.address, balanceToCut);
+        await expect(manager.cutPosition(validator, balanceToCut))
           .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
           .withArgs("vesting", "INSUFFICIENT_BALANCE");
       });
@@ -1829,7 +1853,9 @@ describe("ChildValidatorSet", () => {
         const validator = accounts[2].address;
         const balance = await childValidatorSet.delegationOf(validator, manager.address);
 
-        await expect(manager.cutPosition(validator, balance.sub(1)))
+        const amountToCut = balance.sub(1);
+        await liquidToken.connect(accounts[4]).approve(manager.address, amountToCut);
+        await expect(manager.cutPosition(validator, amountToCut))
           .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
           .withArgs("vesting", "DELEGATION_TOO_LOW");
       });
@@ -1854,10 +1880,6 @@ describe("ChildValidatorSet", () => {
         // ensure position is active
         const isActive = await isActivePosition(childValidatorSet, validator, manager);
         expect(isActive).to.be.true;
-
-        // set next block timestamp so half of the vesting period passed
-        const nextBlockTimestamp = position.duration.div(2).add(position.start);
-        await time.setNextBlockTimestamp(nextBlockTimestamp);
 
         // check is amount properly removed from delegation
         const delegatedBalanceBefore = await childValidatorSet.delegationOf(validator, manager.address);
@@ -1884,6 +1906,12 @@ describe("ChildValidatorSet", () => {
         //   decrease.mul(-1)
         // );
 
+        await liquidToken.connect(accounts[4]).approve(manager.address, cutAmount);
+
+        // set next block timestamp so half of the vesting period passed
+        const nextBlockTimestamp = position.duration.div(2).add(position.start);
+        await time.setNextBlockTimestamp(nextBlockTimestamp);
+
         await manager.cutPosition(validator, cutAmount);
 
         const delegatedBalanceAfter = await childValidatorSet.delegationOf(validator, manager.address);
@@ -1898,7 +1926,9 @@ describe("ChildValidatorSet", () => {
         // commit Epoch so reward is available for withdrawal
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
         await manager.withdraw(user.address);
+
         const balanceAfter = await user.getBalance();
+
         // cut half of the requested amount because half of the vesting period is still not passed
         expect(balanceAfter.sub(balanceBefore)).to.be.eq(amountToBeBurned);
       });
@@ -1921,7 +1951,8 @@ describe("ChildValidatorSet", () => {
 
         const balanceBefore = await accounts[4].getBalance();
         const delegatedAmount = await childValidatorSet.delegationOf(validator, manager.address);
-        manager.cutPosition(accounts[2].address, delegatedAmount);
+        await liquidToken.connect(accounts[4]).approve(manager.address, delegatedAmount);
+        await manager.cutPosition(accounts[2].address, delegatedAmount);
 
         // Commit one more epoch so withdraw to be available
         await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
@@ -1942,7 +1973,6 @@ describe("ChildValidatorSet", () => {
       it("should delete position when closing it", async () => {
         const user2 = accounts[5];
         const validator = accounts[2].address;
-        await childValidatorSet.connect(user2).newManager();
         const manager2 = await getUserManager(childValidatorSet, user2, VestManagerFactory);
 
         await manager2.openDelegatorPosition(validator, 1, {
@@ -1951,7 +1981,8 @@ describe("ChildValidatorSet", () => {
 
         // cut position
         const delegatedAmount = await childValidatorSet.delegationOf(validator, manager2.address);
-        manager2.cutPosition(validator, delegatedAmount);
+        await liquidToken.connect(accounts[5]).approve(manager2.address, delegatedAmount);
+        await manager2.cutPosition(validator, delegatedAmount);
         expect((await childValidatorSet.vestings(validator, manager2.address)).start).to.be.eq(0);
       });
     });
@@ -2056,6 +2087,7 @@ describe("ChildValidatorSet", () => {
 
         // close position
         const delegatedAmount = await childValidatorSet.delegationOf(validator, manager.address);
+        await liquidToken.connect(accounts[4]).approve(manager.address, delegatedAmount);
         await manager.cutPosition(validator, delegatedAmount);
         // top-up
         await expect(manager.topUpPosition(validator, { value: minDelegation }))
@@ -2114,6 +2146,7 @@ describe("ChildValidatorSet", () => {
         const delegation = await childValidatorSet.delegationOf(accounts[2].address, manager.address);
         // is position active
         expect(await isActivePosition(childValidatorSet, validator, manager)).to.be.true;
+        await liquidToken.connect(accounts[4]).approve(manager.address, delegation);
         await manager.cutPosition(validator, delegation);
         // check reward
         expect(await childValidatorSet.getRawDelegatorReward(validator, manager.address)).to.be.eq(0);

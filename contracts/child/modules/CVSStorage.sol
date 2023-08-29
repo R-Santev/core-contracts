@@ -40,14 +40,17 @@ abstract contract CVSStorage is ICVSStorage {
     mapping(uint256 => Epoch) public epochs;
     mapping(address => bool) public whitelist;
 
-    // slither-disable-next-line unused-state,naming-convention
-    uint256[50] private __gap;
-
     // Initial Voting Power exponent to be ^0.5
-    PowerExponentStore public powerExponent = PowerExponentStore({value: 5000, pendingValue: 0});
+    PowerExponentStore public powerExponent;
 
     //base implemetantion to be used by proxies
     address public implementation;
+
+    // Liquid Staking token given to stakers and delegators
+    address internal _liquidToken;
+
+    // slither-disable-next-line unused-state,naming-convention
+    uint256[50] private __gap;
 
     /**
      * @inheritdoc ICVSStorage

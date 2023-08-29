@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MIT
+pragma solidity 0.8.17;
 
 // TODO: About the contract size 36000 bytes
 // Move VestFactory to a separate contract
@@ -6,8 +7,6 @@
 // Decrease functions
 // Optimize logic to less code
 // Use custom Errors without args to reduce strings size
-
-pragma solidity 0.8.17;
 
 import "./Vesting.sol";
 import "./VestFactory.sol";
@@ -82,6 +81,7 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         _queue.insert(validator, 0, amountInt * -1);
         // emit here so the amount is correct value (before the cut)
         _syncUnstake(validator, amount);
+        LiquidStaking._onUndelegate(msg.sender, amount);
 
         amount = _cutPosition(validator, delegation, amount, amountAfterUndelegate);
         _registerWithdrawal(msg.sender, amount);
