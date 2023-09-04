@@ -1,28 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "./IStakeManager.sol";
+import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "./IStakeManager.sol";
 import "../interfaces/common/IBLS.sol";
 
-contract StakeManager is IStakeManager, Initializable {
+contract StakeManager is IStakeManager, Initializable, Ownable2StepUpgradeable {
     using SafeERC20 for IERC20;
-    using GenesisLib for GenesisSet;
-
-    bytes32 private constant STAKE_SIG = keccak256("STAKE");
-    bytes32 private constant UNSTAKE_SIG = keccak256("UNSTAKE");
-    bytes32 private constant SLASH_SIG = keccak256("SLASH");
 
     IERC20 internal stakingToken;
+    address private validatorSet;
 
     IBLS private bls;
-    address private exitHelper;
 
     bytes32 public domain;
 
-    function initialize(address newStakingToken) public initializer {
+    mapping(address => Validator) public validators;
+
+    modifier onlyValidator(address validator) {
+        if (!validators[validator].isActive) revert Unauthorized("VALIDATOR");
+        _;
+    }
+
+    function initialize(
+        address newStakingToken,
+        address newBls,
+        address newValidatorSet,
+        string memory newDomain
+    ) public initializer {
+        require(
+            newStakingToken != address(0) &&
+                newBls != address(0) &&
+                newValidatorSet != address(0) &&
+                bytes(newDomain).length != 0,
+            "INVALID_INPUT"
+        );
+
         stakingToken = IERC20(newStakingToken);
+        bls = IBLS(newBls);
+        validatorSet = newValidatorSet;
+        domain = keccak256(abi.encode(newDomain));
+    }
+
+    function whitelistValidators(address[] calldata validators_) external onlyOwner {
+        uint256 length = validators_.length;
+        for (uint256 i = 0; i < length; i++) {
+            _addToWhitelist(validators_[i]);
+        }
+    }
+
+    function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external {
+        Validator storage validator = validators[msg.sender];
+        if (!validator.isWhitelisted) revert Unauthorized("WHITELIST");
+        _verifyValidatorRegistration(msg.sender, signature, pubkey);
+        validator.blsKey = pubkey;
+        validator.isActive = true;
+        _removeFromWhitelist(msg.sender);
+        emit ValidatorRegistered(msg.sender, pubkey);
+    }
+
+    function withdrawSlashedStake(address to) external onlyOwner {
+        uint256 balance = matic.balanceOf(address(this));
+        matic.safeTransfer(to, balance);
     }
 
     /**
@@ -103,6 +144,27 @@ contract StakeManager is IStakeManager, Initializable {
         // slither-disable-next-line reentrancy-events
         stakingToken.safeTransfer(to, amount);
         emit StakeWithdrawn(validator, to, amount);
+    }
+
+    function getValidator(address validator_) external view returns (Validator memory) {
+        return validators[validator_];
+    }
+
+    function _addToWhitelist(address validator) internal {
+        validators[validator].isWhitelisted = true;
+        emit AddedToWhitelist(validator);
+    }
+
+    function _removeFromWhitelist(address validator) internal {
+        validators[validator].isWhitelisted = false;
+        emit RemovedFromWhitelist(validator);
+    }
+
+    function _removeIfValidatorUnstaked(address validator) internal {
+        if (stakeManager.stakeOf(validator, id) == 0) {
+            validators[validator].isActive = false;
+            emit ValidatorDeactivated(validator);
+        }
     }
 
     // slither-disable-next-line unused-state,naming-convention
