@@ -1036,7 +1036,7 @@ function implementation() external view returns (address)
 ### initialize
 
 ```solidity
-function initialize(IChildValidatorSetBase.InitStruct init, IChildValidatorSetBase.ValidatorInit[] validators, contract IBLS newBls, address governance) external nonpayable
+function initialize(IChildValidatorSetBase.InitStruct init, IChildValidatorSetBase.ValidatorInit[] validators, contract IBLS newBls, address governance, address liquidToken) external nonpayable
 ```
 
 
@@ -1051,6 +1051,7 @@ function initialize(IChildValidatorSetBase.InitStruct init, IChildValidatorSetBa
 | validators | IChildValidatorSetBase.ValidatorInit[] | undefined |
 | newBls | contract IBLS | undefined |
 | governance | address | undefined |
+| liquidToken | address | undefined |
 
 ### isActivePosition
 
@@ -1161,6 +1162,23 @@ function isVestManager(address delegator) external view returns (bool)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bool | undefined |
+
+### liquidToken
+
+```solidity
+function liquidToken() external view returns (address)
+```
+
+Returns the address of the liquidity token.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### minDelegation
 
