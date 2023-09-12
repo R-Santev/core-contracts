@@ -4,14 +4,14 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "./../child/System.sol";
-import "./../child/h_modules/APR.sol";
 import "./modules/VestingData.sol";
+import "./modules/APR.sol";
 
 import "./libs/VestingLib.sol";
 
-import "./../interfaces/modules/ICVSStorage.sol";
 import "./interfaces/IStakeManager.sol";
 import "./interfaces/IValidatorSet.sol";
+import "./interfaces/IDelegationPool.sol";
 
 contract RewardPoolContract is Initializable, System, APR, VestingData {
     using VestingLib for VestData;
@@ -33,7 +33,7 @@ contract RewardPoolContract is Initializable, System, APR, VestingData {
         Epoch calldata epoch,
         Uptime calldata uptime,
         uint256 epochSize
-    ) external onlySystemCall {
+    ) external payable onlySystemCall {
         // H_MODIFY: Ensure the max reward tokens are sent
         uint256 activeStake = stakeManager.totalActiveStake();
         // Ensure proper reward amount is sent
@@ -56,24 +56,25 @@ contract RewardPoolContract is Initializable, System, APR, VestingData {
 
         for (uint256 i = 0; i < length; ++i) {
             UptimeData memory uptimeData = uptime.uptimeData[i];
-            uint256 stake = validatorSet.balanceOf(uptimeData.validator);
-            uint256 delegation = validatorSet.delegationOf(uptimeData.validator);
+            uint256 stake = validatorSet.balanceOfAt(uptimeData.validator, epochId);
+
+            IDelegationPool delegationPool = IDelegationPool(validatorSet.getDelegationPoolOf(uptimeData.validator));
+            uint256 delegation = delegationPool.delegationAt(epochId);
 
             // slither-disable-next-line divide-before-multiply
             uint256 validatorReward = (reward * (stake + delegation) * uptimeData.signedBlocks) /
                 (activeStake * uptime.totalBlocks);
             (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
-                uptimeData.validator,
-                validatorReward
+                validatorReward,
+                stake,
+                delegation
             );
 
             _distributeValidatorReward(uptimeData.validator, validatorShares);
-            _distributeDelegatorReward(uptimeData.validator, delegatorShares);
+            _distributeDelegatorReward(delegationPool, uptimeData.validator, delegatorShares);
 
             // H_MODIFY: Keep history record of the rewardPerShare to be used on reward claim
-            uint256 magnifiedRewardPerShare = stakeManager
-                .getDelegationPool(uptimeData.validator)
-                .magnifiedRewardPerShare;
+            uint256 magnifiedRewardPerShare = delegationPool.magnifiedRewardPerShare();
             if (delegatorShares > 0) {
                 _saveEpochRPS(uptimeData.validator, magnifiedRewardPerShare, uptime.epochId);
             }
@@ -86,11 +87,10 @@ contract RewardPoolContract is Initializable, System, APR, VestingData {
     }
 
     function _calculateValidatorAndDelegatorShares(
-        address validatorAddr,
         uint256 stakedBalance,
         uint256 delegatedBalance,
         uint256 totalReward
-    ) private view returns (uint256, uint256) {
+    ) private pure returns (uint256, uint256) {
         if (stakedBalance == 0) return (0, 0);
         if (delegatedBalance == 0) return (totalReward, 0);
 
@@ -103,7 +103,7 @@ contract RewardPoolContract is Initializable, System, APR, VestingData {
     }
 
     function _distributeValidatorReward(address validator, uint256 reward) internal {
-        VestData memory position = stakeManager.stakePositions(validator);
+        VestData memory position = validatorSet.stakePositionOf(validator);
         if (position.isActive()) {
             reward = _applyCustomReward(position, reward, true);
         } else {
@@ -115,12 +115,12 @@ contract RewardPoolContract is Initializable, System, APR, VestingData {
         emit ValidatorRewardDistributed(validator, reward);
     }
 
-    function _distributeDelegatorReward(address validator, uint256 reward) internal {
-        stakeManager.getDelegationPool(validator).distributeReward(reward);
+    function _distributeDelegatorReward(IDelegationPool delegationPool, address validator, uint256 reward) internal {
+        delegationPool.distributeReward(reward);
         emit DelegatorRewardDistributed(validator, reward);
     }
 
-    function calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) internal view returns (uint256) {
+    function calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) internal pure returns (uint256) {
         uint256 modifiedEpochReward = applyMacro(activeStake);
         uint256 blocksNum = epoch.endBlock - epoch.startBlock;
         uint256 nominator = modifiedEpochReward * blocksNum * 100;
