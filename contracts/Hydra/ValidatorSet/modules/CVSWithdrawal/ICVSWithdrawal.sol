@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 interface ICVSWithdrawal {
     event WithdrawalRegistered(address indexed account, uint256 amount);
-    event Withdrawal(address indexed account, address indexed to, uint256 amount);
+    event WithdrawalFinished(address indexed account, address indexed to, uint256 amount);
 
     /**
      * @notice Withdraws sender's withdrawable amount to specified address.

@@ -5,7 +5,6 @@ import "./CVSStaking.sol";
 
 abstract contract StakerVesting is Vesting {
     using ValidatorStorageLib for ValidatorTree;
-    using ValidatorQueueLib for ValidatorQueue;
     using SafeMathUint for uint256;
 
     struct ValReward {
@@ -47,9 +46,9 @@ abstract contract StakerVesting is Vesting {
             revert StakeRequirement({src: "stakerVesting", msg: "WRONG_DATA"});
         }
 
-        if (rewardData.totalReward > validator.takenRewards) {
-            return rewardData.totalReward - validator.takenRewards;
-        }
+        // if (rewardData.totalReward > validator.takenRewards) {
+        //     return rewardData.totalReward - validator.takenRewards;
+        // }
 
         return 0;
     }
@@ -60,14 +59,14 @@ abstract contract StakerVesting is Vesting {
     function _handleOpenPosition(uint256 durationWeeks) internal {
         uint256 duration = durationWeeks * 1 weeks;
 
-        stakePositions[msg.sender] = VestData({
-            duration: duration,
-            start: block.timestamp,
-            end: block.timestamp + duration,
-            base: getBase(),
-            vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
-        });
+        // stakePositions[msg.sender] = VestData({
+        //     duration: duration,
+        //     start: block.timestamp,
+        //     end: block.timestamp + duration,
+        //     base: getBase(),
+        //     vestBonus: getVestingBonus(durationWeeks),
+        //     rsiBonus: uint248(getRSI())
+        // });
 
         delete valRewards[msg.sender];
     }
@@ -96,10 +95,10 @@ abstract contract StakerVesting is Vesting {
         uint256 penalty = _calcSlashing(position, amountUnstaked);
         amountUnstaked -= penalty;
 
-        uint256 reward = validator.totalRewards - validator.takenRewards;
+        // uint256 reward = validator.totalRewards - validator.takenRewards;
         // burn penalty and reward
-        validator.takenRewards = validator.totalRewards;
-        _burnAmount(penalty + reward);
+        // validator.takenRewards = validator.totalRewards;
+        // _burnAmount(penalty + reward);
 
         // if position is closed when active, top-up must not be available as well as reward must not be available
         // so we delete the vesting data
@@ -111,13 +110,12 @@ abstract contract StakerVesting is Vesting {
     }
 
     function _saveValRewardData(address validator, uint256 epoch) internal {
-        ValReward memory rewardData = ValReward({
-            totalReward: _validators.get(validator).totalRewards,
-            epoch: epoch,
-            timestamp: block.timestamp
-        });
-
-        valRewards[validator].push(rewardData);
+        // ValReward memory rewardData = ValReward({
+        //     // totalReward: _validators.get(validator).totalRewards,
+        //     epoch: epoch,
+        //     timestamp: block.timestamp
+        // });
+        // valRewards[validator].push(rewardData);
     }
 
     function _calculateDurationIncrease(uint256 oldBalance, uint256 duration) private returns (uint256) {

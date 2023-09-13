@@ -34,11 +34,6 @@ interface ICVSStaking {
     function setCommission(uint256 newCommission) external;
 
     /**
-     * @notice Claims validator rewards for sender.
-     */
-    function claimValidatorReward() external;
-
-    /**
      * @notice Gets first n active validators sorted by total stake.
      * @param n Desired number of validators to return
      * @return Returns array of addresses of first n active validators sorted by total stake,
@@ -58,11 +53,4 @@ interface ICVSStaking {
      * @return Validator's total stake (in MATIC wei)
      */
     function totalStakeOf(address validator) external view returns (uint256);
-
-    /**
-     * @notice Gets validator's unclaimed rewards.
-     * @param validator Address of validator
-     * @return Validator's unclaimed rewards (in MATIC wei)
-     */
-    function getValidatorReward(address validator) external view returns (uint256);
 }

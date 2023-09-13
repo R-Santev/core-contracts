@@ -4,29 +4,25 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/utils/ArraysUpgradeable.sol";
 
 import "./ValidatorSetBase.sol";
-import "./modules/CVSSystem/CVSSystem.sol";
 import "./modules/CVSAccessControl/CVSAccessControl.sol";
 import "./modules/CVSWithdrawal/CVSWithdrawal.sol";
-// import "./modules/CVSDelegation.sol";
+import "./modules/PowerExponent/CVSPowerExponent.sol";
+import "./modules/Staking/ExtendedStaking.sol";
+import "./../common/CVSSystem/CVSSystem.sol";
 
-import "../../libs/ValidatorQueue.sol";
 import "../../libs/SafeMathInt.sol";
 
 // TODO: setup use of reward account that would handle the amounts of rewards
 
 // solhint-disable max-states-count
 contract ValidatorSet is
-    ValidatorSetBase,
     CVSSystem,
-    CVSAccessControl,
-    CVSWithdrawal,
-    PowerExponent,
-    ExtendedStaking,
-    ExtendedDelegation
+    CVSPowerExponent,
+    ExtendedStaking
+    // ExtendedDelegation
 {
-    using ValidatorQueueLib for ValidatorQueue;
+    using ValidatorStorageLib for ValidatorTree;
     using WithdrawalQueueLib for WithdrawalQueue;
-    using RewardPoolLib for RewardPool;
     using SafeMathInt for int256;
     using ArraysUpgradeable for uint256[];
 
@@ -35,6 +31,8 @@ contract ValidatorSet is
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public doubleSignerSlashes;
 
     mapping(uint256 => Epoch) public epochs;
+    uint256[] public epochEndBlocks;
+    mapping(uint256 => uint256) private _commitBlockNumbers;
 
     /**
      * @notice Initializer function for genesis contract, called by v3 client at genesis to set up the initial set.
@@ -56,17 +54,19 @@ contract ValidatorSet is
         address governance,
         address liquidToken
     ) external initializer onlySystemCall {
-        currentEpochId = 1;
-        _transferOwnership(governance);
-        __ReentrancyGuard_init();
-
         require(init.minStake >= 1 ether, "INVALID_MIN_STAKE");
         require(init.minDelegation >= 1 ether, "INVALID_MIN_DELEGATION");
 
+        currentEpochId = 1;
+        epochEndBlocks.push(0);
+
+        _transferOwnership(governance);
+        __ReentrancyGuard_init();
+
         // slither-disable-next-line events-maths
-        epochReward = init.epochReward;
+        // epochReward = init.epochReward;
         minStake = init.minStake;
-        minDelegation = init.minDelegation;
+        // minDelegation = init.minDelegation;
         _liquidToken = liquidToken;
 
         // set BLS contract
@@ -78,27 +78,19 @@ contract ValidatorSet is
                 stake: validators[i].stake,
                 liquidDebt: 0,
                 commission: 0,
-                totalRewards: 0,
-                takenRewards: 0,
                 active: true
             });
             _validators.insert(validators[i].addr, validator);
-
-            verifyValidatorRegistration(validators[i].addr, validators[i].signature, validators[i].pubkey);
-
+            _verifyValidatorRegistration(validators[i].addr, validators[i].signature, validators[i].pubkey);
             LiquidStaking._onStake(validators[i].addr, validators[i].stake);
         }
 
-        // Polygon Edge didn't apply the default value set in the CVSStorage contract, so we set it here
         powerExponent = PowerExponentStore({value: 5000, pendingValue: 0});
 
         // H_MODIFY: Set base implementation for VestFactory
-        implementation = address(new VestManager());
+        // implementation = address(new VestManager());
     }
 
-    /**
-     * @inheritdoc IChildValidatorSetBase
-     */
     function commitEpoch(uint256 id, Epoch calldata epoch, uint256 epochSize) external payable onlySystemCall {
         uint256 newEpochId = currentEpochId++;
         require(id == newEpochId, "UNEXPECTED_EPOCH_ID");
@@ -107,6 +99,8 @@ contract ValidatorSet is
         require(epochs[newEpochId - 1].endBlock + 1 == epoch.startBlock, "INVALID_START_BLOCK");
 
         epochs[newEpochId] = epoch;
+        _commitBlockNumbers[newEpochId] = block.number;
+        epochEndBlocks.push(epoch.endBlock);
 
         // Apply new exponent in case it was changed in the latest epoch
         _applyPendingExp();
