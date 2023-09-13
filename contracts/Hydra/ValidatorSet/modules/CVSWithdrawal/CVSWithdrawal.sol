@@ -8,7 +8,7 @@ import "./../../ValidatorSetBase.sol";
 
 import "./WithdrawalQueue.sol";
 
-contract CVSWithdrawal is ICVSWithdrawal, ReentrancyGuardUpgradeable, ValidatorSetBase {
+abstract contract CVSWithdrawal is ICVSWithdrawal, ValidatorSetBase, ReentrancyGuardUpgradeable {
     using WithdrawalQueueLib for WithdrawalQueue;
 
     uint256 public constant WITHDRAWAL_WAIT_PERIOD = 1;

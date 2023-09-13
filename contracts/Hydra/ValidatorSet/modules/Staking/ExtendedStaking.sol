@@ -6,9 +6,12 @@ import "./LiquidStaking.sol";
 
 import "./CVSStaking.sol";
 
+import "./../../libs/ValidatorStorage.sol";
 import "../../../../libs/SafeMathInt.sol";
 
 abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
+    using ValidatorStorageLib for ValidatorTree;
+
     using SafeMathUint for uint256;
 
     function openStakingPosition(uint256 durationWeeks) external payable {
@@ -29,12 +32,12 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
         VestData memory position = stakePositions[msg.sender];
         if (isActivePosition(position)) {
             // stakeOf still shows the old balance because the new amount will be applied on commitEpoch
-            _handleStake(_validators.stakeOf(msg.sender));
+            // _handleStake(_validators.stakeOf(msg.sender));
         }
     }
 
     function unstake(uint256 amount) public override {
-        int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender)) + _queue.pendingStake(msg.sender);
+        int256 totalValidatorStake = int256(_validators.stakeOf(msg.sender));
 
         int256 amountInt = amount.toInt256Safe();
         if (amountInt > totalValidatorStake) revert StakeRequirement({src: "unstake", msg: "INSUFFICIENT_BALANCE"});
@@ -43,9 +46,9 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
         if (amountAfterUnstake < int256(minStake) && amountAfterUnstake != 0)
             revert StakeRequirement({src: "unstake", msg: "STAKE_TOO_LOW"});
 
-        claimValidatorReward();
+        // claimValidatorReward();
 
-        _queue.insert(msg.sender, amountInt * -1, 0);
+        // _queue.insert(msg.sender, amountInt * -1, 0);
         _syncUnstake(msg.sender, amount);
         LiquidStaking._onUnstake(msg.sender, amount);
         if (amountAfterUnstake == 0) {
@@ -66,14 +69,6 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
         emit Unstaked(msg.sender, amount);
     }
 
-    function claimValidatorReward() public override {
-        if (isStakerInVestingCycle(msg.sender)) {
-            return;
-        }
-
-        super.claimValidatorReward();
-    }
-
     function claimValidatorReward(uint256 rewardHistoryIndex) public {
         VestData memory position = stakePositions[msg.sender];
         if (!isMaturingPosition(position)) {
@@ -84,32 +79,33 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
         uint256 reward = _calcValidatorReward(validator, rewardHistoryIndex);
         if (reward == 0) return;
 
-        _claimValidatorReward(validator, reward);
+        // _claimValidatorReward(validator, reward);
         _registerWithdrawal(msg.sender, reward);
 
         emit ValidatorRewardClaimed(msg.sender, reward);
-    }
-
-    function _distributeValidatorReward(address validator, uint256 reward) internal override {
-        VestData memory position = stakePositions[msg.sender];
-        uint256 maxPotentialReward = applyMaxReward(reward);
-        if (isActivePosition(position)) {
-            reward = _applyCustomReward(position, reward, true);
-        } else {
-            reward = _applyCustomReward(reward);
-        }
-
-        uint256 remainder = maxPotentialReward - reward;
-        if (remainder > 0) {
-            _burnAmount(remainder);
-        }
-
-        super._distributeValidatorReward(validator, reward);
     }
 
     function _requireNotInVestingCycle() internal view {
         if (isStakerInVestingCycle(msg.sender)) {
             revert StakeRequirement({src: "veting", msg: "ALREADY_IN_VESTING"});
         }
+    }
+
+    /// @notice returns a validator balance for a given epoch
+    function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256) {
+        return 0;
+    }
+
+    /// @notice returns the total supply for a given epoch
+    function totalSupplyAt(uint256 epochNumber) external view returns (uint256) {
+        return 0;
+    }
+
+    function getDelegationPoolOf(address validator) external view returns (address) {
+        return address(0);
+    }
+
+    function stakePositionOf(address validator) external view returns (VestData memory) {
+        return VestData({duration: 0, start: 0, end: 0, base: 0, vestBonus: 0, rsiBonus: 0});
     }
 }
