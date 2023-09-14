@@ -2,17 +2,17 @@
 pragma solidity 0.8.17;
 
 import "./ICVSStaking.sol";
-import "./StakeSyncer.sol";
-import "./../Vesting/Vesting.sol";
-import "./../CVSWithdrawal/CVSWithdrawal.sol";
-import "./../CVSAccessControl/CVSAccessControl.sol";
+import "./StateSyncer.sol";
+import "./../../../common/Vesting/Vesting.sol";
+import "./../Withdrawal/Withdrawal.sol";
+import "./../AccessControl/AccessControl.sol";
 
 import "./../../../common/Errors.sol";
 
 import "../../../../libs/SafeMathInt.sol";
 import "./../../libs/ValidatorStorage.sol";
 
-abstract contract CVSStaking is ICVSStaking, CVSAccessControl, CVSWithdrawal, StakeSyncer {
+abstract contract CVSStaking is ICVSStaking, AccessControl, Withdrawal, StateSyncer {
     using ValidatorStorageLib for ValidatorTree;
     using SafeMathUint for uint256;
 

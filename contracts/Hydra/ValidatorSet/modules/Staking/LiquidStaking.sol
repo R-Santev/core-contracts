@@ -16,7 +16,7 @@ abstract contract LiquidStaking is ILiquidStaking, ValidatorSetBase {
         return _liquidToken;
     }
 
-    function _onStake(address staker, uint256 stakedAmount) internal {
+    function _distributeTokens(address staker, uint256 stakedAmount) internal {
         _mintTokens(staker, stakedAmount);
     }
 
