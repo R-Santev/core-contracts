@@ -56,19 +56,27 @@ abstract contract StakerVesting is Vesting {
     /**
      * Handles the logic to be executed when a validator opens a vesting position
      */
-    function _handleOpenPosition(uint256 durationWeeks) internal {
+    function _setPosition(uint256 durationWeeks) internal {
         uint256 duration = durationWeeks * 1 weeks;
 
-        // stakePositions[msg.sender] = VestData({
-        //     duration: duration,
-        //     start: block.timestamp,
-        //     end: block.timestamp + duration,
-        //     base: getBase(),
-        //     vestBonus: getVestingBonus(durationWeeks),
-        //     rsiBonus: uint248(getRSI())
-        // });
+        stakePositions[msg.sender] = VestData({
+            duration: duration,
+            start: block.timestamp,
+            end: block.timestamp + duration,
+            base: getBase(),
+            vestBonus: getVestingBonus(durationWeeks),
+            rsiBonus: uint248(getRSI())
+        });
 
         delete valRewards[msg.sender];
+    }
+
+    function _updatePosition(address staker, uint256 oldBalance) internal {
+        VestData memory position = stakePositions[staker];
+        if (isActivePosition(position)) {
+            // stakeOf still shows the old balance because the new amount will be applied on commitEpoch
+            _handleStake(oldBalance);
+        }
     }
 
     /**

@@ -9,10 +9,18 @@
 
 pragma solidity 0.8.17;
 
-import "../../../common/Errors.sol";
-import "./../../IValidatorSet.sol";
+import "./../Errors.sol";
 
 error NoReward();
+
+struct VestData {
+    uint256 duration;
+    uint256 start;
+    uint256 end;
+    uint256 base;
+    uint256 vestBonus;
+    uint256 rsiBonus;
+}
 
 abstract contract Vesting {
     /**

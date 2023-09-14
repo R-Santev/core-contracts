@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "../../../../interfaces/IWithdrawalQueue.sol";
+import "./IWithdrawalQueue.sol";
 
 /**
  * @title Withdrawal Queue Lib
@@ -25,7 +25,7 @@ library WithdrawalQueueLib {
 
         // first element in empty list
         if (tail == head) {
-            self.withdrawals[tail] = Withdrawal(amount, epoch);
+            self.withdrawals[tail] = WithdrawalData(amount, epoch);
             self.tail++;
             return;
         }
@@ -34,7 +34,7 @@ library WithdrawalQueueLib {
         assert(epoch >= latestEpoch);
         if (latestEpoch < epoch) {
             // new withdrawal for next epoch
-            self.withdrawals[tail] = Withdrawal(amount, epoch);
+            self.withdrawals[tail] = WithdrawalData(amount, epoch);
             self.tail++;
         } else {
             // adding to existing withdrawal for next epoch
@@ -67,7 +67,7 @@ library WithdrawalQueueLib {
         uint256 currentEpoch
     ) internal view returns (uint256 amount, uint256 newHead) {
         for (newHead = self.head; newHead < self.tail; newHead++) {
-            Withdrawal memory withdrawal = self.withdrawals[newHead];
+            WithdrawalData memory withdrawal = self.withdrawals[newHead];
             if (withdrawal.epoch > currentEpoch) return (amount, newHead);
             amount += withdrawal.amount;
         }
@@ -84,7 +84,7 @@ library WithdrawalQueueLib {
         uint256 tail = self.tail;
         if (tail == 0) return 0;
         for (uint256 i = tail - 1; i >= self.head; i--) {
-            Withdrawal memory withdrawal = self.withdrawals[i];
+            WithdrawalData memory withdrawal = self.withdrawals[i];
             if (withdrawal.epoch <= currentEpoch) break;
             amount += withdrawal.amount;
             if (i == 0) break;

@@ -2,11 +2,11 @@
 pragma solidity 0.8.17;
 
 /**
- * @title StakeSyncer
+ * @title StateSyncer
  * @notice This contract is used to emit a specific event on stake, unstake, delegate and undelegate;
  * Child chain listen for this event to sync the state of the validators
  */
-abstract contract StakeSyncer {
+abstract contract StateSyncer {
     event Transfer(address indexed from, address indexed to, uint256 value);
 
     /**

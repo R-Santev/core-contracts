@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "./../common/Vesting/Vesting.sol";
+
 struct ValidatorInit {
     address addr;
     uint256[4] pubkey;
@@ -82,15 +84,6 @@ struct Epoch {
     uint256 startBlock;
     uint256 endBlock;
     bytes32 epochRoot;
-}
-
-struct VestData {
-    uint256 duration;
-    uint256 start;
-    uint256 end;
-    uint256 base;
-    uint256 vestBonus;
-    uint256 rsiBonus;
 }
 
 struct Validator {

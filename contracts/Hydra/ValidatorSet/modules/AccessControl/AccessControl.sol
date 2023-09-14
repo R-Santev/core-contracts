@@ -4,8 +4,16 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import "../../../../interfaces/modules/ICVSAccessControl.sol";
 
-abstract contract CVSAccessControl is ICVSAccessControl, Ownable2StepUpgradeable {
+abstract contract AccessControl is ICVSAccessControl, Ownable2StepUpgradeable {
     mapping(address => bool) public whitelist;
+
+    function __CVSAccessControl_init(address governance) internal onlyInitializing {
+        __CVSAccessControl_init_unchained(governance);
+    }
+
+    function __CVSAccessControl_init_unchained(address governance) internal onlyInitializing {
+        _transferOwnership(governance);
+    }
 
     /**
      * @notice Adds addresses that are allowed to register as validators.

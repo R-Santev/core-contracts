@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "./../CVSAccessControl/CVSAccessControl.sol";
+import "./../AccessControl/AccessControl.sol";
 import "./IPowerExponent.sol";
 
-abstract contract PowerExponent is IPowerExponent, CVSAccessControl {
+abstract contract PowerExponent is IPowerExponent, AccessControl {
     PowerExponentStore public powerExponent;
 
-    function __PowerExponent_init() internal onlyInitializing {}
+    function __PowerExponent_init() internal onlyInitializing {
+        __PowerExponent_init_unchained();
+    }
 
-    function __PowerExponent_init_unchained() internal onlyInitializing {}
+    function __PowerExponent_init_unchained() internal onlyInitializing {
+        powerExponent = PowerExponentStore({value: 5000, pendingValue: 0});
+    }
 
     /**
      * @inheritdoc IPowerExponent
@@ -41,4 +45,7 @@ abstract contract PowerExponent is IPowerExponent, CVSAccessControl {
             powerExponent = data;
         }
     }
+
+    // slither-disable-next-line unused-state,naming-convention
+    uint256[50] private __gap;
 }
