@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface ICVSStaking {
+interface IStaking {
     event NewValidator(address indexed validator, uint256[4] blsKey);
     event CommissionUpdated(address indexed validator, uint256 oldCommission, uint256 newCommission);
     event Staked(address indexed validator, uint256 amount);
     event Unstaked(address indexed validator, uint256 amount);
     event ValidatorRewardClaimed(address indexed validator, uint256 amount);
     event ValidatorRewardDistributed(address indexed validator, uint256 amount);
+    event ValidatorDeactivated(address indexed validator);
 
     /**
      * @notice Validates BLS signature with the provided pubkey and registers validators into the set.
@@ -32,14 +33,6 @@ interface ICVSStaking {
      * @param newCommission New commission (100 = 100%)
      */
     function setCommission(uint256 newCommission) external;
-
-    /**
-     * @notice Gets first n active validators sorted by total stake.
-     * @param n Desired number of validators to return
-     * @return Returns array of addresses of first n active validators sorted by total stake,
-     * or fewer if there are not enough active validators
-     */
-    function sortedValidators(uint256 n) external view returns (address[] memory);
 
     /**
      * @notice Calculates total stake in the network (self-stake + delegation).

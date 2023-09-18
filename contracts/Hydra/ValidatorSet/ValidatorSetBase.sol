@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IValidatorSet.sol";
 import "../../interfaces/IBLS.sol";
 import "./../common/Errors.sol";
+import "./../RewardPool/IRewardPool.sol";
 
 //base implemetantion to be used by proxies
 // address public implementation;
@@ -16,17 +17,20 @@ abstract contract ValidatorSetBase is Initializable {
     bytes32 public constant DOMAIN = keccak256("DOMAIN_VALIDATOR_SET");
 
     // slither-disable-next-line naming-convention
-    ValidatorTree internal _validators;
+    mapping(address => Validator) public validators;
 
     IBLS public bls;
+    IRewardPool public rewardPool;
+
     uint256 public currentEpochId;
 
-    function __ValidatorSetBase_init(IBLS newBls) internal onlyInitializing {
-        __ValidatorSetBase_init(newBls);
+    function __ValidatorSetBase_init(IBLS newBls, IRewardPool newRewardPool) internal onlyInitializing {
+        __ValidatorSetBase_init(newBls, newRewardPool);
     }
 
-    function __ValidatorSetBase_init_unchained(IBLS newBls) internal onlyInitializing {
+    function __ValidatorSetBase_init_unchained(IBLS newBls, IRewardPool newRewardPool) internal onlyInitializing {
         bls = newBls;
+        rewardPool = newRewardPool;
         currentEpochId = 1;
     }
 

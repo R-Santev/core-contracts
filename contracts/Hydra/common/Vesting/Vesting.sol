@@ -9,42 +9,24 @@
 
 pragma solidity 0.8.17;
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./../Errors.sol";
+import "./../../ValidatorSet/ValidatorSetBase.sol";
 
 error NoReward();
 
-struct VestData {
-    uint256 duration;
-    uint256 start;
-    uint256 end;
-    uint256 base;
-    uint256 vestBonus;
-    uint256 rsiBonus;
-}
-
-abstract contract Vesting {
-    /**
-     * Returns true if the staker is in active vesting position
-     *  active position are matured yet
-     * @param position VestData struct holding the vesting position data
-     */
-    function isActivePosition(VestData memory position) public view returns (bool) {
-        return position.start < block.timestamp && block.timestamp < position.end;
-    }
-
-    function isMaturingPosition(VestData memory position) public view returns (bool) {
-        uint256 vestingEnd = position.end;
-        uint256 matureEnd = vestingEnd + position.duration;
-        return vestingEnd < block.timestamp && block.timestamp < matureEnd;
-    }
-
+abstract contract Vesting is ValidatorSetBase {
     /** @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
-    function _calcSlashing(VestData memory position, uint256 amount) internal view returns (uint256) {
+    function _calcSlashing(
+        uint256 positionEnd,
+        uint256 positionDuration,
+        uint256 amount
+    ) internal view returns (uint256) {
         // Calculate what part of the balance to be slashed
-        uint256 leftPeriod = position.end - block.timestamp;
-        uint256 fullPeriod = position.duration;
+        uint256 leftPeriod = positionEnd - block.timestamp;
+        uint256 fullPeriod = positionDuration;
         uint256 slash = (amount * leftPeriod) / fullPeriod;
 
         return slash;
