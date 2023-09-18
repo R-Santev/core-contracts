@@ -3,17 +3,18 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./../common/CVSSystem/CVSSystem.sol";
 import "./modules/VestingData.sol";
 import "./modules/APR.sol";
+import "./../common/CVSSystem/CVSSystem.sol";
 
 import "./libs/VestingLib.sol";
 
+import "./IRewardPool.sol";
 import "./../ValidatorSet/IValidatorSet.sol";
 import "./../DelegationPool/IDelegationPool.sol";
 
-contract RewardPoolContract is Initializable, CVSSystem, APR, VestingData {
-    using VestingLib for VestData;
+contract RewardPoolContract is IRewardPool, CVSSystem, APR, VestingData, Initializable {
+    using VestingPositionLib for VestingPosition;
 
     uint256 constant DELEGATORS_COMMISSION = 10;
 
@@ -84,6 +85,26 @@ contract RewardPoolContract is Initializable, CVSSystem, APR, VestingData {
         }
     }
 
+    // function claimValidatorReward(uint256 rewardHistoryIndex) public {
+    //     VestData memory position = stakePositions[msg.sender];
+    //     if (!isMaturingPosition(position)) {
+    //         revert StakeRequirement({src: "vesting", msg: "NOT_MATURING"});
+    //     }
+
+    //     Validator storage validator = _validators.get(msg.sender);
+    //     uint256 reward = _calcValidatorReward(validator, rewardHistoryIndex);
+    //     if (reward == 0) return;
+
+    //     // _claimValidatorReward(validator, reward);
+    //     _registerWithdrawal(msg.sender, reward);
+
+    //     emit ValidatorRewardClaimed(msg.sender, reward);
+    // }
+
+    function getAPRPositionParams() external view returns (uint256, uint256, uint256, uint256) {
+        // return (APR_START, APR_PERIOD, APR_DECIMALS, APR_MAX);
+    }
+
     function _calculateValidatorAndDelegatorShares(
         uint256 stakedBalance,
         uint256 delegatedBalance,
@@ -101,7 +122,7 @@ contract RewardPoolContract is Initializable, CVSSystem, APR, VestingData {
     }
 
     function _distributeValidatorReward(address validator, uint256 reward) internal {
-        VestData memory position = validatorSet.stakePositionOf(validator);
+        VestingPosition memory position = positions[validator];
         if (position.isActive()) {
             reward = _applyCustomReward(position, reward, true);
         } else {
@@ -151,6 +172,29 @@ contract RewardPoolContract is Initializable, CVSSystem, APR, VestingData {
         // Validator memory val = _validators.get(validator);
         // return val.totalRewards - val.takenRewards;
     }
+
+    /**
+     * @dev Ensure the function is executed for maturing positions only
+     */
+    // function _calcValidatorReward(
+    //     Validator memory validator,
+    //     uint256 rewardHistoryIndex
+    // ) internal view returns (uint256) {
+    //     VestData memory position = stakePositions[msg.sender];
+    //     uint256 maturedPeriod = block.timestamp - position.end;
+    //     uint256 alreadyMatured = position.start + maturedPeriod;
+    //     ValReward memory rewardData = valRewards[msg.sender][rewardHistoryIndex];
+    //     // If the given data is for still not matured period - it is wrong, so revert
+    //     if (rewardData.timestamp > alreadyMatured) {
+    //         revert StakeRequirement({src: "stakerVesting", msg: "WRONG_DATA"});
+    //     }
+
+    //     // if (rewardData.totalReward > validator.takenRewards) {
+    //     //     return rewardData.totalReward - validator.takenRewards;
+    //     // }
+
+    //     return 0;
+    // }
 
     //     function _distributeValidatorReward(address validator, uint256 reward) internal override {
     //     VestData memory position = stakePositions[msg.sender];

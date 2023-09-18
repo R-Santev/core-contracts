@@ -105,7 +105,5 @@ interface IValidatorSet {
 
     function getDelegationPoolOf(address validator) external view returns (address);
 
-    function stakePositionOf(address validator) external view returns (VestData memory);
-
     event NewEpoch(uint256 indexed id, uint256 indexed startBlock, uint256 indexed endBlock, bytes32 epochRoot);
 }

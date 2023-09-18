@@ -20,11 +20,11 @@ abstract contract LiquidStaking is ILiquidStaking, ValidatorSetBase {
         _mintTokens(staker, stakedAmount);
     }
 
-    function _onUnstake(address staker, uint256 unstakedAmount) internal {
+    function _collectTokens(address staker, uint256 unstakedAmount) internal {
         // User needs to burn the liquid tokens for slashed stake as well
-        uint256 liquidDebt = _validators.get(msg.sender).liquidDebt;
+        uint256 liquidDebt = validators[msg.sender].liquidDebt;
         if (liquidDebt > 0) {
-            _validators.get(msg.sender).liquidDebt = 0;
+            validators[msg.sender].liquidDebt = 0;
             unstakedAmount += liquidDebt;
         }
 

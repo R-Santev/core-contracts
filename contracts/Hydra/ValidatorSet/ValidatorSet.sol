@@ -42,7 +42,7 @@ contract ValidatorSet is
      * @param init: newEpochReward reward for a proposed epoch
      *              newMinStake minimum stake to become a validator
      *              newMinDelegation minimum amount to delegate to a validator
-     * @param validators: addr addresses of initial validators
+     * @param newValidators: addr addresses of initial validators
      *                    pubkey uint256[4] BLS public keys of initial validators
      *                    signature uint256[2] signature of initial validators
      *                    stake amount staked per initial validator
@@ -51,14 +51,16 @@ contract ValidatorSet is
      */
     function initialize(
         InitStruct calldata init,
-        ValidatorInit[] calldata validators,
+        ValidatorInit[] calldata newValidators,
         IBLS newBls,
+        IRewardPool newRewardPool,
         address governance,
         address liquidToken
     ) external initializer onlySystemCall {
-        __ValidatorSetBase_init(newBls);
+        __ValidatorSetBase_init(newBls, newRewardPool);
         __PowerExponent_init();
         __CVSAccessControl_init(governance);
+        __Staking_init(init.minStake);
 
         __ReentrancyGuard_init();
 
@@ -68,23 +70,21 @@ contract ValidatorSet is
         // minDelegation = init.minDelegation;
         _liquidToken = liquidToken;
 
-        require(init.minStake >= 1 ether, "INVALID_MIN_STAKE");
         require(init.minDelegation >= 1 ether, "INVALID_MIN_DELEGATION");
 
         epochEndBlocks.push(0);
 
         // add initial validators
-        for (uint256 i = 0; i < validators.length; i++) {
-            Validator memory validator = Validator({
-                blsKey: validators[i].pubkey,
-                stake: validators[i].stake,
+        for (uint256 i = 0; i < newValidators.length; i++) {
+            validators[newValidators[i].addr] = Validator({
+                blsKey: newValidators[i].pubkey,
+                stake: newValidators[i].stake,
                 liquidDebt: 0,
                 commission: 0,
                 active: true
             });
-            _validators.insert(validators[i].addr, validator);
-            _verifyValidatorRegistration(validators[i].addr, validators[i].signature, validators[i].pubkey);
-            LiquidStaking._onStake(validators[i].addr, validators[i].stake);
+            _verifyValidatorRegistration(newValidators[i].addr, newValidators[i].signature, newValidators[i].pubkey);
+            LiquidStaking._distributeTokens(newValidators[i].addr, newValidators[i].stake);
         }
     }
 

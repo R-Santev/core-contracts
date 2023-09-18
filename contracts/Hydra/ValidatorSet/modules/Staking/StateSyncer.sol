@@ -7,7 +7,7 @@ pragma solidity 0.8.17;
  * Child chain listen for this event to sync the state of the validators
  */
 abstract contract StateSyncer {
-    event Transfer(address indexed from, address indexed to, uint256 value);
+    event TransferStake(address indexed from, address indexed to, uint256 value);
 
     /**
      * @notice Emit a transfer event on stake
@@ -16,7 +16,7 @@ abstract contract StateSyncer {
      * @dev Use on delegate as well
      */
     function _syncStake(address staker, uint256 amount) internal {
-        emit Transfer(address(0), staker, amount);
+        emit TransferStake(address(0), staker, amount);
     }
 
     /**
@@ -25,6 +25,6 @@ abstract contract StateSyncer {
      * @dev Use on undelegate as well
      */
     function _syncUnstake(address staker, uint256 amount) internal {
-        emit Transfer(staker, address(0), amount);
+        emit TransferStake(staker, address(0), amount);
     }
 }
