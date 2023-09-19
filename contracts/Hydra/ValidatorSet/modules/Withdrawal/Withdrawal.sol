@@ -8,9 +8,10 @@ import "./../../ValidatorSetBase.sol";
 
 import "./WithdrawalQueue.sol";
 
-abstract contract Withdrawal is ICVSWithdrawal, ValidatorSetBase, ReentrancyGuardUpgradeable {
+abstract contract Withdrawal is ICVSWithdrawal, ReentrancyGuardUpgradeable, ValidatorSetBase {
     using WithdrawalQueueLib for WithdrawalQueue;
 
+    // TODO: This should be a parameter of the contract. Add NetworkParams based on the Polygon implementation
     uint256 public constant WITHDRAWAL_WAIT_PERIOD = 1;
     mapping(address => WithdrawalQueue) internal _withdrawals;
 

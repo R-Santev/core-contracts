@@ -2,29 +2,29 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
-
-import "./../Withdrawal/Withdrawal.sol";
-import "./LiquidStaking.sol";
-import "./StateSyncer.sol";
-import "./StakerVesting.sol";
 import "./IStaking.sol";
+import "./StateSyncer.sol";
+import "./LiquidStaking.sol";
+import "./../Withdrawal/Withdrawal.sol";
+import "./../AccessControl/AccessControl.sol";
 
 // TODO: An optimization I can do is keeping only once the general apr params for a block so I don' need to keep them for every single user
 
 abstract contract Staking is
     IStaking,
+    ValidatorSetBase,
     ERC20VotesUpgradeable,
     Withdrawal,
     LiquidStaking,
     StateSyncer,
-    StakerVesting,
     AccessControl
 {
     uint256 public constant MAX_COMMISSION = 100;
     uint256 public minStake;
 
-    function __Staking_init(uint256 newMinStake) internal onlyInitializing {
+    function __Staking_init(uint256 newMinStake, address newLiquidToken) internal onlyInitializing {
         __ERC20_init("ValidatorSet", "VSET");
+        __LiquidStaking_init(newLiquidToken);
         __Staking_init_unchained(newMinStake);
     }
 
@@ -38,23 +38,26 @@ abstract contract Staking is
         _;
     }
 
-    function totalStake() external view returns (uint256) {
-        return totalSupply();
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256) {
+        return super.getPastVotes(account, _commitBlockNumbers[epochNumber]);
     }
 
-    function totalStakeOf(address validator) external view returns (uint256) {
-        return balanceOf(validator);
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function totalSupplyAt(uint256 epochNumber) external view returns (uint256) {
+        return super.getPastTotalSupply(_commitBlockNumbers[epochNumber]);
     }
 
     /**
      * @inheritdoc IStaking
      */
     function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external {
-        if (!whitelist[msg.sender]) revert Unauthorized("WHITELIST");
-
-        _verifyValidatorRegistration(msg.sender, signature, pubkey);
-
-        validators[msg.sender] = Validator({blsKey: pubkey, stake: 0, liquidDebt: 0, commission: 0, active: true});
+        if (!validators[msg.sender].whitelisted) revert Unauthorized("WHITELIST");
+        _register(msg.sender, signature, pubkey);
         _removeFromWhitelist(msg.sender);
 
         emit NewValidator(msg.sender, pubkey);
@@ -70,48 +73,62 @@ abstract contract Staking is
         validator.commission = newCommission;
     }
 
-    function openStakingPosition(uint256 durationWeeks) external payable {
+    /**
+     * @inheritdoc IStaking
+     */
+    function openVestedPosition(uint256 durationWeeks) external payable onlyValidator {
         _requireNotInVestingCycle();
-        uint256 currentBalance = balanceOf(msg.sender);
-        _processStake(currentBalance);
+        _ensureStakeIsInRange(msg.value, balanceOf(msg.sender));
+
+        _processStake(msg.sender, msg.value);
         rewardPool.onNewPosition(msg.sender, durationWeeks);
     }
 
+    /**
+     * @inheritdoc IStaking
+     */
     function stake() external payable onlyValidator {
         uint256 currentBalance = balanceOf(msg.sender);
-        _processStake(currentBalance);
+        _ensureStakeIsInRange(msg.value, currentBalance);
+
+        _processStake(msg.sender, msg.value);
         rewardPool.onStake(msg.sender, currentBalance);
     }
 
+    /**
+     * @inheritdoc IStaking
+     */
     function unstake(uint256 amount) public {
         uint256 balanceAfterUnstake = _unstake(amount);
         StateSyncer._syncUnstake(msg.sender, amount);
         LiquidStaking._collectTokens(msg.sender, amount);
-        uint256 amountToWithdraw = StakerVesting._updatePositionOnUnstake(amount, balanceAfterUnstake);
-        _registerWithdrawal(msg.sender, amount);
+        uint256 amountToWithdraw = rewardPool.onUnstake(msg.sender, amount, balanceAfterUnstake);
+        _registerWithdrawal(msg.sender, amountToWithdraw);
 
         emit Unstaked(msg.sender, amount);
     }
 
-    function _processStake(uint256 balance) private {
-        _stake(balance);
-        _postStakeAction();
+    function _register(address validator, uint256[2] calldata signature, uint256[4] calldata pubkey) internal {
+        _verifyValidatorRegistration(validator, signature, pubkey);
+        validators[validator].blsKey = pubkey;
+        validators[validator].active = true;
     }
 
-    function _stake(uint256 currentBalance) private {
-        uint256 amount = msg.value;
-        if (msg.value + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
-        assert(currentBalance + amount <= _maxSupply());
-
-        _mint(msg.sender, amount);
-        _delegate(msg.sender, msg.sender);
-
-        emit Staked(msg.sender, msg.value);
+    function _processStake(address account, uint256 amount) internal {
+        _stake(account, amount);
+        _postStakeAction(account, amount);
     }
 
-    function _postStakeAction() private {
-        StateSyncer._syncStake(msg.sender, msg.value);
-        LiquidStaking._distributeTokens(msg.sender, msg.value);
+    function _stake(address account, uint256 amount) private {
+        _mint(account, amount);
+        _delegate(account, account);
+
+        emit Staked(account, amount);
+    }
+
+    function _postStakeAction(address account, uint256 amount) private {
+        StateSyncer._syncStake(account, amount);
+        LiquidStaking._distributeTokens(account, amount);
     }
 
     function _unstake(uint256 amount) private returns (uint256) {
@@ -128,8 +145,13 @@ abstract contract Staking is
         return balanceAfterUnstake;
     }
 
+    function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
+        if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
+        assert(currentBalance + amount <= _maxSupply());
+    }
+
     function _requireNotInVestingCycle() private view {
-        if (isStakerInVestingCycle(msg.sender)) {
+        if (rewardPool.isStakerInVestingCycle(msg.sender)) {
             revert StakeRequirement({src: "veting", msg: "ALREADY_IN_VESTING"});
         }
     }
@@ -141,6 +163,8 @@ abstract contract Staking is
         }
     }
 
+    // OpenZeppelin Overrides
+
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
         require(from == address(0) || to == address(0), "TRANSFER_FORBIDDEN");
         super._beforeTokenTransfer(from, to, amount);
@@ -150,4 +174,7 @@ abstract contract Staking is
         if (delegator != delegatee) revert("DELEGATION_FORBIDDEN");
         super._delegate(delegator, delegatee);
     }
+
+    // slither-disable-next-line unused-state,naming-convention
+    uint256[50] private __gap;
 }

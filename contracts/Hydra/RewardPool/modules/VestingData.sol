@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 // import "./../../ValidatorSet/IValidatorSet.sol";
+import "./../IRewardPool.sol";
 import "./APR.sol";
 import "./../libs/VestingLib.sol";
 
@@ -31,12 +32,11 @@ struct ValRewardRecord {
     uint256 timestamp;
 }
 
-contract VestingData is APR {
+abstract contract VestingData is IRewardPool, APR {
     using VestingPositionLib for VestingPosition;
 
     mapping(address => VestingPosition) public positions;
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
-    mapping(address => ValReward) public valRewards;
     mapping(address => ValRewardRecord[]) public valRewardRecords;
 
     function isActivePosition(address staker) public view returns (bool) {
@@ -49,20 +49,6 @@ contract VestingData is APR {
         return position.isMaturingPosition();
     }
 
-    function onNewPosition(address staker, uint256 durationWeeks) external {
-        uint256 duration = durationWeeks * 1 weeks;
-        positions[staker] = VestingPosition({
-            duration: duration,
-            start: block.timestamp,
-            end: block.timestamp + duration,
-            base: getBase(),
-            vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
-        });
-
-        delete valRewards[staker];
-    }
-
     function onStake(address staker, uint256 oldBalance) external {
         VestingPosition memory position = positions[staker];
         if (position.isActive()) {
@@ -71,20 +57,24 @@ contract VestingData is APR {
         }
     }
 
-    function onUnstake(
-        address staker,
-        uint256 amountUnstaked,
-        uint256 amountLeft
-    ) external returns (uint256 amountToWithdraw) {
-        VestingPosition memory position = positions[msg.sender];
-        if (position.isActive()) {
-            Validator storage validator = validators[msg.sender];
-            amountToWithdraw = _handleUnstake(validator, amountUnstaked, uint256(amountLeft));
-        } else {
-            amountToWithdraw = amountUnstaked;
-        }
+    function isStakerInVestingCycle(address staker) external view returns (bool) {
+        return positions[staker].isStakerInVestingCycle();
+    }
 
-        return amountToWithdraw;
+    // function getValRewardsValues(address validator) external view returns (ValReward[] memory) {
+    //     return valRewards[validator];
+    // }
+
+    /** @param amount Amount of tokens to be slashed
+     * @dev Invoke only when position is active, otherwise - underflow
+     */
+    function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
+        // Calculate what part of the balance to be slashed
+        uint256 leftPeriod = position.end - block.timestamp;
+        uint256 fullPeriod = position.duration;
+        uint256 slash = (amount * leftPeriod) / fullPeriod;
+
+        return slash;
     }
 
     /**
@@ -129,15 +119,5 @@ contract VestingData is APR {
         require(validatorRPSes.value == 0, "RPS already saved");
 
         historyRPS[validator][epochNumber] = RPS({value: uint192(rewardPerShare), timestamp: uint64(block.timestamp)});
-    }
-
-    function _saveValRewardData(address validator, uint256 epoch) internal {
-        ValRewardRecord memory rewardData = ValRewardRecord({
-            totalReward: valRewards[validator].total,
-            epoch: epoch,
-            timestamp: block.timestamp
-        });
-
-        valRewardRecords[validator].push(rewardData);
     }
 }

@@ -2,43 +2,43 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-import "./modules/VestingData.sol";
-import "./modules/APR.sol";
-import "./../common/CVSSystem/CVSSystem.sol";
-
-import "./libs/VestingLib.sol";
-
 import "./IRewardPool.sol";
+import "./modules/APR.sol";
+import "./modules/VestingData.sol";
+import "./../common/System/System.sol";
+import "./libs/VestingLib.sol";
 import "./../ValidatorSet/IValidatorSet.sol";
 import "./../DelegationPool/IDelegationPool.sol";
 
-contract RewardPoolContract is IRewardPool, CVSSystem, APR, VestingData, Initializable {
+contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializable {
     using VestingPositionLib for VestingPosition;
 
     uint256 constant DELEGATORS_COMMISSION = 10;
 
+    address public rewardWallet;
     IValidatorSet public validatorSet;
-
+    mapping(address => ValReward) public valRewards;
     mapping(address => uint256) public pendingRewards;
+    mapping(uint256 => uint256) public paidRewardPerEpoch;
 
-    event ValidatorRewardDistributed(address indexed validator, uint256 amount);
-    event DelegatorRewardDistributed(address indexed validator, uint256 amount);
-
-    function initialize(address newStakeManager) external initializer onlySystemCall {}
+    function initialize(IValidatorSet newValidatorSet, address newRewardWallet) external initializer onlySystemCall {
+        require(newRewardWallet != address(0) && address(newValidatorSet) != address(0), "ZERO_ADDRESS");
+        validatorSet = newValidatorSet;
+        rewardWallet = newRewardWallet;
+    }
 
     function distributeRewardsFor(
         uint256 epochId,
         Epoch calldata epoch,
         Uptime calldata uptime,
         uint256 epochSize
-    ) external payable onlySystemCall {
+    ) external onlySystemCall {
+        require(paidRewardPerEpoch[epochId] == 0, "REWARD_ALREADY_DISTRIBUTED");
+        uint256 totalBlocks = validatorSet.totalBlocks(epochId);
+        require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
+
         // H_MODIFY: Ensure the max reward tokens are sent
         uint256 activeStake = validatorSet.totalSupplyAt(epochId);
-        // Ensure proper reward amount is sent
-        require(msg.value == getEpochMaxReward(activeStake), "INVALID_REWARD_AMOUNT");
-        uint256 totalBlocks = uptime.totalBlocks;
-        require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
 
         uint256 length = uptime.uptimeData.length;
 
@@ -46,11 +46,10 @@ contract RewardPoolContract is IRewardPool, CVSSystem, APR, VestingData, Initial
         // can receive reward for the last epoch they were part of the validator set
         // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
 
-        // H_MODIFY: change the epoch reward calculation
+        // Epoch reward calculation:
         // apply the reward factor; participation factor is applied then
         // base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
         // and on _distributeValidatorReward for validators
-        // TODO: Reward must be calculated per epoch; apply the changes whenever APR oracles are available
         uint256 reward = calcReward(epoch, activeStake, epochSize);
 
         for (uint256 i = 0; i < length; ++i) {
@@ -100,6 +99,52 @@ contract RewardPoolContract is IRewardPool, CVSSystem, APR, VestingData, Initial
 
     //     emit ValidatorRewardClaimed(msg.sender, reward);
     // }
+
+    function onUnstake(
+        address staker,
+        uint256 amountUnstaked,
+        uint256 amountLeft
+    ) external returns (uint256 amountToWithdraw) {
+        VestingPosition memory position = positions[staker];
+        if (position.isActive()) {
+            // staker lost its reward
+            valRewards[staker].taken = valRewards[staker].total;
+            uint256 penalty = _calcSlashing(position, amountUnstaked);
+            // if position is closed when active, top-up must not be available as well as reward must not be available
+            // so we delete the vesting data
+            if (amountLeft == 0) {
+                delete positions[staker];
+            }
+
+            return amountUnstaked - penalty;
+        }
+
+        return amountUnstaked;
+    }
+
+    function onNewPosition(address staker, uint256 durationWeeks) external {
+        uint256 duration = durationWeeks * 1 weeks;
+        positions[staker] = VestingPosition({
+            duration: duration,
+            start: block.timestamp,
+            end: block.timestamp + duration,
+            base: getBase(),
+            vestBonus: getVestingBonus(durationWeeks),
+            rsiBonus: uint248(getRSI())
+        });
+
+        delete valRewards[staker];
+    }
+
+    function _saveValRewardData(address validator, uint256 epoch) internal {
+        ValRewardRecord memory rewardData = ValRewardRecord({
+            totalReward: valRewards[validator].total,
+            epoch: epoch,
+            timestamp: block.timestamp
+        });
+
+        valRewardRecords[validator].push(rewardData);
+    }
 
     function getAPRPositionParams() external view returns (uint256, uint256, uint256, uint256) {
         // return (APR_START, APR_PERIOD, APR_DECIMALS, APR_MAX);

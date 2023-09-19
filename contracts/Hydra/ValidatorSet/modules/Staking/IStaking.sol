@@ -6,8 +6,6 @@ interface IStaking {
     event CommissionUpdated(address indexed validator, uint256 oldCommission, uint256 newCommission);
     event Staked(address indexed validator, uint256 amount);
     event Unstaked(address indexed validator, uint256 amount);
-    event ValidatorRewardClaimed(address indexed validator, uint256 amount);
-    event ValidatorRewardDistributed(address indexed validator, uint256 amount);
     event ValidatorDeactivated(address indexed validator);
 
     /**
@@ -18,7 +16,13 @@ interface IStaking {
     function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external;
 
     /**
-     * @notice Stakes sent amount. Claims rewards beforehand.
+     * @notice Opens vested staking position
+     * @param durationWeeks Duration of position in weeks. Must be between 1 and 52.
+     */
+    function openVestedPosition(uint256 durationWeeks) external payable;
+
+    /**
+     * @notice Stakes sent amount.
      */
     function stake() external payable;
 
@@ -33,17 +37,4 @@ interface IStaking {
      * @param newCommission New commission (100 = 100%)
      */
     function setCommission(uint256 newCommission) external;
-
-    /**
-     * @notice Calculates total stake in the network (self-stake + delegation).
-     * @return Total stake (in MATIC wei)
-     */
-    function totalStake() external view returns (uint256);
-
-    /**
-     * @notice Gets validator's total stake (self-stake + delegation).
-     * @param validator Address of validator
-     * @return Validator's total stake (in MATIC wei)
-     */
-    function totalStakeOf(address validator) external view returns (uint256);
 }
