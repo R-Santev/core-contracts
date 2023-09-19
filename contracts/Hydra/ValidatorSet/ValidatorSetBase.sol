@@ -3,26 +3,20 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IValidatorSet.sol";
-import "../../interfaces/IBLS.sol";
 import "./../common/Errors.sol";
+import "../../interfaces/IBLS.sol";
 import "./../RewardPool/IRewardPool.sol";
 
-//base implemetantion to be used by proxies
-// address public implementation;
-
-// H_MODIFY: Set base implementation for VestFactory
-// implementation = address(new VestManager());
-
-abstract contract ValidatorSetBase is Initializable {
+abstract contract ValidatorSetBase is IValidatorSet, Initializable {
     bytes32 public constant DOMAIN = keccak256("DOMAIN_VALIDATOR_SET");
-
-    // slither-disable-next-line naming-convention
-    mapping(address => Validator) public validators;
 
     IBLS public bls;
     IRewardPool public rewardPool;
-
     uint256 public currentEpochId;
+    // slither-disable-next-line naming-convention
+    mapping(address => Validator) public validators;
+
+    mapping(uint256 => uint256) internal _commitBlockNumbers;
 
     function __ValidatorSetBase_init(IBLS newBls, IRewardPool newRewardPool) internal onlyInitializing {
         __ValidatorSetBase_init(newBls, newRewardPool);
@@ -33,8 +27,6 @@ abstract contract ValidatorSetBase is Initializable {
         rewardPool = newRewardPool;
         currentEpochId = 1;
     }
-
-    event NewEpoch(uint256 indexed id, uint256 indexed startBlock, uint256 indexed endBlock, bytes32 epochRoot);
 
     function _verifyValidatorRegistration(
         address signer,

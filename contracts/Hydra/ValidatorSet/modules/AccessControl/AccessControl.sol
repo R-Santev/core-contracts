@@ -2,11 +2,11 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import "../../../../interfaces/modules/ICVSAccessControl.sol";
+import "./IAccessControl.sol";
+import "./../../ValidatorSetBase.sol";
 
-abstract contract AccessControl is ICVSAccessControl, Ownable2StepUpgradeable {
-    mapping(address => bool) public whitelist;
-
+abstract contract AccessControl is IAccessControl, Ownable2StepUpgradeable, ValidatorSetBase {
+    // TODO: We must be able to enable/disable this feature
     function __CVSAccessControl_init(address governance) internal onlyInitializing {
         __CVSAccessControl_init_unchained(governance);
     }
@@ -16,8 +16,7 @@ abstract contract AccessControl is ICVSAccessControl, Ownable2StepUpgradeable {
     }
 
     /**
-     * @notice Adds addresses that are allowed to register as validators.
-     * @param whitelistAddreses Array of address to whitelist
+     * @inheritdoc IAccessControl
      */
     function addToWhitelist(address[] calldata whitelistAddreses) external onlyOwner {
         for (uint256 i = 0; i < whitelistAddreses.length; i++) {
@@ -26,8 +25,7 @@ abstract contract AccessControl is ICVSAccessControl, Ownable2StepUpgradeable {
     }
 
     /**
-     * @notice Deletes addresses that are allowed to register as validators.
-     * @param whitelistAddreses Array of address to remove from whitelist
+     * @inheritdoc IAccessControl
      */
     function removeFromWhitelist(address[] calldata whitelistAddreses) external onlyOwner {
         for (uint256 i = 0; i < whitelistAddreses.length; i++) {
@@ -36,12 +34,12 @@ abstract contract AccessControl is ICVSAccessControl, Ownable2StepUpgradeable {
     }
 
     function _addToWhitelist(address account) internal {
-        whitelist[account] = true;
+        validators[account].whitelisted = true;
         emit AddedToWhitelist(account);
     }
 
     function _removeFromWhitelist(address account) internal {
-        whitelist[account] = false;
+        validators[account].whitelisted = false;
         emit RemovedFromWhitelist(account);
     }
 

@@ -7,23 +7,15 @@ import "./ValidatorSetBase.sol";
 import "./modules/AccessControl/AccessControl.sol";
 import "./modules/PowerExponent/PowerExponent.sol";
 import "./modules/Staking/Staking.sol";
-import "./../common/CVSSystem/CVSSystem.sol";
+import "./modules/Delegation/Delegation.sol";
+import "./../common/System/System.sol";
 
 import "../../libs/SafeMathInt.sol";
-import "./libs/ValidatorStorage.sol";
 
 // TODO: setup use of reward account that would handle the amounts of rewards
 
 // solhint-disable max-states-count
-contract ValidatorSet is
-    ValidatorSetBase,
-    CVSSystem,
-    AccessControl,
-    PowerExponent,
-    Staking
-    // ExtendedDelegation
-{
-    using ValidatorStorageLib for ValidatorTree;
+contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent, Staking, Delegation {
     using WithdrawalQueueLib for WithdrawalQueue;
     using SafeMathInt for int256;
     using ArraysUpgradeable for uint256[];
@@ -34,7 +26,6 @@ contract ValidatorSet is
 
     mapping(uint256 => Epoch) public epochs;
     uint256[] public epochEndBlocks;
-    mapping(uint256 => uint256) private _commitBlockNumbers;
 
     /**
      * @notice Initializer function for genesis contract, called by v3 client at genesis to set up the initial set.
@@ -60,31 +51,17 @@ contract ValidatorSet is
         __ValidatorSetBase_init(newBls, newRewardPool);
         __PowerExponent_init();
         __CVSAccessControl_init(governance);
-        __Staking_init(init.minStake);
-
+        __Staking_init(init.minStake, liquidToken);
         __ReentrancyGuard_init();
+        _initialize(newValidators);
+    }
 
-        // slither-disable-next-line events-maths
-        // epochReward = init.epochReward;
-        minStake = init.minStake;
-        // minDelegation = init.minDelegation;
-        _liquidToken = liquidToken;
-
-        require(init.minDelegation >= 1 ether, "INVALID_MIN_DELEGATION");
-
+    function _initialize(ValidatorInit[] calldata newValidators) private {
         epochEndBlocks.push(0);
-
-        // add initial validators
+        // set initial validators
         for (uint256 i = 0; i < newValidators.length; i++) {
-            validators[newValidators[i].addr] = Validator({
-                blsKey: newValidators[i].pubkey,
-                stake: newValidators[i].stake,
-                liquidDebt: 0,
-                commission: 0,
-                active: true
-            });
-            _verifyValidatorRegistration(newValidators[i].addr, newValidators[i].signature, newValidators[i].pubkey);
-            LiquidStaking._distributeTokens(newValidators[i].addr, newValidators[i].stake);
+            _register(newValidators[i].addr, newValidators[i].signature, newValidators[i].pubkey);
+            _processStake(newValidators[i].addr, newValidators[i].stake);
         }
     }
 
@@ -103,6 +80,14 @@ contract ValidatorSet is
         _applyPendingExp();
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
+    }
+
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function totalBlocks(uint256 epochId) external view returns (uint256 length) {
+        uint256 endBlock = epochs[epochId].endBlock;
+        length = endBlock == 0 ? 0 : endBlock - epochs[epochId].startBlock + 1;
     }
 
     // slither-disable-next-line unused-state,naming-convention

@@ -27,4 +27,7 @@ abstract contract StateSyncer {
     function _syncUnstake(address staker, uint256 amount) internal {
         emit TransferStake(staker, address(0), amount);
     }
+
+    // slither-disable-next-line unused-state,naming-convention
+    uint256[50] private __gap;
 }

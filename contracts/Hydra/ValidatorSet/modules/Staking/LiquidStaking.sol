@@ -4,13 +4,18 @@ pragma solidity 0.8.17;
 import "./ILiquidStaking.sol";
 import "./../../ValidatorSetBase.sol";
 import "./../../../LiquidityToken/ILiquidityToken.sol";
-import "./../../libs/ValidatorStorage.sol";
 
 abstract contract LiquidStaking is ILiquidStaking, ValidatorSetBase {
-    using ValidatorStorageLib for ValidatorTree;
-
-    // Liquid Staking token given to stakers and delegators
+    /// Liquid Staking token given to stakers and delegators
     address internal _liquidToken;
+
+    function __LiquidStaking_init(address newLiquidToken) internal onlyInitializing {
+        __LiquidStaking_init_unchained(newLiquidToken);
+    }
+
+    function __LiquidStaking_init_unchained(address newLiquidToken) internal onlyInitializing {
+        _liquidToken = newLiquidToken;
+    }
 
     function liquidToken() external view override returns (address) {
         return _liquidToken;
@@ -46,4 +51,7 @@ abstract contract LiquidStaking is ILiquidStaking, ValidatorSetBase {
     function _burnTokens(address account, uint256 amount) private {
         ILiquidityToken(_liquidToken).burn(account, amount);
     }
+
+    // slither-disable-next-line unused-state,naming-convention
+    uint256[50] private __gap;
 }
