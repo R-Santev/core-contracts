@@ -3,12 +3,12 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import "./ICVSWithdrawal.sol";
+import "./IWithdrawal.sol";
 import "./../../ValidatorSetBase.sol";
 
 import "./WithdrawalQueue.sol";
 
-abstract contract Withdrawal is ICVSWithdrawal, ReentrancyGuardUpgradeable, ValidatorSetBase {
+abstract contract Withdrawal is IWithdrawal, ReentrancyGuardUpgradeable, ValidatorSetBase {
     using WithdrawalQueueLib for WithdrawalQueue;
 
     // TODO: This should be a parameter of the contract. Add NetworkParams based on the Polygon implementation
@@ -16,7 +16,7 @@ abstract contract Withdrawal is ICVSWithdrawal, ReentrancyGuardUpgradeable, Vali
     mapping(address => WithdrawalQueue) internal _withdrawals;
 
     /**
-     * @inheritdoc ICVSWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function withdraw(address to) external nonReentrant {
         assert(to != address(0));
@@ -30,14 +30,14 @@ abstract contract Withdrawal is ICVSWithdrawal, ReentrancyGuardUpgradeable, Vali
     }
 
     /**
-     * @inheritdoc ICVSWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function withdrawable(address account) external view returns (uint256 amount) {
         (amount, ) = _withdrawals[account].withdrawable(currentEpochId);
     }
 
     /**
-     * @inheritdoc ICVSWithdrawal
+     * @inheritdoc IWithdrawal
      */
     function pendingWithdrawals(address account) external view returns (uint256) {
         return _withdrawals[account].pending(currentEpochId);

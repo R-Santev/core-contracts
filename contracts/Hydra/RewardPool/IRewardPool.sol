@@ -1,15 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-struct UptimeData {
-    address validator;
-    uint256 signedBlocks;
-}
+import "./../ValidatorSet/IValidatorSet.sol";
 
 struct Uptime {
-    uint256 epochId;
-    UptimeData[] uptimeData;
-    uint256 totalBlocks;
+    address validator;
+    uint256 signedBlocks;
 }
 
 interface IRewardPool {
@@ -17,7 +13,31 @@ interface IRewardPool {
     event ValidatorRewardDistributed(address indexed validator, uint256 amount);
     event DelegatorRewardDistributed(address indexed validator, uint256 amount);
 
-    function getAPRPositionParams() external view returns (uint256, uint256, uint256, uint256);
+    /// @notice distributes rewards for the given epoch
+    /// @dev transfers funds from sender to this contract
+    /// @param uptime uptime data for every validator
+    function distributeRewardsFor(
+        uint256 epochId,
+        Epoch calldata epoch,
+        Uptime[] calldata uptime,
+        uint256 epochSize
+    ) external;
+
+    /// @notice sets the reward params for the new vested position
+    function onNewPosition(address staker, uint256 durationWeeks) external;
+
+    /// @notice sets the reward params for the new vested delegation position
+    function onNewDelegationPosition(address staker, uint256 durationWeeks) external;
+
+    /// @notice update the reward params for the vested position
+    function onStake(address staker, uint256 oldBalance) external;
+
+    /// @notice update the reward params for the new vested position.
+    function onUnstake(
+        address staker,
+        uint256 amountUnstaked,
+        uint256 amountLeft
+    ) external returns (uint256 amountToWithdraw);
 
     function isActivePosition(address staker) external view returns (bool);
 
@@ -29,14 +49,4 @@ interface IRewardPool {
      * @param staker Address of the staker
      */
     function isStakerInVestingCycle(address staker) external view returns (bool);
-
-    function onNewPosition(address staker, uint256 durationWeeks) external;
-
-    function onStake(address staker, uint256 oldBalance) external;
-
-    function onUnstake(
-        address staker,
-        uint256 amountUnstaked,
-        uint256 amountLeft
-    ) external returns (uint256 amountToWithdraw);
 }

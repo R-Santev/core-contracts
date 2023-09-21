@@ -65,6 +65,11 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         }
     }
 
+    modifier onlyRewardPool() {
+        if (msg.sender != address(rewardPool)) revert Unauthorized("REWARD_POOL");
+        _;
+    }
+
     function commitEpoch(uint256 id, Epoch calldata epoch, uint256 epochSize) external payable onlySystemCall {
         uint256 newEpochId = currentEpochId++;
         require(id == newEpochId, "UNEXPECTED_EPOCH_ID");
@@ -80,6 +85,10 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         _applyPendingExp();
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
+    }
+
+    function onRewardClaimed(address validator, uint256 amount) external onlyRewardPool {
+        _registerWithdrawal(validator, amount);
     }
 
     /**
