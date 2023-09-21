@@ -18,7 +18,6 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
     address public rewardWallet;
     IValidatorSet public validatorSet;
     mapping(address => ValReward) public valRewards;
-    mapping(address => uint256) public pendingRewards;
     mapping(uint256 => uint256) public paidRewardPerEpoch;
 
     function initialize(IValidatorSet newValidatorSet, address newRewardWallet) external initializer onlySystemCall {
@@ -27,79 +26,143 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
         rewardWallet = newRewardWallet;
     }
 
+    /**
+     * @inheritdoc IRewardPool
+     */
     function distributeRewardsFor(
         uint256 epochId,
         Epoch calldata epoch,
-        Uptime calldata uptime,
+        Uptime[] calldata uptime,
         uint256 epochSize
     ) external onlySystemCall {
         require(paidRewardPerEpoch[epochId] == 0, "REWARD_ALREADY_DISTRIBUTED");
         uint256 totalBlocks = validatorSet.totalBlocks(epochId);
         require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
 
-        // H_MODIFY: Ensure the max reward tokens are sent
-        uint256 activeStake = validatorSet.totalSupplyAt(epochId);
+        uint256 totalSupply = validatorSet.totalSupplyAt(epochId);
+        uint256 reward = _calcReward(epoch, totalSupply, epochSize);
 
-        uint256 length = uptime.uptimeData.length;
-
-        // Hydra modification: Check is removed because validators that are already not part of the validator set
-        // can receive reward for the last epoch they were part of the validator set
-        // require(length <= ACTIVE_VALIDATOR_SET_SIZE && length <= _validators.count, "INVALID_LENGTH");
-
-        // Epoch reward calculation:
-        // apply the reward factor; participation factor is applied then
-        // base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
-        // and on _distributeValidatorReward for validators
-        uint256 reward = calcReward(epoch, activeStake, epochSize);
-
+        uint256 length = uptime.length;
+        uint256 totalReward = 0;
         for (uint256 i = 0; i < length; ++i) {
-            UptimeData memory uptimeData = uptime.uptimeData[i];
-            uint256 stake = validatorSet.balanceOfAt(uptimeData.validator, epochId);
+            totalReward += _distributeReward(epochId, uptime[i], reward, totalSupply, totalBlocks);
+        }
 
-            IDelegationPool delegationPool = IDelegationPool(validatorSet.getDelegationPoolOf(uptimeData.validator));
-            uint256 delegation = delegationPool.delegationAt(epochId);
+        paidRewardPerEpoch[epochId] = totalReward;
+    }
 
-            // slither-disable-next-line divide-before-multiply
-            uint256 validatorReward = (reward * (stake + delegation) * uptimeData.signedBlocks) /
-                (activeStake * uptime.totalBlocks);
-            (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
-                validatorReward,
-                stake,
-                delegation
-            );
+    function claimValidatorReward() external {
+        if (isStakerInVestingCycle(msg.sender)) {
+            return;
+        }
 
-            // _distributeValidatorReward(uptimeData.validator, validatorShares);
-            // _distributeDelegatorReward(delegationPool, uptimeData.validator, delegatorShares);
+        uint256 reward = _calcValidatorReward(msg.sender);
+        if (reward == 0) {
+            return;
+        }
 
-            // // H_MODIFY: Keep history record of the rewardPerShare to be used on reward claim
-            // uint256 magnifiedRewardPerShare = delegationPool.magnifiedRewardPerShare();
-            // if (delegatorShares > 0) {
-            //     _saveEpochRPS(uptimeData.validator, magnifiedRewardPerShare, uptime.epochId);
-            // }
+        _claimValidatorReward(msg.sender, reward);
+        validatorSet.onRewardClaimed(msg.sender, reward);
 
-            // // H_MODIFY: Keep history record of the validator rewards to be used on maturing vesting reward claim
-            // if (validatorShares > 0) {
-            //     _saveValRewardData(uptimeData.validator, uptime.epochId);
-            // }
+        emit ValidatorRewardClaimed(msg.sender, reward);
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function onNewPosition(address staker, uint256 durationWeeks) external {
+        uint256 duration = durationWeeks * 1 weeks;
+        positions[staker] = VestingPosition({
+            duration: duration,
+            start: block.timestamp,
+            end: block.timestamp + duration,
+            base: getBase(),
+            vestBonus: getVestingBonus(durationWeeks),
+            rsiBonus: uint248(getRSI())
+        });
+
+        delete valRewards[staker];
+    }
+
+    function onNewDelegationPosition(
+        address validator,
+        address delegator,
+        uint256 durationWeeks,
+        DelegationPoolParams params
+    ) external {
+        VestingPosition memory position = delegationPositions[validator][delegator];
+        if (position.isMaturing()) {
+            revert StakeRequirement({src: "vesting", msg: "POSITION_MATURING"});
+        }
+
+        if (position.isActive()) {
+            revert StakeRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
+        }
+
+        // If is a position which is not active and not in maturing state,
+        // we can recreate/create the position
+        uint256 duration = durationWeeks * 1 weeks;
+        delete delegationPoolParamsHistory[validator][msg.sender];
+        delete beforeTopUpParams[validator][msg.sender];
+        delegationPositions[validator][msg.sender] = VestingPosition({
+            duration: duration,
+            start: block.timestamp,
+            end: block.timestamp + duration,
+            base: getBase(),
+            vestBonus: getVestingBonus(durationWeeks),
+            rsiBonus: uint248(getRSI())
+        });
+
+        // keep the change in the account pool params
+        uint256 balance = delegation.balanceOf(msg.sender);
+        int256 correction = delegation.correctionOf(msg.sender);
+        _onAccountParamsChange(validator, balance, correction);
+    }
+
+    function _onAccountParamsChange(address validator, uint256 balance, int256 correction) internal {
+        if (isBalanceChangeMade(validator)) {
+            // Top up can be made only once on epoch
+            revert StakeRequirement({src: "vesting", msg: "TOPUP_ALREADY_MADE"});
+        }
+
+        poolParamsChanges[validator][msg.sender].push(
+            AccountPoolParams({balance: balance, correction: correction, epochNum: currentEpochId})
+        );
+    }
+
+    // TODO: Check if the commitEpoch is the last transaction in the epoch, otherwise bug may occur
+    /**
+     * @notice Checks if balance change was already made in the current epoch
+     * @param validator Validator to delegate to
+     */
+    function isBalanceChangeMade(address validator) public view returns (bool) {
+        uint256 length = delegationPoolParamsHistory[validator][msg.sender].length;
+        if (length == 0) {
+            return false;
+        }
+
+        DelegationPoolParams memory data = delegationPoolParamsHistory[validator][msg.sender][length - 1];
+        if (data.epochNum == currentEpochId) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function onStake(address staker, uint256 oldBalance) external {
+        VestingPosition memory position = positions[staker];
+        if (position.isActive()) {
+            // stakeOf still shows the old balance because the new amount will be applied on commitEpoch
+            _handleStake(staker, oldBalance);
         }
     }
 
-    // function claimValidatorReward(uint256 rewardHistoryIndex) public {
-    //     VestData memory position = stakePositions[msg.sender];
-    //     if (!isMaturingPosition(position)) {
-    //         revert StakeRequirement({src: "vesting", msg: "NOT_MATURING"});
-    //     }
-
-    //     Validator storage validator = _validators.get(msg.sender);
-    //     uint256 reward = _calcValidatorReward(validator, rewardHistoryIndex);
-    //     if (reward == 0) return;
-
-    //     // _claimValidatorReward(validator, reward);
-    //     _registerWithdrawal(msg.sender, reward);
-
-    //     emit ValidatorRewardClaimed(msg.sender, reward);
-    // }
-
+    /**
+     * @inheritdoc IRewardPool
+     */
     function onUnstake(
         address staker,
         uint256 amountUnstaked,
@@ -122,32 +185,61 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
         return amountUnstaked;
     }
 
-    function onNewPosition(address staker, uint256 durationWeeks) external {
-        uint256 duration = durationWeeks * 1 weeks;
-        positions[staker] = VestingPosition({
-            duration: duration,
-            start: block.timestamp,
-            end: block.timestamp + duration,
-            base: getBase(),
-            vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
-        });
+    /**
+     * Calculates the epoch reward the following way:
+     * apply the reward factor; participation factor is applied then
+     * (base + vesting and RSI are applied on claimReward (handled by the position proxy) for delegators
+     * and on _distributeValidatorReward for validators)
+     * @param epoch Epoch for which the reward is distributed
+     * @param activeStake Total active stake for the epoch
+     * @param epochSize Number of blocks in the epoch
+     */
+    function _calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) private pure returns (uint256) {
+        uint256 modifiedEpochReward = applyMacro(activeStake);
+        uint256 blocksNum = epoch.endBlock - epoch.startBlock;
+        uint256 nominator = modifiedEpochReward * blocksNum * 100;
+        uint256 denominator = epochSize * 100;
 
-        delete valRewards[staker];
+        return nominator / denominator;
     }
 
-    function _saveValRewardData(address validator, uint256 epoch) internal {
-        ValRewardRecord memory rewardData = ValRewardRecord({
-            totalReward: valRewards[validator].total,
-            epoch: epoch,
-            timestamp: block.timestamp
-        });
+    function _distributeReward(
+        uint256 epochId,
+        Uptime calldata uptime,
+        uint256 fullReward,
+        uint256 totalSupply,
+        uint256 totalBlocks
+    ) private returns (uint256 reward) {
+        require(uptime.signedBlocks <= totalBlocks, "SIGNED_BLOCKS_EXCEEDS_TOTAL");
 
-        valRewardRecords[validator].push(rewardData);
-    }
+        uint256 balance = validatorSet.balanceOfAt(uptime.validator, epochId);
+        IDelegationPool delegationPool = IDelegationPool(validatorSet.getDelegationPoolOf(uptime.validator));
+        uint256 delegation = delegationPool.delegationAt(epochId);
 
-    function getAPRPositionParams() external view returns (uint256, uint256, uint256, uint256) {
-        // return (APR_START, APR_PERIOD, APR_DECIMALS, APR_MAX);
+        // slither-disable-next-line divide-before-multiply
+        uint256 validatorReward = (fullReward * (balance + delegation) * uptime.signedBlocks) /
+            (totalSupply * totalBlocks);
+        (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
+            validatorReward,
+            balance,
+            delegation
+        );
+
+        _distributeValidatorReward(uptime.validator, validatorShares);
+        _distributeDelegatorReward(delegationPool, uptime.validator, delegatorShares);
+
+        // Keep history record of the rewardPerShare to be used on reward claim
+        uint256 magnifiedRewardPerShare = delegationPool.magnifiedRewardPerShare();
+        if (delegatorShares > 0) {
+            _saveEpochRPS(uptime.validator, magnifiedRewardPerShare, epochId);
+        }
+
+        // Keep history record of the validator rewards to be used on maturing vesting reward claim
+        if (validatorShares > 0) {
+            _saveValRewardData(uptime.validator, epochId);
+        }
+
+        return validatorReward;
     }
 
     function _calculateValidatorAndDelegatorShares(
@@ -157,16 +249,14 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
     ) private pure returns (uint256, uint256) {
         if (stakedBalance == 0) return (0, 0);
         if (delegatedBalance == 0) return (totalReward, 0);
-
         uint256 validatorReward = (totalReward * stakedBalance) / (stakedBalance + delegatedBalance);
         uint256 delegatorReward = totalReward - validatorReward;
-
         uint256 commission = (DELEGATORS_COMMISSION * delegatorReward) / 100;
 
         return (validatorReward + commission, delegatorReward - commission);
     }
 
-    function _distributeValidatorReward(address validator, uint256 reward) internal {
+    function _distributeValidatorReward(address validator, uint256 reward) private {
         VestingPosition memory position = positions[validator];
         if (position.isActive()) {
             reward = _applyCustomReward(position, reward, true);
@@ -174,89 +264,71 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
             reward = _applyCustomReward(reward);
         }
 
-        pendingRewards[validator] += reward;
+        valRewards[validator].total += reward;
 
         emit ValidatorRewardDistributed(validator, reward);
     }
 
-    function _distributeDelegatorReward(IDelegationPool delegationPool, address validator, uint256 reward) internal {
+    function _distributeDelegatorReward(IDelegationPool delegationPool, address validator, uint256 reward) private {
         delegationPool.distributeReward(reward);
         emit DelegatorRewardDistributed(validator, reward);
     }
 
-    function calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) internal pure returns (uint256) {
-        uint256 modifiedEpochReward = applyMacro(activeStake);
-        uint256 blocksNum = epoch.endBlock - epoch.startBlock;
-        uint256 nominator = modifiedEpochReward * blocksNum * 100;
-        uint256 denominator = epochSize * 100;
+    function _saveValRewardData(address validator, uint256 epoch) internal {
+        ValRewardHistory memory rewardData = ValRewardHistory({
+            totalReward: valRewards[validator].total,
+            epoch: epoch,
+            timestamp: block.timestamp
+        });
 
-        return nominator / denominator;
+        valRewardHistory[validator].push(rewardData);
     }
 
-    function claimValidatorReward() public virtual {
-        // Validator storage validator = _validators.get(msg.sender);
-        // uint256 reward = _calcValidatorReward(validator);
-        // if (reward == 0) {
-        //     return;
-        // }
-        // _claimValidatorReward(validator, reward);
-        // _registerWithdrawal(msg.sender, reward);
-        // emit ValidatorRewardClaimed(msg.sender, reward);
+    function claimValidatorReward(uint256 rewardHistoryIndex) public {
+        if (!isMaturingPosition(msg.sender)) {
+            revert StakeRequirement({src: "vesting", msg: "NOT_MATURING"});
+        }
+
+        uint256 reward = _calcValidatorReward(msg.sender, rewardHistoryIndex);
+        if (reward == 0) return;
+
+        _claimValidatorReward(msg.sender, reward);
+        validatorSet.onRewardClaimed(msg.sender, reward);
+
+        emit ValidatorRewardClaimed(msg.sender, reward);
     }
 
-    function _claimValidatorReward(Validator storage validator, uint256 reward) internal {
-        // TODO: fill the logic
-        // validator.takenRewards += reward;
+    function _claimValidatorReward(address validator, uint256 reward) internal {
+        valRewards[validator].taken += reward;
     }
 
-    function _calcValidatorReward(Validator memory validator) internal pure returns (uint256) {
-        // return validator.totalRewards - validator.takenRewards;
+    function _calcValidatorReward(address validator) internal view returns (uint256) {
+        return valRewards[validator].total - valRewards[validator].taken;
     }
 
     function getValidatorReward(address validator) external view returns (uint256) {
-        // Validator memory val = _validators.get(validator);
-        // return val.totalRewards - val.takenRewards;
+        return valRewards[validator].total - valRewards[validator].taken;
     }
 
     /**
      * @dev Ensure the function is executed for maturing positions only
      */
-    // function _calcValidatorReward(
-    //     Validator memory validator,
-    //     uint256 rewardHistoryIndex
-    // ) internal view returns (uint256) {
-    //     VestData memory position = stakePositions[msg.sender];
-    //     uint256 maturedPeriod = block.timestamp - position.end;
-    //     uint256 alreadyMatured = position.start + maturedPeriod;
-    //     ValReward memory rewardData = valRewards[msg.sender][rewardHistoryIndex];
-    //     // If the given data is for still not matured period - it is wrong, so revert
-    //     if (rewardData.timestamp > alreadyMatured) {
-    //         revert StakeRequirement({src: "stakerVesting", msg: "WRONG_DATA"});
-    //     }
+    function _calcValidatorReward(address validator, uint256 rewardHistoryIndex) internal view returns (uint256) {
+        VestingPosition memory position = positions[msg.sender];
+        uint256 maturedPeriod = block.timestamp - position.end;
+        uint256 alreadyMatured = position.start + maturedPeriod;
+        ValRewardHistory memory rewardData = valRewardHistory[msg.sender][rewardHistoryIndex];
+        // If the given data is for still not matured period - it is wrong, so revert
+        if (rewardData.timestamp > alreadyMatured) {
+            revert StakeRequirement({src: "stakerVesting", msg: "WRONG_DATA"});
+        }
 
-    //     // if (rewardData.totalReward > validator.takenRewards) {
-    //     //     return rewardData.totalReward - validator.takenRewards;
-    //     // }
+        if (rewardData.totalReward > valRewards[validator].taken) {
+            return rewardData.totalReward - valRewards[validator].taken;
+        }
 
-    //     return 0;
-    // }
-
-    //     function _distributeValidatorReward(address validator, uint256 reward) internal override {
-    //     VestData memory position = stakePositions[msg.sender];
-    //     uint256 maxPotentialReward = applyMaxReward(reward);
-    //     if (isActivePosition(position)) {
-    //         reward = _applyCustomReward(position, reward, true);
-    //     } else {
-    //         reward = _applyCustomReward(reward);
-    //     }
-
-    //     uint256 remainder = maxPotentialReward - reward;
-    //     if (remainder > 0) {
-    //         _burnAmount(remainder);
-    //     }
-
-    //     super._distributeValidatorReward(validator, reward);
-    // }
+        return 0;
+    }
 
     // function claimValidatorReward() public override {
     //     if (isStakerInVestingCycle(msg.sender)) {

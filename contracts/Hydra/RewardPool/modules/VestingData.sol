@@ -5,6 +5,7 @@ pragma solidity 0.8.17;
 import "./../IRewardPool.sol";
 import "./APR.sol";
 import "./../libs/VestingLib.sol";
+import "./../../common/CommonStructs.sol";
 
 struct VestingPosition {
     uint256 duration;
@@ -26,18 +27,33 @@ struct ValReward {
     uint256 total;
 }
 
-struct ValRewardRecord {
+struct ValRewardHistory {
     uint256 totalReward;
     uint256 epoch;
     uint256 timestamp;
+}
+
+struct RewardParams {
+    uint256 rewardPerShare;
+    uint256 balance;
+    int256 correction;
 }
 
 abstract contract VestingData is IRewardPool, APR {
     using VestingPositionLib for VestingPosition;
 
     mapping(address => VestingPosition) public positions;
+    mapping(address => mapping(address => VestingPosition)) public delegationPositions;
+
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
-    mapping(address => ValRewardRecord[]) public valRewardRecords;
+    mapping(address => ValRewardHistory[]) public valRewardHistory;
+    // Historical Validator Delegation Pool's Params per delegator
+    // validator => delegator => top-up data
+    mapping(address => mapping(address => DelegationPoolParams[])) public delegationPoolParamsHistory;
+    // keep the account parameters before the top-up, so we can separately calculate the rewards made before  a top-up is made
+    // This is because we need to apply the RSI bonus to the rewards made before the top-up
+    // and not apply the RSI bonus to the rewards made after the top-up
+    mapping(address => mapping(address => RewardParams)) public beforeTopUpParams;
 
     function isActivePosition(address staker) public view returns (bool) {
         VestingPosition memory position = positions[staker];
@@ -49,15 +65,7 @@ abstract contract VestingData is IRewardPool, APR {
         return position.isMaturingPosition();
     }
 
-    function onStake(address staker, uint256 oldBalance) external {
-        VestingPosition memory position = positions[staker];
-        if (position.isActive()) {
-            // stakeOf still shows the old balance because the new amount will be applied on commitEpoch
-            _handleStake(staker, oldBalance);
-        }
-    }
-
-    function isStakerInVestingCycle(address staker) external view returns (bool) {
+    function isStakerInVestingCycle(address staker) public view returns (bool) {
         return positions[staker].isStakerInVestingCycle();
     }
 

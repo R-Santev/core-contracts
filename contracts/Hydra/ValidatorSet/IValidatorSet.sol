@@ -41,5 +41,7 @@ interface IValidatorSet {
     /// @notice returns the total supply for a given epoch
     function totalSupplyAt(uint256 epochNumber) external view returns (uint256);
 
+    function onRewardClaimed(address validator, uint256 amount) external;
+
     function getDelegationPoolOf(address validator) external view returns (address);
 }

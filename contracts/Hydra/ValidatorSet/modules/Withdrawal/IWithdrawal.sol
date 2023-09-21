@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface ICVSWithdrawal {
+interface IWithdrawal {
     event WithdrawalRegistered(address indexed account, uint256 amount);
     event WithdrawalFinished(address indexed account, address indexed to, uint256 amount);
 
