@@ -91,34 +91,34 @@ describe("ChildValidatorSet StakeSyncer", () => {
   }
 
   describe("Stake", () => {
-    it("emit transfer event from zero addr on stake", async () => {
+    it("emit StakeChanged event on stake", async () => {
       const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
 
       await expect(validatorChildValidatorSet.stake({ value: minStake }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake);
 
       // ensure getValidatorTotalStake returns the proper staked amount
       const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
       expect(stakeData.totalStake).to.equal(minStake);
     });
 
-    it("emit transfer event from zero addr on opening a vested position", async () => {
+    it("emit StakeChanged event on opening a vested position", async () => {
       const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
 
       const vestingDuration = 12; // weeks
       await expect(validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake);
 
       // ensure getValidatorTotalStake returns the proper staked amount
       const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
       expect(stakeData.totalStake).to.equal(minStake);
     });
 
-    it("emit transfer event from zero addr on top-up vested position", async () => {
+    it("emit StakeChanged event on top-up vested position", async () => {
       const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       const vestingDuration = 12; // weeks
@@ -126,39 +126,45 @@ describe("ChildValidatorSet StakeSyncer", () => {
       await commitEpoch(systemChildValidatorSet, []);
 
       await expect(validatorChildValidatorSet.stake({ value: minStake.mul(2) }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake.mul(2));
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake.mul(2).add(minStake));
 
       // ensure getValidatorTotalStake returns the proper staked amount
       const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
       expect(stakeData.totalStake).to.equal(minStake.mul(3));
     });
 
-    it("emit transfer event to zero addr on unstake", async () => {
+    it("emit StakeChanged event on unstake", async () => {
       const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       await validatorChildValidatorSet.stake({ value: minStake });
       await commitEpoch(systemChildValidatorSet, []);
 
       await expect(validatorChildValidatorSet.unstake(minStake))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(validator.address, ethers.constants.AddressZero, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, 0);
+
       // ensure getValidatorTotalStake returns the proper staked amount
       const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
       expect(stakeData.totalStake).to.equal(0);
     });
 
-    it("emit transfer event to zero addr on unstake from vested position", async () => {
+    it("emit StakeChanged event on unstake from vested position", async () => {
       const { childValidatorSet, validator, systemChildValidatorSet } = await loadFixture(registerValidatorFixture);
       const validatorChildValidatorSet = childValidatorSet.connect(validator);
       const vestingDuration = 12; // weeks
-      await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: minStake.mul(2) });
+      const stakeAmount = minStake.mul(2);
+      await validatorChildValidatorSet.openStakingPosition(vestingDuration, { value: stakeAmount });
       await commitEpoch(systemChildValidatorSet, []);
 
       const unstakeAmount = ethers.BigNumber.from(minStake).div(3);
       await expect(validatorChildValidatorSet.unstake(unstakeAmount))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(validator.address, ethers.constants.AddressZero, unstakeAmount);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, stakeAmount.sub(unstakeAmount));
+
+      // ensure getValidatorTotalStake returns the proper staked amount
+      const stakeData = await childValidatorSet.getValidatorTotalStake(validator.address);
+      expect(stakeData.totalStake).to.equal(stakeAmount.sub(unstakeAmount));
     });
   });
 
@@ -171,46 +177,46 @@ describe("ChildValidatorSet StakeSyncer", () => {
       return { childValidatorSet, systemChildValidatorSet, validator, vestManager, delegatorVestManager };
     }
 
-    it("emit transfer event from zero addr on delegate", async () => {
+    it("emit StakeChanged event on delegate", async () => {
       const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const { totalStake } = await childValidatorSet.getValidator(validator.address);
 
       const delegatorChildValidatorSet = childValidatorSet.connect(delegator);
       await expect(delegatorChildValidatorSet.delegate(validator.address, false, { value: minStake }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake);
 
       // to ensure that delegate is immediately applied on the validator stake
       expect((await childValidatorSet.getValidator(validator.address)).totalStake).to.equal(totalStake.add(minStake));
     });
 
-    it("emit transfer event from zero addr on delegate", async () => {
+    it("emit StakeChanged event on delegate", async () => {
       const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const { totalStake } = await childValidatorSet.getValidator(validator.address);
 
       const delegatorChildValidatorSet = childValidatorSet.connect(delegator);
       await expect(delegatorChildValidatorSet.delegate(validator.address, false, { value: minStake }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake);
 
       // to ensure that undelegate is immediately applied on the validator stake
       expect((await childValidatorSet.getValidator(validator.address)).totalStake).to.equal(totalStake.add(minStake));
     });
 
-    it("emit transfer event from zero addr on open vested position", async () => {
+    it("emit StakeChanged event on open vested position", async () => {
       const { childValidatorSet, validator, delegatorVestManager } = await loadFixture(
         setupDelegationVestManagerFixture
       );
       const { totalStake } = await childValidatorSet.getValidator(validator.address);
       const vestingDuration = 12; // weeks
       await expect(delegatorVestManager.openDelegatorPosition(validator.address, vestingDuration, { value: minStake }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake);
       // to ensure that delegate is immediately applied on the validator stake
       expect((await childValidatorSet.getValidator(validator.address)).totalStake).to.equal(totalStake.add(minStake));
     });
 
-    it("emit transfer event from zero addr on top-up vested position", async () => {
+    it("emit StakeChanged event on top-up vested position", async () => {
       const { childValidatorSet, validator, delegatorVestManager, systemChildValidatorSet } = await loadFixture(
         setupDelegationVestManagerFixture
       );
@@ -221,27 +227,27 @@ describe("ChildValidatorSet StakeSyncer", () => {
       const { totalStake } = await childValidatorSet.getValidator(validator.address);
 
       await expect(delegatorVestManager.topUpPosition(validator.address, { value: minStake }))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(ethers.constants.AddressZero, validator.address, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, minStake.mul(2));
       // to ensure that delegate is immediately applied on the validator stake
       expect((await childValidatorSet.getValidator(validator.address)).totalStake).to.equal(totalStake.add(minStake));
     });
 
-    it("emit transfer event from zero addr on undelegate", async () => {
+    it("emit StakeChanged event on undelegate", async () => {
       const { childValidatorSet, validator } = await loadFixture(registerValidatorFixture);
       const delegatorChildValidatorSet = childValidatorSet.connect(delegator);
       await delegatorChildValidatorSet.delegate(validator.address, false, { value: minStake });
       const { totalStake } = await childValidatorSet.getValidator(validator.address);
 
       await expect(await delegatorChildValidatorSet.undelegate(validator.address, minStake))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(validator.address, ethers.constants.AddressZero, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, ethers.BigNumber.from(totalStake).sub(minStake));
 
       // to ensure that undelegate is immediately applied on the validator stake
       expect((await childValidatorSet.getValidator(validator.address)).totalStake).to.equal(totalStake.sub(minStake));
     });
 
-    it("emit transfer event from zero addr on cut vested position", async () => {
+    it("emit StakeChanged event on cut vested position", async () => {
       const { childValidatorSet, validator, delegatorVestManager, systemChildValidatorSet } = await loadFixture(
         setupDelegationVestManagerFixture
       );
@@ -253,8 +259,8 @@ describe("ChildValidatorSet StakeSyncer", () => {
 
       await liquidToken.connect(delegator).approve(delegatorVestManager.address, minStake);
       await expect(delegatorVestManager.cutPosition(validator.address, minStake))
-        .to.emit(childValidatorSet, "Transfer")
-        .withArgs(validator.address, ethers.constants.AddressZero, minStake);
+        .to.emit(childValidatorSet, "StakeChanged")
+        .withArgs(validator.address, ethers.BigNumber.from(0));
       // to ensure that undelegate is immediately applied on the validator stake
       expect((await childValidatorSet.getValidator(validator.address)).totalStake).to.equal(totalStake.sub(minStake));
     });
