@@ -80,7 +80,7 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         int256 amountInt = amount.toInt256Safe();
         _queue.insert(validator, 0, amountInt * -1);
         // emit here so the amount is correct value (before the cut)
-        _syncUnstake(validator, amount);
+        _syncStake(validator);
         LiquidStaking._onUndelegate(msg.sender, amount);
 
         amount = _cutPosition(validator, delegation, amount, amountAfterUndelegate);

@@ -50,7 +50,7 @@ abstract contract ExtendedStaking is StakerVesting, CVSStaking, LiquidStaking {
         claimValidatorReward();
 
         _queue.insert(msg.sender, amountInt * -1, 0);
-        _syncUnstake(msg.sender, amount);
+        _syncStake(msg.sender);
         LiquidStaking._onUnstake(msg.sender, amount);
         if (amountAfterUnstake == 0) {
             _validators.get(msg.sender).active = false;

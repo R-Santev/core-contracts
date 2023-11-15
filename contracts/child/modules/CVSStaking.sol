@@ -59,7 +59,7 @@ abstract contract CVSStaking is ICVSStaking, CVSStorage, CVSAccessControl, CVSWi
             revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
         claimValidatorReward();
         _queue.insert(msg.sender, int256(msg.value), 0);
-        _syncStake(msg.sender, msg.value);
+        _syncStake(msg.sender);
         emit Staked(msg.sender, msg.value);
     }
 
