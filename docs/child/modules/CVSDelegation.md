@@ -542,6 +542,23 @@ function implementation() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
+### liquidToken
+
+```solidity
+function liquidToken() external view returns (address)
+```
+
+Returns the address of the liquidity token.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### minDelegation
 
 ```solidity
@@ -811,10 +828,10 @@ event Initialized(uint8 version)
 |---|---|---|
 | version  | uint8 | undefined |
 
-### Transfer
+### StakeChanged
 
 ```solidity
-event Transfer(address indexed from, address indexed to, uint256 value)
+event StakeChanged(address indexed validator, uint256 newStake)
 ```
 
 
@@ -825,9 +842,8 @@ event Transfer(address indexed from, address indexed to, uint256 value)
 
 | Name | Type | Description |
 |---|---|---|
-| from `indexed` | address | undefined |
-| to `indexed` | address | undefined |
-| value  | uint256 | undefined |
+| validator `indexed` | address | undefined |
+| newStake  | uint256 | undefined |
 
 ### Undelegated
 
