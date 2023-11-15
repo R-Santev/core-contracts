@@ -1,30 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import "./../modules/CVSStorage.sol";
+
 /**
  * @title StakeSyncer
  * @notice This contract is used to emit a specific event on stake, unstake, delegate and undelegate;
  * Child chain listen for this event to sync the state of the validators
  */
-abstract contract StakeSyncer {
-    event Transfer(address indexed from, address indexed to, uint256 value);
+abstract contract StakeSyncer is CVSStorage {
+    event StakeChanged(address indexed validator, uint256 newStake);
 
     /**
-     * @notice Emit a transfer event on stake
+     * @notice Emit a StakeChanged event on stake
      * @param staker The address of the staker
-     * @param amount The amount of tokens staked
      * @dev Use on delegate as well
      */
-    function _syncStake(address staker, uint256 amount) internal {
-        emit Transfer(address(0), staker, amount);
-    }
-
-    /**
-     * @notice Emit a transfer event on unstake
-     * @param amount The amount of tokens unstaked
-     * @dev Use on undelegate as well
-     */
-    function _syncUnstake(address staker, uint256 amount) internal {
-        emit Transfer(staker, address(0), amount);
+    function _syncStake(address staker) internal {
+        (, uint256 totalStake) = getValidatorTotalStake(staker);
+        emit StakeChanged(staker, totalStake);
     }
 }
