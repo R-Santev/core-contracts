@@ -1742,8 +1742,10 @@ describe("ChildValidatorSet", () => {
         });
       });
 
-      it("set manager in mapping", async () => {
+      it("set manager in mappings", async () => {
         expect(await childValidatorSet.vestManagers(vestManager.address)).to.equal(accounts[4].address);
+        expect(await childValidatorSet.userVestManagers(accounts[4].address, 1)).to.equal(vestManager.address);
+        expect((await childValidatorSet.getUserVestManagers(accounts[4].address)).length).to.equal(2);
       });
     });
 

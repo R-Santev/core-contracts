@@ -899,6 +899,28 @@ function getRawDelegatorReward(address validator, address delegator) external vi
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### getUserVestManagers
+
+```solidity
+function getUserVestManagers(address user) external view returns (address[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| user | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
+
 ### getValRewardsValues
 
 ```solidity
@@ -1659,6 +1681,29 @@ Set new pending exponent, to be activated in the next commit epoch
 | Name | Type | Description |
 |---|---|---|
 | newValue | uint256 | New Voting Power Exponent Numerator |
+
+### userVestManagers
+
+```solidity
+function userVestManagers(address, uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### valRewards
 

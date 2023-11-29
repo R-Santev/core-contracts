@@ -59,6 +59,9 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
     // vesting manager => owner
     mapping(address => address) public vestManagers;
 
+    // Additional mapping to store all vesting managers per user address for fast off-chain lookup
+    mapping(address => address[]) public userVestManagers;
+
     // validator delegation pool => epochNumber => RPS
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
 
@@ -248,6 +251,11 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         return false;
     }
 
+    function storeVestManagerData(address vestManager, address owner) internal {
+        vestManagers[vestManager] = owner;
+        userVestManagers[owner].push(vestManager);
+    }
+
     function _getAccountParams(
         address validator,
         address manager,
@@ -283,6 +291,10 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         }
 
         return (params.balance, params.correction);
+    }
+
+    function getUserVestManagers(address user) external view returns (address[] memory) {
+        return userVestManagers[user];
     }
 
     function getRPSValues(address validator) external view returns (RPS[] memory) {

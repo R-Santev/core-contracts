@@ -37,7 +37,7 @@ abstract contract ExtendedDelegation is DelegationVesting, CVSDelegation {
         require(msg.sender != address(0), "INVALID_OWNER");
 
         address managerAddr = _clone(msg.sender);
-        vestManagers[managerAddr] = msg.sender;
+        storeVestManagerData(managerAddr, msg.sender);
     }
 
     function openDelegatorPosition(address validator, uint256 durationWeeks) external payable onlyManager {
