@@ -478,6 +478,28 @@ function getRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
+### getUserVestManagers
+
+```solidity
+function getUserVestManagers(address user) external view returns (address[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| user | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
+
 ### getValidator
 
 ```solidity
@@ -800,6 +822,29 @@ Delegates sent amount to validator. Add top-up data. Modify vesting position dat
 | Name | Type | Description |
 |---|---|---|
 | validator | address | Validator to delegate to |
+
+### userVestManagers
+
+```solidity
+function userVestManagers(address, uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### vestManagers
 

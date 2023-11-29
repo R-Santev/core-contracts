@@ -583,6 +583,28 @@ function getRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
+### getUserVestManagers
+
+```solidity
+function getUserVestManagers(address user) external view returns (address[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| user | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
+
 ### getValidator
 
 ```solidity
@@ -983,6 +1005,29 @@ Undelegates amount from validator for sender. Claims rewards beforehand.
 |---|---|---|
 | validator | address | Validator to undelegate from |
 | amount | uint256 | The amount to undelegate |
+
+### userVestManagers
+
+```solidity
+function userVestManagers(address, uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### vestManagers
 
