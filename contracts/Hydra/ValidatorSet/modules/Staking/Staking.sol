@@ -163,18 +163,6 @@ abstract contract Staking is
         }
     }
 
-    // OpenZeppelin Overrides
-
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
-        require(from == address(0) || to == address(0), "TRANSFER_FORBIDDEN");
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
-    function _delegate(address delegator, address delegatee) internal override {
-        if (delegator != delegatee) revert("DELEGATION_FORBIDDEN");
-        super._delegate(delegator, delegatee);
-    }
-
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;
 }

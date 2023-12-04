@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "./../ValidatorSet/IValidatorSet.sol";
+import "./../common/CommonStructs.sol";
 
 struct Uptime {
     address validator;
@@ -27,7 +28,20 @@ interface IRewardPool {
     function onNewPosition(address staker, uint256 durationWeeks) external;
 
     /// @notice sets the reward params for the new vested delegation position
-    function onNewDelegationPosition(address staker, uint256 durationWeeks) external;
+    function onNewDelegatePosition(
+        address validator,
+        address delegator,
+        uint256 durationWeeks,
+        uint256 currentEpochId,
+        uint256 newBalance
+    ) external;
+
+    function onTopUpDelegatePosition(
+        address validator,
+        address delegator,
+        uint256 newBalance,
+        uint256 currentEpochId
+    ) external;
 
     /// @notice update the reward params for the vested position
     function onStake(address staker, uint256 oldBalance) external;

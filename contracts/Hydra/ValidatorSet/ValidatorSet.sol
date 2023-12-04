@@ -37,8 +37,8 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
      *                    pubkey uint256[4] BLS public keys of initial validators
      *                    signature uint256[2] signature of initial validators
      *                    stake amount staked per initial validator
-     * @param newBls address pf BLS contract/precompile
-     * @param governance Governance address to set as owner of the
+     * @param newBls address of BLS contract/precompile
+     * @param governance Governance address to set as owner of the contract
      */
     function initialize(
         InitStruct calldata init,
@@ -97,6 +97,18 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     function totalBlocks(uint256 epochId) external view returns (uint256 length) {
         uint256 endBlock = epochs[epochId].endBlock;
         length = endBlock == 0 ? 0 : endBlock - epochs[epochId].startBlock + 1;
+    }
+
+    // OpenZeppelin Overrides
+
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+        require(from == address(0) || to == address(0), "TRANSFER_FORBIDDEN");
+        super._beforeTokenTransfer(from, to, amount);
+    }
+
+    function _delegate(address delegator, address delegatee) internal override {
+        if (delegator != delegatee) revert("DELEGATION_FORBIDDEN");
+        super._delegate(delegator, delegatee);
     }
 
     // slither-disable-next-line unused-state,naming-convention

@@ -34,12 +34,12 @@ abstract contract ValidatorSetBase is IValidatorSet, Initializable {
         uint256[4] calldata pubkey
     ) internal view {
         // slither-disable-next-line calls-loop
-        (bool result, bool callSuccess) = bls.verifySingle(signature, pubkey, message(signer));
+        (bool result, bool callSuccess) = bls.verifySingle(signature, pubkey, _message(signer));
         if (!callSuccess || !result) revert InvalidSignature(signer);
     }
 
     /// @notice Message to sign for registration
-    function message(address signer) internal view returns (uint256[2] memory) {
+    function _message(address signer) internal view returns (uint256[2] memory) {
         // slither-disable-next-line calls-loop
         return bls.hashToPoint(DOMAIN, abi.encodePacked(signer, block.chainid));
     }

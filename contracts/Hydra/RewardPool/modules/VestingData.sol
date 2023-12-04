@@ -60,9 +60,14 @@ abstract contract VestingData is IRewardPool, APR {
         return position.isActive();
     }
 
+    function isActiveDelegatePosition(address validator, address delegator) public view returns (bool) {
+        VestingPosition memory position = delegationPositions[validator][delegator];
+        return position.isActive();
+    }
+
     function isMaturingPosition(address staker) public view returns (bool) {
         VestingPosition memory position = positions[staker];
-        return position.isMaturingPosition();
+        return position.isMaturing();
     }
 
     function isStakerInVestingCycle(address staker) public view returns (bool) {
