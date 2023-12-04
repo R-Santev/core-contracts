@@ -8,7 +8,7 @@ interface IDelegationVesting {
         uint256 indexed weeksDuration,
         uint256 amount
     );
-    event PositionTopUp(address indexed manager, address indexed validator, uint256 indexed topUpIndex, uint256 amount);
+    event PositionTopUp(address indexed manager, address indexed validator, uint256 amount);
     event PositionCut(address indexed manager, address indexed validator, uint256 amount);
     event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount);
 

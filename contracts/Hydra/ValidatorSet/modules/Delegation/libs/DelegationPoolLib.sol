@@ -2,13 +2,12 @@
 pragma solidity 0.8.17;
 
 import "./IDelegationPool.sol";
-import "./../../../libs/SafeMathInt.sol";
+import "./../../../../../libs/SafeMathInt.sol";
 
 /**
- * @title Reward Pool Lib
- * @author Polygon Technology (Daniel Gretzke @gretzke)
- * @notice library for distributing rewards
- * @dev structs can be found in the IValidator interface
+ * @title Delegation Pool Lib
+ * @author Rosen Santev (Based Polygon Technology's RewardPoolLib)
+ * @notice library for handling delegators and their rewards
  */
 library DelegationPoolLib {
     using SafeMathUint for uint256;
