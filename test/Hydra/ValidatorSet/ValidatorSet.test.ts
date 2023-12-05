@@ -14,10 +14,6 @@ describe("ValidatorSet", () => {
   let validatorSetContract: ValidatorSet;
   before(async () => {
     accounts = await ethers.getSigners();
-
-    // const { deployer, validatorSet } = await mockValidatorSetFixture();
-    // deployerSigner = deployer;
-    // validatorSetContract = validatorSet;
   });
 
   it("should successfully load the mocked validator set fixture", async () => {
