@@ -1,12 +1,12 @@
-# ValidatorSet
+# MockValidatorSet
 
 
 
+> MockValidatorSet
 
 
 
-
-
+*Mock contract allowing improved testing of ValidatorSet It just adds read functions to check the state of the ValidatorSet contract*
 
 ## Methods
 
@@ -752,6 +752,29 @@ function getPastVotes(address account, uint256 blockNumber) external view return
 |---|---|---|
 | account | address | undefined |
 | blockNumber | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### getRawDelegatorReward
+
+```solidity
+function getRawDelegatorReward(address validator, address delegator) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
 
 #### Returns
 
