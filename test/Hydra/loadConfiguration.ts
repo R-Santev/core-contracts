@@ -6,7 +6,6 @@ const { ethers } = require("hardhat");
 export async function validatorSetFixture(governance: SignerWithAddress) {
   const ValidatorSet = await ethers.getContractFactory("ValidatorSet", governance);
   const validatorSet = await ValidatorSet.deploy();
-
   await validatorSet.deployed();
 
   return validatorSet;
@@ -15,7 +14,6 @@ export async function validatorSetFixture(governance: SignerWithAddress) {
 export async function mockValidatorSetFixture() {
   const ValidatorSet = await ethers.getContractFactory("MockValidatorSet");
   const validatorSet = await ValidatorSet.deploy();
-
   await validatorSet.deployed();
 
   return validatorSet;
@@ -26,10 +24,7 @@ export async function liquidityTokenFixture() {
     "contracts/Hydra/LiquidityToken/LiquidityToken.sol:LiquidityToken"
   );
   const liquidToken = await LiquidTokenFactory.deploy();
-
   await liquidToken.deployed();
-
-  // await liquidToken.initialize("Lydra", "LDR", governance, validatorSet.address);
 
   return liquidToken;
 }
