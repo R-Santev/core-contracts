@@ -1,51 +1,42 @@
 /* eslint-disable node/no-extraneous-import */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { ValidatorSet } from "../../typechain-types";
 
 const { ethers } = require("hardhat");
 
-export async function validatorSetFixture() {
-  const accounts = await ethers.getSigners();
-  const validators = initValidators(accounts);
-  const governance = accounts[4];
-  const delegator = accounts[5];
-
+export async function validatorSetFixture(governance: SignerWithAddress) {
   const ValidatorSet = await ethers.getContractFactory("ValidatorSet", governance);
   const validatorSet = await ValidatorSet.deploy();
 
   await validatorSet.deployed();
 
-  return { accounts, validators, governance, delegator, validatorSet };
+  return validatorSet;
 }
 
 export async function mockValidatorSetFixture() {
-  const [deployer] = await ethers.getSigners();
-
   const ValidatorSet = await ethers.getContractFactory("MockValidatorSet");
   const validatorSet = await ValidatorSet.deploy();
 
   await validatorSet.deployed();
 
-  return { deployer, validatorSet };
+  return validatorSet;
 }
 
-export async function liquidityTokenFixture(governance: string, validatorSet: ValidatorSet) {
-  const LiquidTokenFactory = await ethers.getContractFactory("LiquidityToken");
+export async function liquidityTokenFixture() {
+  const LiquidTokenFactory = await ethers.getContractFactory(
+    "contracts/Hydra/LiquidityToken/LiquidityToken.sol:LiquidityToken"
+  );
   const liquidToken = await LiquidTokenFactory.deploy();
-  await liquidToken.initialize("Lydra", "LDR", governance, validatorSet.address);
+
+  await liquidToken.deployed();
+
+  // await liquidToken.initialize("Lydra", "LDR", governance, validatorSet.address);
 
   return liquidToken;
 }
 
-function initValidators(accounts: SignerWithAddress[], num: number = 4) {
-  if (num > accounts.length) {
-    throw new Error("Too many validators");
-  }
+export async function blsFixture() {
+  const bls = await (await ethers.getContractFactory("BLS")).deploy();
+  await bls.deployed();
 
-  const vals: SignerWithAddress[] = [];
-  for (let i = 0; i < num; i++) {
-    vals[i] = accounts[i];
-  }
-
-  return vals;
+  return bls;
 }
