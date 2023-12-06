@@ -1,6 +1,10 @@
 /* eslint-disable node/no-extraneous-import */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+<<<<<<< HEAD
 import { BigNumber, Contract } from "ethers";
+=======
+import { BigNumber } from "ethers";
+>>>>>>> 232c201 (re-structure the tests - create mocha context, create a test that initializing the context and separate each fixture to be responsible for 1 contract;)
 
 export interface Signers {
   accounts: SignerWithAddress[];
@@ -10,6 +14,7 @@ export interface Signers {
   delegator: SignerWithAddress;
 }
 
+<<<<<<< HEAD
 export interface Fixtures {
   validatorSetFixture: { (): Promise<Contract> };
 }
@@ -17,6 +22,10 @@ export interface Fixtures {
 declare module "mocha" {
   export interface Context {
     fixtures: Fixtures;
+=======
+declare module "mocha" {
+  export interface Context {
+>>>>>>> 232c201 (re-structure the tests - create mocha context, create a test that initializing the context and separate each fixture to be responsible for 1 contract;)
     signers: Signers;
     epochReward: BigNumber;
     minStake: BigNumber;
