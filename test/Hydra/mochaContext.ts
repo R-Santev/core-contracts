@@ -1,6 +1,6 @@
 /* eslint-disable node/no-extraneous-import */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 
 export interface Signers {
   accounts: SignerWithAddress[];
@@ -10,8 +10,13 @@ export interface Signers {
   delegator: SignerWithAddress;
 }
 
+export interface Fixtures {
+  validatorSetFixture: { (): Promise<Contract> };
+}
+
 declare module "mocha" {
   export interface Context {
+    fixtures: Fixtures;
     signers: Signers;
     epochReward: BigNumber;
     minStake: BigNumber;

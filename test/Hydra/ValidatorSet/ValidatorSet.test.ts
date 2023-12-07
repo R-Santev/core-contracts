@@ -3,21 +3,16 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import * as hre from "hardhat";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumberish } from "ethers";
 
-import { blsFixture, liquidityTokenFixture, mockValidatorSetFixture } from "../loadConfiguration";
 import * as mcl from "../../../ts/mcl";
-import { LiquidityToken } from "../../../typechain-types/contracts/Hydra/LiquidityToken/LiquidityToken";
-import { BLS, MockValidatorSet } from "../../../typechain-types";
+import { Fixtures, Signers, initValidators } from "../mochaContext";
 import { CHAIN_ID, DOMAIN } from "../constants";
+import { generateFixtures } from "../fixtures";
 
-export function validatorSetTests(): void {
-  let validatorSet: MockValidatorSet;
-  let systemValidatorSet: MockValidatorSet;
-  let liquidToken: LiquidityToken;
-  let blsContract: BLS;
-  let validatorSetSize: number;
-  let validatorStake: BigNumber;
+describe("ValidatorSet", function () {
+  /** Variables */
+  let systemValidatorSet;
   let validatorInit: {
     addr: string;
     pubkey: [BigNumberish, BigNumberish, BigNumberish, BigNumberish];
@@ -25,11 +20,34 @@ export function validatorSetTests(): void {
     stake: BigNumberish;
   };
 
+  // * Method used to initialize the parameters of the mocha context, e.g., the signers
+  async function initializeContext(context: any) {
+    context.signers = {} as Signers;
+    context.fixtures = {} as Fixtures;
+
+    const signers = await hre.ethers.getSigners();
+    context.signers.accounts = signers;
+    context.signers.admin = signers[0];
+    context.signers.validators = initValidators(signers, 4);
+    context.signers.governance = signers[4];
+    context.signers.delegator = signers[5];
+    context.epochReward = hre.ethers.utils.parseEther("0.0000001");
+    context.minStake = hre.ethers.utils.parseEther("1");
+    context.minDelegation = hre.ethers.utils.parseEther("1");
+    context.epochsInYear = 31500;
+
+    const network = await hre.ethers.getDefaultProvider().getNetwork();
+    context.chainId = network.chainId;
+  }
+
   before(async function () {
-    const fixtures = await loadFixture(setupEnvFixtures);
-    validatorSet = fixtures.validatorSetFixture;
-    liquidToken = fixtures.liquidTokenFixture;
-    blsContract = fixtures.blsContractFixture;
+    // * Initialize the this context of mocha
+    await initializeContext(this);
+
+    /** Generate and initialize the context fixtures */
+    await generateFixtures(this);
+
+    const validatorSet = await loadFixture(this.fixtures.validatorSetFixture);
 
     await mcl.init();
 
@@ -72,17 +90,14 @@ export function validatorSetTests(): void {
   });
 
   it("should validate validator set initialization", async function () {
+    const validatorSet = await loadFixture(this.fixtures.validatorSetFixture);
+
+    expect(validatorSet.deployTransaction.from).to.equal(this.signers.admin.address);
     expect(await validatorSet.minStake()).to.equal(0);
     expect(await validatorSet.minDelegation()).to.equal(0);
     expect(await validatorSet.currentEpochId()).to.equal(0);
     expect(await validatorSet.owner()).to.equal(hre.ethers.constants.AddressZero);
   });
 
-  async function setupEnvFixtures() {
-    const validatorSetFixture = await loadFixture(mockValidatorSetFixture);
-    const liquidTokenFixture = await loadFixture(liquidityTokenFixture);
-    const blsContractFixture = await loadFixture(blsFixture);
-
-    return { validatorSetFixture, liquidTokenFixture, blsContractFixture };
-  }
-}
+  // * Main tests for the ValidatorSet with the loaded context and all child fixtures
+});
