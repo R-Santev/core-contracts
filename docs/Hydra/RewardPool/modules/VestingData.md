@@ -66,6 +66,104 @@ function applyMaxReward(uint256 reward) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### beforeTopUpParams
+
+```solidity
+function beforeTopUpParams(address, address) external view returns (uint256 rewardPerShare, uint256 balance, int256 correction)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| rewardPerShare | uint256 | undefined |
+| balance | uint256 | undefined |
+| correction | int256 | undefined |
+
+### delegationPoolParamsHistory
+
+```solidity
+function delegationPoolParamsHistory(address, address, uint256) external view returns (uint256 balance, int256 correction, uint256 epochNum)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+| _2 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| balance | uint256 | undefined |
+| correction | int256 | undefined |
+| epochNum | uint256 | undefined |
+
+### delegationPositions
+
+```solidity
+function delegationPositions(address, address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| duration | uint256 | undefined |
+| start | uint256 | undefined |
+| end | uint256 | undefined |
+| base | uint256 | undefined |
+| vestBonus | uint256 | undefined |
+| rsiBonus | uint256 | undefined |
+
+### distributeRewardsFor
+
+```solidity
+function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uint256 epochSize) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| epochId | uint256 | undefined |
+| epoch | Epoch | undefined |
+| uptime | Uptime[] | undefined |
+| epochSize | uint256 | undefined |
+
 ### getBase
 
 ```solidity
@@ -237,10 +335,223 @@ function historyRPS(address, uint256) external view returns (uint192 value, uint
 | value | uint192 | undefined |
 | timestamp | uint64 | undefined |
 
-### valRewardRecords
+### isActiveDelegatePosition
 
 ```solidity
-function valRewardRecords(address, uint256) external view returns (uint256 totalReward, uint256 epoch, uint256 timestamp)
+function isActiveDelegatePosition(address validator, address delegator) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isActivePosition
+
+```solidity
+function isActivePosition(address staker) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isMaturingPosition
+
+```solidity
+function isMaturingPosition(address staker) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isStakerInVestingCycle
+
+```solidity
+function isStakerInVestingCycle(address staker) external view returns (bool)
+```
+
+Returns true if the staker is an active vesting position or not all rewards from the latest  active position are matured yet
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | Address of the staker |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### onNewDelegatePosition
+
+```solidity
+function onNewDelegatePosition(address validator, address delegator, uint256 durationWeeks, uint256 currentEpochId, uint256 newBalance) external nonpayable
+```
+
+sets the reward params for the new vested delegation position
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+| durationWeeks | uint256 | undefined |
+| currentEpochId | uint256 | undefined |
+| newBalance | uint256 | undefined |
+
+### onNewPosition
+
+```solidity
+function onNewPosition(address staker, uint256 durationWeeks) external nonpayable
+```
+
+sets the reward params for the new vested position
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | undefined |
+| durationWeeks | uint256 | undefined |
+
+### onStake
+
+```solidity
+function onStake(address staker, uint256 oldBalance) external nonpayable
+```
+
+update the reward params for the vested position
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | undefined |
+| oldBalance | uint256 | undefined |
+
+### onTopUpDelegatePosition
+
+```solidity
+function onTopUpDelegatePosition(address validator, address delegator, uint256 newBalance, uint256 currentEpochId) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+| newBalance | uint256 | undefined |
+| currentEpochId | uint256 | undefined |
+
+### onUnstake
+
+```solidity
+function onUnstake(address staker, uint256 amountUnstaked, uint256 amountLeft) external nonpayable returns (uint256 amountToWithdraw)
+```
+
+update the reward params for the new vested position.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | undefined |
+| amountUnstaked | uint256 | undefined |
+| amountLeft | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| amountToWithdraw | uint256 | undefined |
+
+### positions
+
+```solidity
+function positions(address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| duration | uint256 | undefined |
+| start | uint256 | undefined |
+| end | uint256 | undefined |
+| base | uint256 | undefined |
+| vestBonus | uint256 | undefined |
+| rsiBonus | uint256 | undefined |
+
+### valRewardHistory
+
+```solidity
+function valRewardHistory(address, uint256) external view returns (uint256 totalReward, uint256 epoch, uint256 timestamp)
 ```
 
 
@@ -261,29 +572,6 @@ function valRewardRecords(address, uint256) external view returns (uint256 total
 | totalReward | uint256 | undefined |
 | epoch | uint256 | undefined |
 | timestamp | uint256 | undefined |
-
-### valRewards
-
-```solidity
-function valRewards(address) external view returns (uint256 taken, uint256 total)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| taken | uint256 | undefined |
-| total | uint256 | undefined |
 
 ### vestingBonus
 
@@ -307,6 +595,60 @@ function vestingBonus(uint256) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+
+
+## Events
+
+### DelegatorRewardDistributed
+
+```solidity
+event DelegatorRewardDistributed(address indexed validator, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### ValidatorRewardClaimed
+
+```solidity
+event ValidatorRewardClaimed(address indexed validator, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### ValidatorRewardDistributed
+
+```solidity
+event ValidatorRewardDistributed(address indexed validator, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
 
 
 

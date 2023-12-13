@@ -1,4 +1,4 @@
-# IValidatorSet
+# Vesting
 
 
 
@@ -9,6 +9,23 @@
 
 
 ## Methods
+
+### DOMAIN
+
+```solidity
+function DOMAIN() external view returns (bytes32)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
 
 ### balanceOfAt
 
@@ -26,6 +43,40 @@ returns a validator balance for a given epoch
 |---|---|---|
 | account | address | undefined |
 | epochNumber | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### bls
+
+```solidity
+function bls() external view returns (contract IBLS)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IBLS | undefined |
+
+### currentEpochId
+
+```solidity
+function currentEpochId() external view returns (uint256)
+```
+
+
+
+
+
 
 #### Returns
 
@@ -72,6 +123,23 @@ function onRewardClaimed(address validator, uint256 amount) external nonpayable
 | validator | address | undefined |
 | amount | uint256 | undefined |
 
+### rewardPool
+
+```solidity
+function rewardPool() external view returns (contract IRewardPool)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IRewardPool | undefined |
+
 ### totalBlocks
 
 ```solidity
@@ -116,9 +184,50 @@ returns the total supply for a given epoch
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### validators
+
+```solidity
+function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| liquidDebt | uint256 | undefined |
+| commission | uint256 | undefined |
+| active | bool | undefined |
+| whitelisted | bool | undefined |
+
 
 
 ## Events
+
+### Initialized
+
+```solidity
+event Initialized(uint8 version)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| version  | uint8 | undefined |
 
 ### NewEpoch
 

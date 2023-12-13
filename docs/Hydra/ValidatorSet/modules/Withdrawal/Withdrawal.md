@@ -1,4 +1,4 @@
-# LiquidStaking
+# Withdrawal
 
 
 
@@ -26,6 +26,23 @@ function DOMAIN() external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
+
+### WITHDRAWAL_WAIT_PERIOD
+
+```solidity
+function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 ### balanceOfAt
 
@@ -106,23 +123,6 @@ function getDelegationPoolOf(address validator) external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
-### liquidToken
-
-```solidity
-function liquidToken() external view returns (address)
-```
-
-Returns the address of the liquidity token.
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
 ### onRewardClaimed
 
 ```solidity
@@ -139,6 +139,28 @@ function onRewardClaimed(address validator, uint256 amount) external nonpayable
 |---|---|---|
 | validator | address | undefined |
 | amount | uint256 | undefined |
+
+### pendingWithdrawals
+
+```solidity
+function pendingWithdrawals(address account) external view returns (uint256)
+```
+
+Calculates how much is yet to become withdrawable for account.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account | address | The account to calculate amount for |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
 
 ### rewardPool
 
@@ -226,6 +248,44 @@ function validators(address) external view returns (uint256 liquidDebt, uint256 
 | active | bool | undefined |
 | whitelisted | bool | undefined |
 
+### withdraw
+
+```solidity
+function withdraw(address to) external nonpayable
+```
+
+Withdraws sender&#39;s withdrawable amount to specified address.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| to | address | Address to withdraw to |
+
+### withdrawable
+
+```solidity
+function withdrawable(address account) external view returns (uint256 amount)
+```
+
+Calculates how much can be withdrawn for account in this epoch.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account | address | The account to calculate amount for |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| amount | uint256 | Amount withdrawable (in MATIC wei) |
+
 
 
 ## Events
@@ -264,6 +324,41 @@ event NewEpoch(uint256 indexed id, uint256 indexed startBlock, uint256 indexed e
 | startBlock `indexed` | uint256 | undefined |
 | endBlock `indexed` | uint256 | undefined |
 | epochRoot  | bytes32 | undefined |
+
+### WithdrawalFinished
+
+```solidity
+event WithdrawalFinished(address indexed account, address indexed to, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### WithdrawalRegistered
+
+```solidity
+event WithdrawalRegistered(address indexed account, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account `indexed` | address | undefined |
+| amount  | uint256 | undefined |
 
 
 
