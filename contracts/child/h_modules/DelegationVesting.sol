@@ -95,6 +95,7 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         vestings[validator][msg.sender] = VestData({
             duration: duration,
             start: block.timestamp,
+            startEpoch: currentEpochId,
             end: block.timestamp + duration,
             base: getBase(),
             vestBonus: getVestingBonus(durationWeeks),
@@ -297,12 +298,25 @@ abstract contract DelegationVesting is IDelegationVesting, Vesting, VestFactory 
         return userVestManagers[user];
     }
 
-    function getRPSValues(address validator) external view returns (RPS[] memory) {
-        RPS[] memory values = new RPS[](currentEpochId);
-        for (uint256 i = 0; i < currentEpochId; i++) {
+    function getRPSValues(
+        address validator,
+        uint256 startEpoch,
+        uint256 endEpoch
+    ) external view returns (RPS[] memory) {
+        require(startEpoch <= endEpoch, "Invalid args");
+
+        if (endEpoch == 0) {
+            endEpoch = currentEpochId;
+        }
+
+        RPS[] memory values = new RPS[](endEpoch - startEpoch + 1);
+        uint256 itemIndex = 0;
+        for (uint256 i = startEpoch; i <= endEpoch; i++) {
             if (historyRPS[validator][i].value != 0) {
-                values[i] = (historyRPS[validator][i]);
+                values[itemIndex] = (historyRPS[validator][i]);
             }
+
+            itemIndex++;
         }
 
         return values;

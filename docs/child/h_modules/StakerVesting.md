@@ -605,7 +605,7 @@ function powerExponent() external view returns (uint128 value, uint128 pendingVa
 ### stakePositions
 
 ```solidity
-function stakePositions(address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+function stakePositions(address) external view returns (uint256 duration, uint256 start, uint256 startEpoch, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
 ```
 
 
@@ -624,6 +624,7 @@ function stakePositions(address) external view returns (uint256 duration, uint25
 |---|---|---|
 | duration | uint256 | undefined |
 | start | uint256 | undefined |
+| startEpoch | uint256 | undefined |
 | end | uint256 | undefined |
 | base | uint256 | undefined |
 | vestBonus | uint256 | undefined |

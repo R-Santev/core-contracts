@@ -66,6 +66,7 @@ abstract contract StakerVesting is Vesting, CVSStorage {
         stakePositions[msg.sender] = VestData({
             duration: duration,
             start: block.timestamp,
+            startEpoch: currentEpochId,
             end: block.timestamp + duration,
             base: getBase(),
             vestBonus: getVestingBonus(durationWeeks),
