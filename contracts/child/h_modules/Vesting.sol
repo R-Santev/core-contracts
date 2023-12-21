@@ -19,6 +19,7 @@ abstract contract Vesting is APR {
     struct VestData {
         uint256 duration;
         uint256 start;
+        uint256 startEpoch;
         uint256 end;
         uint256 base;
         uint256 vestBonus;

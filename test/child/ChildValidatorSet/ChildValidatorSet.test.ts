@@ -14,11 +14,12 @@ import {
   VestManager,
   DelegationVesting,
   ChildValidatorSetMock,
+  Vesting,
 } from "../../../typechain-types";
 import { alwaysFalseBytecode, alwaysTrueBytecode } from "../../constants";
 import { getValidatorReward, isActivePosition } from "../helpers";
 import { commitEpoch, getMaxEpochReward, getUserManager } from "./helper";
-import { LiquidityToken } from "../../../typechain-types/contracts/child/Lydra.sol";
+import { LiquidityToken } from "../../../typechain-types/contracts/child/LiquidityToken";
 
 const DOMAIN = ethers.utils.arrayify(ethers.utils.solidityKeccak256(["string"], ["DOMAIN_CHILD_VALIDATOR_SET"]));
 const CHAIN_ID = 31337;
@@ -2167,7 +2168,7 @@ describe("ChildValidatorSet", () => {
 
         const position = await childValidatorSet.vestings(validator, manager.address);
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
         const topUpIndex = 0;
 
@@ -2216,7 +2217,7 @@ describe("ChildValidatorSet", () => {
         // prepare params for call
         const position = await childValidatorSet.vestings(validator, manager.address);
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
         // When there are no top ups, just set 0, because it is not actually checked
         const topUpIndex = 0;
@@ -2280,7 +2281,7 @@ describe("ChildValidatorSet", () => {
         // prepare params for call
         const position = await childValidatorSet.vestings(validator, manager.address);
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
         // When there are no top ups, just set 0, because it is not actually checked
         const topUpIndex = 0;
@@ -2368,7 +2369,7 @@ describe("ChildValidatorSet", () => {
 
         // prepare params for call
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
         // 1 because we have only one top-up
         const topUpIndex = 1;
@@ -2459,7 +2460,7 @@ describe("ChildValidatorSet", () => {
         // prepare params for call
         const position = await childValidatorSet.vestings(validator, manager.address);
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
         // 1 because we have only one top-up, but the first is for the openDelegatorPosition
         const topUpIndex = 1;
@@ -2505,7 +2506,7 @@ describe("ChildValidatorSet", () => {
 
         // prepare params for call
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
         // set invalid index
         const topUpIndex = 2;
@@ -2544,7 +2545,7 @@ describe("ChildValidatorSet", () => {
 
         // prepare params for call
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
 
         // set later index
@@ -2580,7 +2581,7 @@ describe("ChildValidatorSet", () => {
 
         // prepare params for call
         const end = position.end;
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, end);
 
         // set earlier index
@@ -2623,7 +2624,7 @@ describe("ChildValidatorSet", () => {
         // enter the maturing state
         await time.increaseTo(position.end.toNumber() + toBeMatured.toNumber() + 1);
 
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, position.start.add(toBeMatured));
         const topUpIndex = 0;
         // ensure rewards are maturing
@@ -2672,7 +2673,7 @@ describe("ChildValidatorSet", () => {
         // enter the maturing state
         await time.increaseTo(position.end.toNumber() + toBeMatured.toNumber() + 1);
 
-        const rpsValues = await childValidatorSet.getRPSValues(validator);
+        const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
         const epochNum = findProperRPSIndex(rpsValues, position.start.add(toBeMatured));
         const topUpIndex = 0;
         // ensure rewards are maturing
@@ -2868,14 +2869,52 @@ describe("ChildValidatorSet", () => {
           .to.emit(childValidatorSet, "ValidatorRewardClaimed")
           .withArgs(staker.address, reward);
       });
+
+      // it("can claim whole reward when not in position", async () => {
+      //   for (let i = 0; i < 300; i++) {
+      //     await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
+      //   }
+
+      //   await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
+
+      //   const currentCommitEpoch = await childValidatorSet.currentEpochId();
+      //   const rps = await childValidatorSet.getRPSValues(accounts[2].address, 0, currentCommitEpoch, {
+      //     gasLimit: 10000000,
+      //   });
+      //   console.log(rps.length);
+      // });
     });
   });
 });
 
+async function calcGetRPSValuesParams(
+  currentEpochId: BigNumber,
+  position: Vesting.VestDataStructOutput
+): Promise<BigNumber[]> {
+  const currentTime = await time.latest();
+  // 500 blocks per epoch, block on every 2.1 seconds
+  const potentialEpochsInPositiion = position.duration.div(500 * 2.1);
+
+  let closestEpoch;
+  if (position.end.gt(currentTime / 1000)) {
+    // position is still active
+    throw new Error("No reward matured");
+  } else if (position.end.add(position.duration).gt(currentTime / 1000)) {
+    // reward is maturing
+    closestEpoch = currentEpochId.sub(potentialEpochsInPositiion);
+  } else {
+    // reward is fully matured
+    closestEpoch = position.startEpoch.add(potentialEpochsInPositiion);
+  }
+
+  const margin = 300;
+  return [closestEpoch.sub(margin), closestEpoch.add(margin)];
+}
+
 async function claimRewards(childValidatorSet: ChildValidatorSet, manager: VestManager, validator: string) {
   const position = await childValidatorSet.vestings(validator, manager.address);
   const end = position.end;
-  const rpsValues = await childValidatorSet.getRPSValues(validator);
+  const rpsValues = await childValidatorSet.getRPSValues(validator, 0, 0);
   const accountParams = await childValidatorSet.getAccountParams(validator, manager.address);
   const rpsIndex = findProperRPSIndex(rpsValues, end);
   const accountParamsIndex = findAccountParamsIndex(accountParams, ethers.BigNumber.from(rpsIndex));

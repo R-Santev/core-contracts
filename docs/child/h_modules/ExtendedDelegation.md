@@ -547,7 +547,7 @@ function getMaxRSI() external pure returns (uint256 nominator)
 ### getRPSValues
 
 ```solidity
-function getRPSValues(address validator) external view returns (struct DelegationVesting.RPS[])
+function getRPSValues(address validator, uint256 startEpoch, uint256 endEpoch) external view returns (struct DelegationVesting.RPS[])
 ```
 
 
@@ -559,6 +559,8 @@ function getRPSValues(address validator) external view returns (struct Delegatio
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
+| startEpoch | uint256 | undefined |
+| endEpoch | uint256 | undefined |
 
 #### Returns
 
@@ -1076,7 +1078,7 @@ function vestingBonus(uint256) external view returns (uint256)
 ### vestings
 
 ```solidity
-function vestings(address, address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
+function vestings(address, address) external view returns (uint256 duration, uint256 start, uint256 startEpoch, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
 ```
 
 
@@ -1096,6 +1098,7 @@ function vestings(address, address) external view returns (uint256 duration, uin
 |---|---|---|
 | duration | uint256 | undefined |
 | start | uint256 | undefined |
+| startEpoch | uint256 | undefined |
 | end | uint256 | undefined |
 | base | uint256 | undefined |
 | vestBonus | uint256 | undefined |
