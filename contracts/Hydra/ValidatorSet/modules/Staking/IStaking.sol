@@ -37,4 +37,12 @@ interface IStaking {
      * @param newCommission New commission (100 = 100%)
      */
     function setCommission(uint256 newCommission) external;
+
+    /**
+     * @notice Gets first n active validators sorted by total stake.
+     * @param n Desired number of validators to return
+     * @return Returns array of addresses of first n active validators sorted by total stake,
+     * or fewer if there are not enough active validators
+     */
+    function sortedValidators(uint256 n) external view returns (address[] memory);
 }

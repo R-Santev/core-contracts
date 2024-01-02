@@ -63,4 +63,8 @@ interface IRewardPool {
      * @param staker Address of the staker
      */
     function isStakerInVestingCycle(address staker) external view returns (bool);
+
+    /// @notice Returns the generated rewards for a validator
+    /// @param validator Address of the staker
+    function getValidatorReward(address validator) external view returns (uint256);
 }

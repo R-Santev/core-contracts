@@ -112,6 +112,7 @@ abstract contract Staking is
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
         validators[validator].active = true;
+        validatorsAddresses.push(validator);
     }
 
     function _processStake(address account, uint256 amount) internal {
@@ -161,6 +162,28 @@ abstract contract Staking is
             validators[validator].active = false;
             emit ValidatorDeactivated(validator);
         }
+    }
+
+    /**
+     * @inheritdoc IStaking
+     */
+    function sortedValidators(uint256 n) public view returns (address[] memory) {
+        uint256 length = n <= validatorsAddresses.length ? n : validatorsAddresses.length;
+        address[] memory validatorAddresses = new address[](length);
+
+        if (length == 0) return validatorAddresses;
+
+        if (length == 1) {
+            validatorAddresses[0] = validatorsAddresses[0];
+            return validatorAddresses;
+        }
+
+        for (uint256 i = 0; i < length; i++) {
+            uint256 validatorIndex = validatorsAddresses.length - i - 1;
+            validatorAddresses[i] = validatorsAddresses[validatorIndex];
+        }
+
+        return validatorAddresses;
     }
 
     // slither-disable-next-line unused-state,naming-convention

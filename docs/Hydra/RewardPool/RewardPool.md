@@ -1,4 +1,4 @@
-# RewardPoolContract
+# RewardPool
 
 
 
@@ -449,7 +449,7 @@ function getRSI() external pure returns (uint256 nominator)
 function getValidatorReward(address validator) external view returns (uint256)
 ```
 
-
+Returns the generated rewards for a validator
 
 
 
@@ -457,7 +457,7 @@ function getValidatorReward(address validator) external view returns (uint256)
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | undefined |
+| validator | address | Address of the staker |
 
 #### Returns
 

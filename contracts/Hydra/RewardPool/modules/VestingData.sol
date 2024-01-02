@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 // import "./../../ValidatorSet/IValidatorSet.sol";
 import "./../IRewardPool.sol";
 import "./APR.sol";
-import "./../libs/VestingLib.sol";
+import "./../libs/VestingPositionLib.sol";
 import "./../../common/CommonStructs.sol";
 
 struct VestingPosition {

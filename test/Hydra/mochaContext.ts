@@ -1,14 +1,7 @@
 /* eslint-disable node/no-extraneous-import */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { BigNumber, Contract } from "ethers";
-=======
-import { BigNumber } from "ethers";
->>>>>>> 232c201 (re-structure the tests - create mocha context, create a test that initializing the context and separate each fixture to be responsible for 1 contract;)
-=======
-import { BigNumber, Contract } from "ethers";
->>>>>>> f7701b1 ([OPTIMIZE] optimize the current architechture with a better one - use context and fixtures combined;)
+import { BigNumber, BigNumberish, ContractTransaction } from "ethers";
+import { BLS, LiquidityToken, RewardPool, System, ValidatorSet } from "../../typechain-types";
 
 export interface Signers {
   accounts: SignerWithAddress[];
@@ -16,44 +9,113 @@ export interface Signers {
   validators: SignerWithAddress[];
   governance: SignerWithAddress;
   delegator: SignerWithAddress;
+  rewardWallet: SignerWithAddress;
+  system: SignerWithAddress;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> f7701b1 ([OPTIMIZE] optimize the current architechture with a better one - use context and fixtures combined;)
 export interface Fixtures {
-  validatorSetFixture: { (): Promise<Contract> };
+  systemFixture: { (): Promise<System> };
+  presetValidatorSetStateFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  initializedValidatorSetStateFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  commitEpochTxFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+      commitEpochTx: ContractTransaction;
+    }>;
+  };
+  whitelistedValidatorsStateFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  registeredValidatorsStateFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  stakedValidatorsStateFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  withdrawableFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
 }
 
 declare module "mocha" {
   export interface Context {
     fixtures: Fixtures;
-<<<<<<< HEAD
-=======
-declare module "mocha" {
-  export interface Context {
->>>>>>> 232c201 (re-structure the tests - create mocha context, create a test that initializing the context and separate each fixture to be responsible for 1 contract;)
-=======
->>>>>>> f7701b1 ([OPTIMIZE] optimize the current architechture with a better one - use context and fixtures combined;)
     signers: Signers;
+    uptime: any;
+    epochId: BigNumber;
+    epochSize: BigNumber;
     epochReward: BigNumber;
+    epoch: {
+      startBlock: BigNumber;
+      endBlock: BigNumber;
+      epochRoot: Uint8Array;
+    };
     minStake: BigNumber;
     minDelegation: BigNumber;
     epochsInYear: number;
     chainId: number;
+    validatorInit: {
+      addr: string;
+      pubkey: [BigNumberish, BigNumberish, BigNumberish, BigNumberish];
+      signature: [BigNumberish, BigNumberish];
+      stake: BigNumberish;
+    };
   }
 }
 
-export function initValidators(accounts: SignerWithAddress[], num: number = 4) {
-  if (num > accounts.length) {
+export function initValidators(accounts: SignerWithAddress[], from: number = 0, to: number = 4) {
+  if (to > accounts.length) {
     throw new Error("Too many validators");
   }
 
-  const vals: SignerWithAddress[] = [];
-  for (let i = 0; i < num; i++) {
-    vals[i] = accounts[i];
+  const validators: SignerWithAddress[] = [];
+  for (let i = from; i <= to; i++) {
+    validators.push(accounts[i]);
   }
 
-  return vals;
+  return validators;
 }

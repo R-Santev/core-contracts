@@ -123,6 +123,55 @@ function getDelegationPoolOf(address validator) external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
+### getEpochByBlock
+
+```solidity
+function getEpochByBlock(uint256 blockNumber) external view returns (struct Epoch)
+```
+
+Look up an epoch by block number. Searches in O(log n) time.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| blockNumber | uint256 | ID of epoch to be committed |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | Epoch | Epoch Returns epoch if found, or else, the last epoch |
+
+### getValidator
+
+```solidity
+function getValidator(address validator) external view returns (uint256[4] blsKey, uint256 stake, uint256 totalStake, uint256 commission, uint256 withdrawableRewards, bool active)
+```
+
+Gets validator by address.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| blsKey | uint256[4] | BLS public key |
+| stake | uint256 | self-stake |
+| totalStake | uint256 | self-stake + delegation |
+| commission | uint256 | commission |
+| withdrawableRewards | uint256 | withdrawable rewards |
+| active | bool | activity status |
+
 ### onRewardClaimed
 
 ```solidity
@@ -247,6 +296,28 @@ function validators(address) external view returns (uint256 liquidDebt, uint256 
 | commission | uint256 | undefined |
 | active | bool | undefined |
 | whitelisted | bool | undefined |
+
+### validatorsAddresses
+
+```solidity
+function validatorsAddresses(uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### withdraw
 

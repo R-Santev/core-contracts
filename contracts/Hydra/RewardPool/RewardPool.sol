@@ -4,13 +4,13 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IRewardPool.sol";
 import "./modules/APR.sol";
-import "./libs/VestingLib.sol";
+import "./libs/VestingPositionLib.sol";
 import "./modules/VestingData.sol";
 import "./../common/System/System.sol";
 import "./../ValidatorSet/IValidatorSet.sol";
 import "./../ValidatorSet/modules/Delegation/libs/DelegationPoolLib.sol";
 
-contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializable {
+contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
     using VestingPositionLib for VestingPosition;
     using DelegationPoolLib for DelegationPool;
 
