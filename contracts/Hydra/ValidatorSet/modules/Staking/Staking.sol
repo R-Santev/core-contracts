@@ -56,6 +56,7 @@ abstract contract Staking is
      * @inheritdoc IStaking
      */
     function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external {
+        if (validators[msg.sender].registered) revert AlreadyRegistered(msg.sender);
         if (!validators[msg.sender].whitelisted) revert Unauthorized("WHITELIST");
         _register(msg.sender, signature, pubkey);
         _removeFromWhitelist(msg.sender);
@@ -112,6 +113,7 @@ abstract contract Staking is
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
         validators[validator].active = true;
+        validators[validator].registered = true;
         validatorsAddresses.push(validator);
     }
 

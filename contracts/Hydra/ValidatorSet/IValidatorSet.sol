@@ -27,6 +27,7 @@ struct Validator {
     uint256 commission;
     bool active;
     bool whitelisted;
+    bool registered;
 }
 
 interface IValidatorSet {
