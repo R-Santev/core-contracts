@@ -247,7 +247,7 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
     /**
      * @inheritdoc IRewardPool
      */
-    function onStake(address staker, uint256 oldBalance) external payable {
+    function onStake(address staker, uint256 oldBalance) external {
         VestingPosition memory position = positions[staker];
         if (position.isActive()) {
             _handleStake(staker, oldBalance);

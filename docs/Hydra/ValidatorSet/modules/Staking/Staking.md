@@ -468,6 +468,23 @@ Gets validator by address.
 | withdrawableRewards | uint256 | withdrawable rewards |
 | active | bool | activity status |
 
+### getValidators
+
+```solidity
+function getValidators() external view returns (address[])
+```
+
+Gets all active validators.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | Returns array of addresses of all active validators |
+
 ### getVotes
 
 ```solidity
@@ -796,28 +813,6 @@ Sets commission for validator.
 |---|---|---|
 | newCommission | uint256 | New commission (100 = 100%) |
 
-### sortedValidators
-
-```solidity
-function sortedValidators(uint256 n) external view returns (address[])
-```
-
-Gets first n active validators sorted by total stake.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| n | uint256 | Desired number of validators to return |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address[] | Returns array of addresses of first n active validators sorted by total stake, or fewer if there are not enough active validators |
-
 ### stake
 
 ```solidity
@@ -989,7 +984,7 @@ Unstakes amount for sender. Claims rewards beforehand.
 ### validators
 
 ```solidity
-function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted)
+function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted, bool registered)
 ```
 
 
@@ -1010,6 +1005,7 @@ function validators(address) external view returns (uint256 liquidDebt, uint256 
 | commission | uint256 | undefined |
 | active | bool | undefined |
 | whitelisted | bool | undefined |
+| registered | bool | undefined |
 
 ### validatorsAddresses
 
@@ -1389,6 +1385,22 @@ event WithdrawalRegistered(address indexed account, uint256 amount)
 
 
 ## Errors
+
+### AlreadyRegistered
+
+```solidity
+error AlreadyRegistered(address validator)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
 
 ### InvalidSignature
 

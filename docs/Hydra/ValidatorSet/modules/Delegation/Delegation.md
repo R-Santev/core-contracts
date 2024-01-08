@@ -1001,7 +1001,7 @@ Undelegates amount from validator for sender. Claims rewards beforehand.
 ### validators
 
 ```solidity
-function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted)
+function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted, bool registered)
 ```
 
 
@@ -1022,6 +1022,7 @@ function validators(address) external view returns (uint256 liquidDebt, uint256 
 | commission | uint256 | undefined |
 | active | bool | undefined |
 | whitelisted | bool | undefined |
+| registered | bool | undefined |
 
 ### validatorsAddresses
 

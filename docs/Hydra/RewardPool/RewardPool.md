@@ -443,6 +443,28 @@ function getRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
+### getValRewardsHistoryValues
+
+```solidity
+function getValRewardsHistoryValues(address validator) external view returns (struct ValRewardHistory[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | ValRewardHistory[] | undefined |
+
 ### getValidatorReward
 
 ```solidity

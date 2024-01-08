@@ -10,6 +10,23 @@
 
 ## Methods
 
+### getValidators
+
+```solidity
+function getValidators() external view returns (address[])
+```
+
+Gets all active validators.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | Returns array of addresses of all active validators |
+
 ### openVestedPosition
 
 ```solidity
@@ -58,28 +75,6 @@ Sets commission for validator.
 | Name | Type | Description |
 |---|---|---|
 | newCommission | uint256 | New commission (100 = 100%) |
-
-### sortedValidators
-
-```solidity
-function sortedValidators(uint256 n) external view returns (address[])
-```
-
-Gets first n active validators sorted by total stake.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| n | uint256 | Desired number of validators to return |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address[] | Returns array of addresses of first n active validators sorted by total stake, or fewer if there are not enough active validators |
 
 ### stake
 
