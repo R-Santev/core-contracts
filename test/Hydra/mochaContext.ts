@@ -70,6 +70,24 @@ export interface Fixtures {
       liquidToken: LiquidityToken;
     }>;
   };
+  newVestingValidatorFixture: {
+    (): Promise<{
+      stakerValidatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  vestingRewardsFixture: {
+    (): Promise<{
+      stakerValidatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
   withdrawableFixture: {
     (): Promise<{
       validatorSet: ValidatorSet;
@@ -105,17 +123,4 @@ declare module "mocha" {
       stake: BigNumberish;
     };
   }
-}
-
-export function initValidators(accounts: SignerWithAddress[], from: number = 0, to: number = 4) {
-  if (to > accounts.length) {
-    throw new Error("Too many validators");
-  }
-
-  const validators: SignerWithAddress[] = [];
-  for (let i = from; i <= to; i++) {
-    validators.push(accounts[i]);
-  }
-
-  return validators;
 }

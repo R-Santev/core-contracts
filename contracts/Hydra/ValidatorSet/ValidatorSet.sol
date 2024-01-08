@@ -111,7 +111,6 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     {
         Validator memory v = validators[validatorAddress];
         blsKey = v.blsKey;
-        // TODO: vito.do: read about erc20vote and how it works. Its delegate works differently from our delegate
         stake = this.balanceOf(validatorAddress);
         totalStake = stake + this.totalDelegationOf(validatorAddress);
         commission = v.commission;

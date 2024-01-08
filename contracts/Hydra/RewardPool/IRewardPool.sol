@@ -44,7 +44,7 @@ interface IRewardPool {
     ) external;
 
     /// @notice update the reward params for the vested position
-    function onStake(address staker, uint256 oldBalance) external;
+    function onStake(address staker, uint256 oldBalance) external payable;
 
     /// @notice update the reward params for the new vested position.
     function onUnstake(

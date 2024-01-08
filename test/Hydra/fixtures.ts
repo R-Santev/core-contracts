@@ -12,8 +12,8 @@ import {
   System__factory,
   ValidatorSet__factory,
 } from "../../typechain-types";
-import { CHAIN_ID, DOMAIN, SYSTEM } from "./constants";
-import { getMaxEpochReward, commitMultipleEpochs } from "./helper";
+import { CHAIN_ID, DOMAIN, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
+import { getMaxEpochReward, commitEpochs, registerValidator } from "./helper";
 
 async function systemFixtureFunction(this: Mocha.Context) {
   const SystemFactory = new System__factory(this.signers.admin);
@@ -179,6 +179,63 @@ async function stakedValidatorsStateFixtureFunction(this: Mocha.Context) {
   return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
 }
 
+async function newVestingValidatorFixtureFunction(this: Mocha.Context) {
+  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+    this.fixtures.stakedValidatorsStateFixture
+  );
+
+  const staker = this.signers.accounts[9];
+  await registerValidator(validatorSet, this.signers.governance, staker);
+
+  const stakerValidatorSet = validatorSet.connect(staker);
+  await stakerValidatorSet.openVestedPosition(VESTING_DURATION_WEEKS, {
+    value: this.minDelegation,
+  });
+
+  // commit epoch so the balance is increased
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], staker],
+    1, // number of epochs to commit
+    this.epochSize
+  );
+
+  return { stakerValidatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
+}
+
+async function vestingRewardsFixtureFunction(this: Mocha.Context) {
+  const { stakerValidatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+    this.fixtures.newVestingValidatorFixture
+  );
+
+  const staker = this.signers.accounts[9];
+
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], staker],
+    1, // number of epochs to commit
+    this.epochSize
+  );
+
+  // ensure there is available reward
+  const tx = await stakerValidatorSet.stake({ value: this.minDelegation });
+  if (!tx.blockNumber) {
+    throw new Error("block number is undefined");
+  }
+
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], staker],
+    1, // number of epochs to commit
+    this.epochSize
+  );
+
+  return { stakerValidatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
+}
+
 async function withdrawableFixtureFunction(this: Mocha.Context) {
   const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
     this.fixtures.stakedValidatorsStateFixture
@@ -186,7 +243,13 @@ async function withdrawableFixtureFunction(this: Mocha.Context) {
 
   await validatorSet.connect(this.signers.validators[0]).unstake(this.minStake.div(2));
 
-  await commitMultipleEpochs(systemValidatorSet, this.epochSize, 3, rewardPool, this.signers.validators);
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+    3, // number of epochs to commit
+    this.epochSize
+  );
 
   // * stake for the third validator in the latest epoch
   await validatorSet.connect(this.signers.validators[2]).stake({ value: this.minStake.mul(2) });
@@ -223,5 +286,7 @@ export async function generateFixtures(context: Mocha.Context) {
   context.fixtures.whitelistedValidatorsStateFixture = whitelistedValidatorsStateFixtureFunction.bind(context);
   context.fixtures.registeredValidatorsStateFixture = registeredValidatorsStateFixtureFunction.bind(context);
   context.fixtures.stakedValidatorsStateFixture = stakedValidatorsStateFixtureFunction.bind(context);
+  context.fixtures.newVestingValidatorFixture = newVestingValidatorFixtureFunction.bind(context);
+  context.fixtures.vestingRewardsFixture = vestingRewardsFixtureFunction.bind(context);
   context.fixtures.withdrawableFixture = withdrawableFixtureFunction.bind(context);
 }

@@ -247,7 +247,7 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
     /**
      * @inheritdoc IRewardPool
      */
-    function onStake(address staker, uint256 oldBalance) external {
+    function onStake(address staker, uint256 oldBalance) external payable {
         VestingPosition memory position = positions[staker];
         if (position.isActive()) {
             _handleStake(staker, oldBalance);
@@ -314,9 +314,9 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
         uint256 validatorReward = (fullReward * (balance + delegation) * uptime.signedBlocks) /
             (totalSupply * totalBlocks);
         (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
-            validatorReward,
             balance,
-            delegation
+            delegation,
+            validatorReward
         );
 
         _distributeValidatorReward(uptime.validator, validatorShares);
@@ -422,12 +422,4 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
 
         return 0;
     }
-
-    // function claimValidatorReward() public override {
-    //     if (isStakerInVestingCycle(msg.sender)) {
-    //         return;
-    //     }
-
-    //     super.claimValidatorReward();
-    // }
 }

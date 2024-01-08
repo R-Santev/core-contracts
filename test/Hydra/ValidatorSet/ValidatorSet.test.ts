@@ -4,10 +4,10 @@ import { expect } from "chai";
 import * as hre from "hardhat";
 
 import * as mcl from "../../../ts/mcl";
-import { Fixtures, Signers, initValidators } from "../mochaContext";
+import { Fixtures, Signers } from "../mochaContext";
 import { CHAIN_ID, DOMAIN, MAX_COMMISSION, SYSTEM } from "../constants";
 import { generateFixtures } from "../fixtures";
-import { getMaxEpochReward } from "../helper";
+import { getMaxEpochReward, initValidators } from "../helper";
 import { RunSystemTests } from "./System.test";
 import { RunStakingTests } from "./Staking.test";
 
@@ -69,20 +69,6 @@ describe("ValidatorSet", function () {
 
   describe("System", function () {
     RunSystemTests();
-  });
-
-  describe("Voting Power Exponent", async () => {
-    it("should have valid initialized values", async function () {
-      const { validatorSet } = await loadFixture(this.fixtures.presetValidatorSetStateFixture);
-
-      const powerExp = await validatorSet.powerExponent();
-      expect(powerExp.value, "powerExp.value").to.equal(0);
-      expect(powerExp.pendingValue, "powerExp.pendingValue").to.equal(0);
-
-      const powerExpRes = await validatorSet.getExponent();
-      expect(powerExpRes.numerator, "powerExpRes.numerator").to.equal(0);
-      expect(powerExpRes.denominator, "powerExpRes.denominator").to.equal(10000);
-    });
   });
 
   // * Main tests for the ValidatorSet with the loaded context and all child fixtures
@@ -180,9 +166,7 @@ describe("ValidatorSet", function () {
       );
       expect(validator.commission, "commission").to.equal(0);
       expect(await systemValidatorSet.bls(), "bls").to.equal(bls.address);
-      // TODO: vito.do: read about erc20vote and how it works. Its delegate works differently from our delegate. Then, I will know why totalSupplyAt returns 0
-      // expect(await validatorSet.totalSupplyAt(epochId), "totalSupplyAt").to.equal(this.minStake.mul(2));
-      expect(await systemValidatorSet.totalSupplyAt(this.epochId), "totalSupplyAt").to.equal(0);
+      expect(await systemValidatorSet.totalSupply(), "totalSupply").to.equal(this.minStake.mul(2));
     });
 
     it("should revert on reinitialization attempt", async function () {
@@ -205,6 +189,20 @@ describe("ValidatorSet", function () {
           liquidToken.address
         )
       ).to.be.revertedWith("Initializable: contract is already initialized");
+    });
+
+    describe("Voting Power Exponent", async () => {
+      it("should have valid initialized values", async function () {
+        const { validatorSet } = await loadFixture(this.fixtures.initializedValidatorSetStateFixture);
+
+        const powerExp = await validatorSet.powerExponent();
+        expect(powerExp.value, "powerExp.value").to.equal(5000);
+        expect(powerExp.pendingValue, "powerExp.pendingValue").to.equal(0);
+
+        const powerExpRes = await validatorSet.getExponent();
+        expect(powerExpRes.numerator, "powerExpRes.numerator").to.equal(5000);
+        expect(powerExpRes.denominator, "powerExpRes.denominator").to.equal(10000);
+      });
     });
 
     it("should revert on commit epoch without system call", async function () {
@@ -293,12 +291,10 @@ describe("ValidatorSet", function () {
       expect(currentEpochId, "currentEpochId").to.equal(2);
     });
 
-    it("should get sorted validators - admin", async function () {
+    it("should all active validators - admin", async function () {
       const { validatorSet } = await loadFixture(this.fixtures.commitEpochTxFixture);
 
-      expect(await validatorSet.sortedValidators(hre.ethers.BigNumber.from(2))).to.deep.equal([
-        this.signers.admin.address,
-      ]);
+      expect(await validatorSet.getValidators()).to.deep.equal([this.signers.admin.address]);
     });
 
     it("should get epoch by block", async function () {
@@ -385,6 +381,7 @@ describe("ValidatorSet", function () {
         const { validatorSet } = await loadFixture(this.fixtures.withdrawableFixture);
 
         const unstakedAmount = this.minStake.div(2);
+
         await expect(
           validatorSet.connect(this.signers.validators[0]).withdraw(this.signers.validators[0].address),
           "withdraw"
@@ -1622,179 +1619,6 @@ describe("ValidatorSet", function () {
     //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
 
     //       expect(await manager.claimPositionReward(validator, epochNum + 1, topUpIndex + 1)).to.not.be.reverted;
-    //     });
-    //   });
-    // });
-
-    // describe.skip("Staking Vesting", () => {
-    //   const vestingDurationWeeks = 10; // in weeks
-    //   const vestingDuration = vestingDurationWeeks * week;
-    //   let staker: any, stakerChildValidatorSet: ChildValidatorSet;
-
-    //   before(async () => {
-    //     staker = accounts[9];
-    //     stakerChildValidatorSet = childValidatorSet.connect(staker);
-    //     await registerValidator(childValidatorSet, staker);
-    //   });
-
-    //   describe("openStakingPosition()", async () => {
-    //     it("should open staking position", async () => {
-    //       const tx = await stakerChildValidatorSet.openStakingPosition(vestingDurationWeeks, { value: minDelegation });
-    //       const vestingData = await stakerChildValidatorSet.stakePositions(staker.address);
-    //       if (!tx.blockNumber) {
-    //         throw new Error("block number is undefined");
-    //       }
-
-    //       expect(vestingData.duration).to.be.equal(vestingDuration);
-    //       const start = await time.latest();
-    //       expect(vestingData.start).to.be.equal(start);
-    //       expect(vestingData.end).to.be.equal(start + vestingDuration);
-    //       expect(vestingData.base).to.be.equal(await childValidatorSet.getBase());
-    //       expect(vestingData.vestBonus).to.be.equal(await childValidatorSet.getVestingBonus(10));
-    //       expect(vestingData.rsiBonus).to.be.equal(await childValidatorSet.getRSI());
-
-    //       // commit epoch so the balance is increased
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-
-    //       // check is balance = min delegation
-    //       expect(await stakerChildValidatorSet.totalStakeOf(staker.address)).to.be.equal(minDelegation);
-    //     });
-
-    //     it("should not be in vesting cycle", async () => {
-    //       await expect(stakerChildValidatorSet.openStakingPosition(vestingDuration))
-    //         .to.be.revertedWithCustomError(childValidatorSet, "StakeRequirement")
-    //         .withArgs("veting", "ALREADY_IN_VESTING");
-    //     });
-    //   });
-
-    //   describe("Top-up staking position with stake()", async () => {
-    //     it("should top-up staking position", async () => {
-    //       const tx = await stakerChildValidatorSet.stake({ value: minDelegation });
-    //       const vestingData = await stakerChildValidatorSet.stakePositions(staker.address);
-    //       if (!tx.blockNumber) {
-    //         throw new Error("block number is undefined");
-    //       }
-
-    //       expect(vestingData.duration).to.be.equal(vestingDuration * 2);
-    //       expect(vestingData.end).to.be.equal(vestingData.start.add(vestingDuration * 2));
-    //       expect(vestingData.rsiBonus).to.be.equal(0);
-
-    //       // commit epoch so the balance is increased
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-
-    //       // check is balance = min delegation
-    //       expect(await stakerChildValidatorSet.totalStakeOf(staker.address)).to.be.equal(minDelegation.mul(2));
-    //     });
-    //   });
-
-    //   describe("decrease staking position with unstake()", async () => {
-    //     async function decreasePosition(unstakeAmount: BigNumber) {
-    //       const position = await stakerChildValidatorSet.stakePositions(staker.address);
-    //       const latestTimestamp = await time.latest();
-    //       const nextTimestamp = latestTimestamp + 2;
-    //       await time.setNextBlockTimestamp(nextTimestamp);
-    //       const duration = position.duration;
-    //       const leftDuration = position.end.sub(nextTimestamp);
-    //       const burnedAmount = unstakeAmount.mul(leftDuration).div(duration);
-    //       return { burnedAmount };
-    //     }
-
-    //     it("should decrease staking position", async () => {
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-    //       const reward = await getValidatorReward(childValidatorSet, staker.address);
-    //       const unstakeAmount = ethers.BigNumber.from(minDelegation).div(2);
-    //       const { burnedAmount } = await decreasePosition(unstakeAmount);
-
-    //       await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
-    //         childValidatorSet,
-    //         burnedAmount.add(reward).mul(-1)
-    //       );
-    //     });
-
-    //     it("should delete position data when full amount removed", async () => {
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-    //       const reward = await getValidatorReward(childValidatorSet, staker.address);
-    //       const validator = await stakerChildValidatorSet.getValidator(staker.address);
-    //       const unstakeAmount = validator.stake;
-    //       const { burnedAmount } = await decreasePosition(unstakeAmount);
-
-    //       await expect(stakerChildValidatorSet.unstake(unstakeAmount)).to.changeEtherBalance(
-    //         childValidatorSet,
-    //         burnedAmount.add(reward).mul(-1)
-    //       );
-    //       expect((await stakerChildValidatorSet.stakePositions(staker.address)).duration).to.be.equal(0);
-    //     });
-    //   });
-
-    //   describe("claim position reward", async () => {
-    //     it("can't claim when active", async () => {
-    //       // clear valdiator stake data
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-    //       expect((await stakerChildValidatorSet.getValidator(staker.address)).stake).to.be.equal(0);
-
-    //       // setup staking position
-    //       await registerValidator(childValidatorSet, staker);
-    //       await stakerChildValidatorSet.openStakingPosition(vestingDurationWeeks, { value: minDelegation });
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-
-    //       // ensure there is available reward
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-
-    //       const reward = await getValidatorReward(childValidatorSet, staker.address);
-    //       expect(reward).to.be.gt(0);
-
-    //       // ensure position is active
-    //       const position = await stakerChildValidatorSet.stakePositions(staker.address);
-    //       const isActive = await childValidatorSet.isActivePosition(position);
-    //       expect(isActive).to.be.true;
-    //       expect(await stakerChildValidatorSet["claimValidatorReward()"]()).to.not.emit(
-    //         childValidatorSet,
-    //         "ValidatorRewardClaimed"
-    //       );
-    //     });
-
-    //     it("can claim  with claimValidatorReward(epoch) when maturing", async () => {
-    //       // add reward exactly before maturing
-    //       // we need it for the next test
-    //       const position = await stakerChildValidatorSet.stakePositions(staker.address);
-    //       const nextTimestamp = position.end.sub(1);
-    //       await time.setNextBlockTimestamp(nextTimestamp.toNumber());
-    //       await commitEpoch(systemChildValidatorSet, [accounts[0], accounts[2], accounts[9]]);
-
-    //       // enter maturing state
-    //       const nextTimestampOne = position.end.add(position.duration.div(2));
-    //       await time.setNextBlockTimestamp(nextTimestampOne.toNumber());
-
-    //       // calculate up to which epoch rewards are matured
-    //       const valRewardsRecords = await childValidatorSet.getValRewardsValues(staker.address);
-    //       const valRewardRecordIndex = findProperRPSIndex(
-    //         valRewardsRecords,
-    //         position.end.sub(position.duration.div(2))
-    //       );
-
-    //       // claim reward
-    //       await expect(stakerChildValidatorSet["claimValidatorReward(uint256)"](valRewardRecordIndex)).to.emit(
-    //         childValidatorSet,
-    //         "ValidatorRewardClaimed"
-    //       );
-    //     });
-
-    //     it("can claim whole reward when not in position", async () => {
-    //       // enter matured state
-    //       const position = await stakerChildValidatorSet.stakePositions(staker.address);
-    //       const nextTimestamp = position.end.add(position.duration).add(1);
-    //       await time.setNextBlockTimestamp(nextTimestamp.toNumber());
-
-    //       // check reward amount
-    //       const reward = await getValidatorReward(childValidatorSet, staker.address);
-
-    //       // reward must be bigger than 0
-    //       expect(reward).to.be.gt(0);
-
-    //       // claim reward
-    //       await expect(stakerChildValidatorSet["claimValidatorReward()"]())
-    //         .to.emit(childValidatorSet, "ValidatorRewardClaimed")
-    //         .withArgs(staker.address, reward);
     //     });
     //   });
     // });

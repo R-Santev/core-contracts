@@ -93,7 +93,7 @@ abstract contract Staking is
         _ensureStakeIsInRange(msg.value, currentBalance);
 
         _processStake(msg.sender, msg.value);
-        rewardPool.onStake(msg.sender, currentBalance);
+        rewardPool.onStake{value: msg.value}(msg.sender, currentBalance);
     }
 
     /**
@@ -155,7 +155,7 @@ abstract contract Staking is
 
     function _requireNotInVestingCycle() private view {
         if (rewardPool.isStakerInVestingCycle(msg.sender)) {
-            revert StakeRequirement({src: "veting", msg: "ALREADY_IN_VESTING"});
+            revert StakeRequirement({src: "vesting", msg: "ALREADY_IN_VESTING"});
         }
     }
 
@@ -169,23 +169,8 @@ abstract contract Staking is
     /**
      * @inheritdoc IStaking
      */
-    function sortedValidators(uint256 n) public view returns (address[] memory) {
-        uint256 length = n <= validatorsAddresses.length ? n : validatorsAddresses.length;
-        address[] memory validatorAddresses = new address[](length);
-
-        if (length == 0) return validatorAddresses;
-
-        if (length == 1) {
-            validatorAddresses[0] = validatorsAddresses[0];
-            return validatorAddresses;
-        }
-
-        for (uint256 i = 0; i < length; i++) {
-            uint256 validatorIndex = validatorsAddresses.length - i - 1;
-            validatorAddresses[i] = validatorsAddresses[validatorIndex];
-        }
-
-        return validatorAddresses;
+    function getValidators() public view returns (address[] memory) {
+        return validatorsAddresses;
     }
 
     // slither-disable-next-line unused-state,naming-convention

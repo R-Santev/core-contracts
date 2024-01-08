@@ -78,6 +78,10 @@ abstract contract VestingData is IRewardPool, APR {
     //     return valRewards[validator];
     // }
 
+    function getValRewardsHistoryValues(address validator) external view returns (ValRewardHistory[] memory) {
+        return valRewardHistory[validator];
+    }
+
     /** @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
