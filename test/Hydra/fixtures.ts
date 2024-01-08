@@ -189,7 +189,7 @@ async function newVestingValidatorFixtureFunction(this: Mocha.Context) {
 
   const stakerValidatorSet = validatorSet.connect(staker);
   await stakerValidatorSet.openVestedPosition(VESTING_DURATION_WEEKS, {
-    value: this.minDelegation,
+    value: this.minStake,
   });
 
   // commit epoch so the balance is increased
@@ -219,11 +219,7 @@ async function vestingRewardsFixtureFunction(this: Mocha.Context) {
     this.epochSize
   );
 
-  // ensure there is available reward
-  const tx = await stakerValidatorSet.stake({ value: this.minDelegation });
-  if (!tx.blockNumber) {
-    throw new Error("block number is undefined");
-  }
+  await stakerValidatorSet.stake({ value: this.minStake });
 
   await commitEpochs(
     systemValidatorSet,

@@ -225,7 +225,7 @@ export function RunStakingTests(): void {
         await registerValidator(validatorSet, this.signers.governance, staker);
         const stakerValidatorSet = validatorSet.connect(staker);
         const tx = await stakerValidatorSet.openVestedPosition(VESTING_DURATION_WEEKS, {
-          value: this.minDelegation,
+          value: this.minStake,
         });
 
         const vestingData = await rewardPool.positions(staker.address);
@@ -251,8 +251,8 @@ export function RunStakingTests(): void {
 
         const validator = await stakerValidatorSet.getValidator(staker.address);
 
-        // check is stake = min delegation
-        expect(validator.stake, "stake").to.be.equal(this.minDelegation);
+        // check is stake = min stake
+        expect(validator.stake, "stake").to.be.equal(this.minStake);
       });
 
       it("should not be in vesting cycle", async function () {
@@ -270,11 +270,8 @@ export function RunStakingTests(): void {
           this.fixtures.newVestingValidatorFixture
         );
 
-        const tx = await stakerValidatorSet.stake({ value: this.minDelegation });
+        await stakerValidatorSet.connect(staker).stake({ value: this.minStake });
         const vestingData = await rewardPool.positions(staker.address);
-        if (!tx.blockNumber) {
-          throw new Error("block number is undefined");
-        }
 
         expect(vestingData.duration, "duration").to.be.equal(vestingDuration * 2);
         expect(vestingData.end, "end").to.be.equal(vestingData.start.add(vestingDuration * 2));
@@ -290,8 +287,8 @@ export function RunStakingTests(): void {
 
         const validator = await stakerValidatorSet.getValidator(staker.address);
 
-        // check is stake = min delegation * 2 because we increased position
-        expect(validator.stake, "stake").to.be.equal(this.minDelegation.mul(2));
+        // check is stake = min stake * 2 because we increased position
+        expect(validator.stake, "stake").to.be.equal(this.minStake.mul(2));
       });
     });
 
@@ -312,7 +309,7 @@ export function RunStakingTests(): void {
           this.fixtures.newVestingValidatorFixture
         );
 
-        await stakerValidatorSet.stake({ value: this.minDelegation });
+        await stakerValidatorSet.stake({ value: this.minStake });
 
         await commitEpochs(
           systemValidatorSet,
@@ -322,7 +319,7 @@ export function RunStakingTests(): void {
           this.epochSize
         );
 
-        const unstakeAmount = this.minDelegation.div(2);
+        const unstakeAmount = this.minStake.div(2);
         const penalty = await calculatePenalty(rewardPool, unstakeAmount);
         await stakerValidatorSet.unstake(unstakeAmount);
 
@@ -395,11 +392,7 @@ export function RunStakingTests(): void {
           this.epochSize
         );
 
-        // ensure there is available reward
-        const tx = await stakerValidatorSet.stake({ value: this.minDelegation });
-        if (!tx.blockNumber) {
-          throw new Error("block number is undefined");
-        }
+        await stakerValidatorSet.stake({ value: this.minStake });
 
         await commitEpochs(
           systemValidatorSet,

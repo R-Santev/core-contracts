@@ -93,7 +93,7 @@ abstract contract Staking is
         _ensureStakeIsInRange(msg.value, currentBalance);
 
         _processStake(msg.sender, msg.value);
-        rewardPool.onStake(msg.sender, currentBalance);
+        rewardPool.onStake(msg.sender, msg.value, currentBalance);
     }
 
     /**

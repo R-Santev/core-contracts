@@ -97,20 +97,24 @@ abstract contract VestingData is IRewardPool, APR {
     /**
      * Handles the logic to be executed when a validator in vesting position stakes
      */
-    function _handleStake(address staker, uint256 oldBalance) internal {
+    function _handleStake(address staker, uint256 amount, uint256 oldBalance) internal {
         uint256 duration = positions[staker].duration;
-        uint256 durationIncrease = _calculateDurationIncrease(oldBalance, duration);
+        uint256 durationIncrease = _calculateDurationIncrease(amount, oldBalance, duration);
         positions[staker].duration = duration + durationIncrease;
         positions[staker].end = positions[staker].end + durationIncrease;
         positions[staker].rsiBonus = 0;
     }
 
-    function _calculateDurationIncrease(uint256 oldBalance, uint256 duration) private returns (uint256) {
+    function _calculateDurationIncrease(
+        uint256 amount,
+        uint256 oldBalance,
+        uint256 duration
+    ) private pure returns (uint256) {
         // duration increase must not be bigger than double
-        if (msg.value >= oldBalance) {
+        if (amount >= oldBalance) {
             return duration;
         } else {
-            return (msg.value * duration) / oldBalance;
+            return (amount * duration) / oldBalance;
         }
     }
 

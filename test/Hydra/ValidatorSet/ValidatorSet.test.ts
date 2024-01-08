@@ -291,7 +291,7 @@ describe("ValidatorSet", function () {
       expect(currentEpochId, "currentEpochId").to.equal(2);
     });
 
-    it("should all active validators - admin", async function () {
+    it("should get all active validators - admin", async function () {
       const { validatorSet } = await loadFixture(this.fixtures.commitEpochTxFixture);
 
       expect(await validatorSet.getValidators()).to.deep.equal([this.signers.admin.address]);
