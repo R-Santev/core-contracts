@@ -8,7 +8,7 @@ library VestingPositionLib {
         return position.start < block.timestamp && block.timestamp < position.end;
     }
 
-    function isMaturing(VestingPosition memory position) public view returns (bool) {
+    function isMaturing(VestingPosition memory position) internal view returns (bool) {
         uint256 vestingEnd = position.end;
         uint256 matureEnd = vestingEnd + position.duration;
         return vestingEnd < block.timestamp && block.timestamp < matureEnd;
@@ -19,7 +19,7 @@ library VestingPositionLib {
      *  active position are matured yet
      * @param position Vesting position
      */
-    function isStakerInVestingCycle(VestingPosition memory position) public view returns (bool) {
+    function isStakerInVestingCycle(VestingPosition memory position) internal view returns (bool) {
         uint256 matureEnd = position.end + position.duration;
         return position.start < block.timestamp && block.timestamp < matureEnd;
     }

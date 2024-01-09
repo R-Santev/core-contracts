@@ -10,6 +10,23 @@
 
 ## Methods
 
+### getValidators
+
+```solidity
+function getValidators() external view returns (address[])
+```
+
+Gets all active validators.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | Returns array of addresses of all active validators |
+
 ### openVestedPosition
 
 ```solidity

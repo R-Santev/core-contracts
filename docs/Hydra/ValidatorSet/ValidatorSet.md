@@ -696,6 +696,28 @@ Gets delegators&#39;s unclaimed rewards with validator.
 |---|---|---|
 | _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
 
+### getEpochByBlock
+
+```solidity
+function getEpochByBlock(uint256 blockNumber) external view returns (struct Epoch)
+```
+
+Look up an epoch by block number. Searches in O(log n) time.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| blockNumber | uint256 | ID of epoch to be committed |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | Epoch | Epoch Returns epoch if found, or else, the last epoch |
+
 ### getExponent
 
 ```solidity
@@ -758,6 +780,50 @@ function getPastVotes(address account, uint256 blockNumber) external view return
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### getValidator
+
+```solidity
+function getValidator(address validatorAddress) external view returns (uint256[4] blsKey, uint256 stake, uint256 totalStake, uint256 commission, uint256 withdrawableRewards, bool active)
+```
+
+Get the validator by its address
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validatorAddress | address | address |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| blsKey | uint256[4] | undefined |
+| stake | uint256 | undefined |
+| totalStake | uint256 | undefined |
+| commission | uint256 | undefined |
+| withdrawableRewards | uint256 | undefined |
+| active | bool | undefined |
+
+### getValidators
+
+```solidity
+function getValidators() external view returns (address[])
+```
+
+Gets all active validators.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | Returns array of addresses of all active validators |
 
 ### getVotes
 
@@ -1485,7 +1551,7 @@ Set new pending exponent, to be activated in the next commit epoch
 ### validators
 
 ```solidity
-function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted)
+function validators(address) external view returns (uint256 liquidDebt, uint256 commission, bool active, bool whitelisted, bool registered)
 ```
 
 
@@ -1506,6 +1572,29 @@ function validators(address) external view returns (uint256 liquidDebt, uint256 
 | commission | uint256 | undefined |
 | active | bool | undefined |
 | whitelisted | bool | undefined |
+| registered | bool | undefined |
+
+### validatorsAddresses
+
+```solidity
+function validatorsAddresses(uint256) external view returns (address)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
 
 ### vestManagers
 
@@ -2047,6 +2136,22 @@ event WithdrawalRegistered(address indexed account, uint256 amount)
 
 
 ## Errors
+
+### AlreadyRegistered
+
+```solidity
+error AlreadyRegistered(address validator)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
 
 ### InvalidSignature
 

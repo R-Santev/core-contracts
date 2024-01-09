@@ -9,6 +9,7 @@ import "./modules/PowerExponent/PowerExponent.sol";
 import "./modules/Staking/Staking.sol";
 import "./modules/Delegation/Delegation.sol";
 import "./../common/System/System.sol";
+import "./../RewardPool/RewardPool.sol";
 
 import "../../libs/SafeMathInt.sol";
 
@@ -50,8 +51,9 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     ) external initializer onlySystemCall {
         __ValidatorSetBase_init(newBls, newRewardPool);
         __PowerExponent_init();
-        __CVSAccessControl_init(governance);
+        __AccessControl_init(governance);
         __Staking_init(init.minStake, liquidToken);
+        __Delegation_init(init.minDelegation);
         __ReentrancyGuard_init();
         _initialize(newValidators);
     }
@@ -91,12 +93,45 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         _registerWithdrawal(validator, amount);
     }
 
+    /// @notice Get the validator by its address
+    /// @param validatorAddress address
+    function getValidator(
+        address validatorAddress
+    )
+        external
+        view
+        returns (
+            uint256[4] memory blsKey,
+            uint256 stake,
+            uint256 totalStake,
+            uint256 commission,
+            uint256 withdrawableRewards,
+            bool active
+        )
+    {
+        Validator memory v = validators[validatorAddress];
+        blsKey = v.blsKey;
+        stake = this.balanceOf(validatorAddress);
+        totalStake = stake + this.totalDelegationOf(validatorAddress);
+        commission = v.commission;
+        withdrawableRewards = rewardPool.getValidatorReward(validatorAddress);
+        active = v.active;
+    }
+
     /**
      * @inheritdoc IValidatorSet
      */
     function totalBlocks(uint256 epochId) external view returns (uint256 length) {
         uint256 endBlock = epochs[epochId].endBlock;
         length = endBlock == 0 ? 0 : endBlock - epochs[epochId].startBlock + 1;
+    }
+
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function getEpochByBlock(uint256 blockNumber) external view returns (Epoch memory) {
+        uint256 epochIndex = epochEndBlocks.findUpperBound(blockNumber);
+        return epochs[epochIndex];
     }
 
     // OpenZeppelin Overrides

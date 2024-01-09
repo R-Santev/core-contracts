@@ -27,6 +27,7 @@ struct Validator {
     uint256 commission;
     bool active;
     bool whitelisted;
+    bool registered;
 }
 
 interface IValidatorSet {
@@ -44,4 +45,34 @@ interface IValidatorSet {
     function onRewardClaimed(address validator, uint256 amount) external;
 
     function getDelegationPoolOf(address validator) external view returns (address);
+
+    /**
+     * @notice Gets validator by address.
+     * @return blsKey BLS public key
+     * @return stake self-stake
+     * @return totalStake self-stake + delegation
+     * @return commission
+     * @return withdrawableRewards withdrawable rewards
+     * @return active activity status
+     */
+    function getValidator(
+        address validator
+    )
+        external
+        view
+        returns (
+            uint256[4] memory blsKey,
+            uint256 stake,
+            uint256 totalStake,
+            uint256 commission,
+            uint256 withdrawableRewards,
+            bool active
+        );
+
+    /**
+     * @notice Look up an epoch by block number. Searches in O(log n) time.
+     * @param blockNumber ID of epoch to be committed
+     * @return Epoch Returns epoch if found, or else, the last epoch
+     */
+    function getEpochByBlock(uint256 blockNumber) external view returns (Epoch memory);
 }

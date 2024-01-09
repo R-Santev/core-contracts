@@ -15,11 +15,12 @@ abstract contract ValidatorSetBase is IValidatorSet, Initializable {
     uint256 public currentEpochId;
     // slither-disable-next-line naming-convention
     mapping(address => Validator) public validators;
+    address[] public validatorsAddresses;
 
     mapping(uint256 => uint256) internal _commitBlockNumbers;
 
     function __ValidatorSetBase_init(IBLS newBls, IRewardPool newRewardPool) internal onlyInitializing {
-        __ValidatorSetBase_init(newBls, newRewardPool);
+        __ValidatorSetBase_init_unchained(newBls, newRewardPool);
     }
 
     function __ValidatorSetBase_init_unchained(IBLS newBls, IRewardPool newRewardPool) internal onlyInitializing {
