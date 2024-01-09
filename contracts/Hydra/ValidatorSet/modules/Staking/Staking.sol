@@ -56,6 +56,7 @@ abstract contract Staking is
      * @inheritdoc IStaking
      */
     function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external {
+        if (validators[msg.sender].registered) revert AlreadyRegistered(msg.sender);
         if (!validators[msg.sender].whitelisted) revert Unauthorized("WHITELIST");
         _register(msg.sender, signature, pubkey);
         _removeFromWhitelist(msg.sender);
@@ -92,7 +93,7 @@ abstract contract Staking is
         _ensureStakeIsInRange(msg.value, currentBalance);
 
         _processStake(msg.sender, msg.value);
-        rewardPool.onStake(msg.sender, currentBalance);
+        rewardPool.onStake(msg.sender, msg.value, currentBalance);
     }
 
     /**
@@ -112,6 +113,8 @@ abstract contract Staking is
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
         validators[validator].active = true;
+        validators[validator].registered = true;
+        validatorsAddresses.push(validator);
     }
 
     function _processStake(address account, uint256 amount) internal {
@@ -152,7 +155,7 @@ abstract contract Staking is
 
     function _requireNotInVestingCycle() private view {
         if (rewardPool.isStakerInVestingCycle(msg.sender)) {
-            revert StakeRequirement({src: "veting", msg: "ALREADY_IN_VESTING"});
+            revert StakeRequirement({src: "vesting", msg: "ALREADY_IN_VESTING"});
         }
     }
 
@@ -161,6 +164,13 @@ abstract contract Staking is
             validators[validator].active = false;
             emit ValidatorDeactivated(validator);
         }
+    }
+
+    /**
+     * @inheritdoc IStaking
+     */
+    function getValidators() public view returns (address[] memory) {
+        return validatorsAddresses;
     }
 
     // slither-disable-next-line unused-state,naming-convention

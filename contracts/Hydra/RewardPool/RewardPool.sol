@@ -4,13 +4,13 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IRewardPool.sol";
 import "./modules/APR.sol";
-import "./libs/VestingLib.sol";
+import "./libs/VestingPositionLib.sol";
 import "./modules/VestingData.sol";
 import "./../common/System/System.sol";
 import "./../ValidatorSet/IValidatorSet.sol";
 import "./../ValidatorSet/modules/Delegation/libs/DelegationPoolLib.sol";
 
-contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializable {
+contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
     using VestingPositionLib for VestingPosition;
     using DelegationPoolLib for DelegationPool;
 
@@ -247,10 +247,10 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
     /**
      * @inheritdoc IRewardPool
      */
-    function onStake(address staker, uint256 oldBalance) external {
+    function onStake(address staker, uint256 amount, uint256 oldBalance) external {
         VestingPosition memory position = positions[staker];
         if (position.isActive()) {
-            _handleStake(staker, oldBalance);
+            _handleStake(staker, amount, oldBalance);
         }
     }
 
@@ -314,9 +314,9 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
         uint256 validatorReward = (fullReward * (balance + delegation) * uptime.signedBlocks) /
             (totalSupply * totalBlocks);
         (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
-            validatorReward,
             balance,
-            delegation
+            delegation,
+            validatorReward
         );
 
         _distributeValidatorReward(uptime.validator, validatorShares);
@@ -422,12 +422,4 @@ contract RewardPoolContract is IRewardPool, System, APR, VestingData, Initializa
 
         return 0;
     }
-
-    // function claimValidatorReward() public override {
-    //     if (isStakerInVestingCycle(msg.sender)) {
-    //         return;
-    //     }
-
-    //     super.claimValidatorReward();
-    // }
 }

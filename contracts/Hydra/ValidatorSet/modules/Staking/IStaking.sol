@@ -37,4 +37,10 @@ interface IStaking {
      * @param newCommission New commission (100 = 100%)
      */
     function setCommission(uint256 newCommission) external;
+
+    /**
+     * @notice Gets all active validators.
+     * @return Returns array of addresses of all active validators
+     */
+    function getValidators() external view returns (address[] memory);
 }

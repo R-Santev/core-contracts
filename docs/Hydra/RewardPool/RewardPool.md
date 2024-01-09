@@ -1,4 +1,4 @@
-# RewardPoolContract
+# RewardPool
 
 
 
@@ -443,10 +443,10 @@ function getRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
-### getValidatorReward
+### getValRewardsHistoryValues
 
 ```solidity
-function getValidatorReward(address validator) external view returns (uint256)
+function getValRewardsHistoryValues(address validator) external view returns (struct ValRewardHistory[])
 ```
 
 
@@ -458,6 +458,28 @@ function getValidatorReward(address validator) external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | ValRewardHistory[] | undefined |
+
+### getValidatorReward
+
+```solidity
+function getValidatorReward(address validator) external view returns (uint256)
+```
+
+Returns the generated rewards for a validator
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Address of the staker |
 
 #### Returns
 

@@ -7,11 +7,11 @@ import "./../../ValidatorSetBase.sol";
 
 abstract contract AccessControl is IAccessControl, Ownable2StepUpgradeable, ValidatorSetBase {
     // TODO: We must be able to enable/disable this feature
-    function __CVSAccessControl_init(address governance) internal onlyInitializing {
-        __CVSAccessControl_init_unchained(governance);
+    function __AccessControl_init(address governance) internal onlyInitializing {
+        __AccessControl_init_unchained(governance);
     }
 
-    function __CVSAccessControl_init_unchained(address governance) internal onlyInitializing {
+    function __AccessControl_init_unchained(address governance) internal onlyInitializing {
         _transferOwnership(governance);
     }
 
