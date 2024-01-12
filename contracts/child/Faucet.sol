@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract Faucet is Ownable {
+contract Faucet is AccessControl {
+    bytes32 public constant MANAGER_ROLE = keccak256("manager_role");
+
     uint256 public withdrawalAmount = 100 * (10 ** 18);
     uint256 public lockTime = 2 hours; // Default cooling time
     mapping(address => uint256) public nextAccessTime;
@@ -11,16 +13,21 @@ contract Faucet is Ownable {
     event Distribution(address indexed to, uint256 amount);
     event Received(address indexed from, uint256 amount);
 
-    function requestHYDRA() public {
-        require(msg.sender != address(0), "must be non-zero addr");
+    constructor(address manager) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, manager);
+    }
 
-        require(block.timestamp > nextAccessTime[msg.sender], "insufficient cooldown");
+    function requestHYDRA(address account) public onlyRole(MANAGER_ROLE) {
+        require(account != address(0), "must be non-zero addr");
 
-        nextAccessTime[msg.sender] = block.timestamp + lockTime;
+        require(block.timestamp > nextAccessTime[account], "insufficient cooldown");
 
-        sendHYDRA(msg.sender, withdrawalAmount);
+        nextAccessTime[account] = block.timestamp + lockTime;
 
-        emit Distribution(msg.sender, withdrawalAmount);
+        sendHYDRA(account, withdrawalAmount);
+
+        emit Distribution(account, withdrawalAmount);
     }
 
     function sendHYDRA(address to, uint256 amount) public {
@@ -33,7 +40,7 @@ contract Faucet is Ownable {
      * @param amount amount of HYDRA to withdraw.
      *
      */
-    function setWithdrawalAmount(uint256 amount) public onlyOwner {
+    function setWithdrawalAmount(uint256 amount) public onlyRole(DEFAULT_ADMIN_ROLE) {
         withdrawalAmount = amount * (10 ** 18);
     }
 
@@ -47,14 +54,14 @@ contract Faucet is Ownable {
     /**
      * @notice Claim the whole HYDRA balance.
      */
-    function claimHYDRA() public onlyOwner {
-        sendHYDRA(owner(), address(this).balance);
+    function claimHYDRA() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        sendHYDRA(msg.sender, address(this).balance);
     }
 
     /**
      * @notice Setting the cooling time.
      */
-    function setLockTime(uint8 time) public onlyOwner {
+    function setLockTime(uint8 time) public onlyRole(DEFAULT_ADMIN_ROLE) {
         lockTime = time * 1 hours;
     }
 }
