@@ -50,7 +50,7 @@ function DOMAIN_SEPARATOR() external view returns (bytes32)
 function MAX_COMMISSION() external view returns (uint256)
 ```
 
-
+A constant for the maximum comission
 
 
 
@@ -352,28 +352,6 @@ function delegates(address account) external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
-### getDelegationPoolOf
-
-```solidity
-function getDelegationPoolOf(address validator) external view returns (address)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
 ### getEpochByBlock
 
 ```solidity
@@ -553,7 +531,7 @@ Returns the address of the liquidity token.
 function minStake() external view returns (uint256)
 ```
 
-
+A state variable to keep the minimum amount for stake
 
 
 

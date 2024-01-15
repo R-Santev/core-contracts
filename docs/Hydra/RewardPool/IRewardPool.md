@@ -10,6 +10,30 @@
 
 ## Methods
 
+### claimDelegatorReward
+
+```solidity
+function claimDelegatorReward(address delegator, address validator, bool restake) external nonpayable returns (uint256)
+```
+
+Claims delegator rewards for sender.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| delegator | address | undefined |
+| validator | address | Validator to claim from |
+| restake | bool | Whether to redelegate the claimed rewards |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### distributeRewardsFor
 
 ```solidity
@@ -28,6 +52,28 @@ function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uin
 | epoch | Epoch | undefined |
 | uptime | Uptime[] | undefined |
 | epochSize | uint256 | undefined |
+
+### getDelegationPoolSupplyOf
+
+```solidity
+function getDelegationPoolSupplyOf(address validator) external view returns (uint256)
+```
+
+returns the supply of the delegation pool of the requested validator
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | the address of the validator whose pool is being queried |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | supply of the delegation pool |
 
 ### getValidatorReward
 
@@ -51,13 +97,13 @@ Returns the generated rewards for a validator
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### isActivePosition
+### onClaimPositionReward
 
 ```solidity
-function isActivePosition(address staker) external view returns (bool)
+function onClaimPositionReward(address validator, address delegator, uint256 epochNumber, uint256 topUpIndex) external nonpayable returns (uint256)
 ```
 
-
+Claims delegator rewards for sender.
 
 
 
@@ -65,21 +111,50 @@ function isActivePosition(address staker) external view returns (bool)
 
 | Name | Type | Description |
 |---|---|---|
-| staker | address | undefined |
+| validator | address | Validator to claim from |
+| delegator | address | Delegator to claim for |
+| epochNumber | uint256 | Epoch where the last claimable reward is distributed. We need it because not all rewards are matured at the moment of claiming. |
+| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | bool | undefined |
+| _0 | uint256 | undefined |
 
-### isMaturingPosition
+### onCutPosition
 
 ```solidity
-function isMaturingPosition(address staker) external view returns (bool)
+function onCutPosition(address validator, address delegator, uint256 amount, uint256 delegatedAmount, uint256 currentEpochId) external nonpayable returns (uint256)
 ```
 
+cuts a vesting position from the delegation pool
 
+*applies penalty (slashing) if the vesting period is active and returns the updated amount*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
+| amount | uint256 | undefined |
+| delegatedAmount | uint256 | undefined |
+| currentEpochId | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### onGetDelegatorReward
+
+```solidity
+function onGetDelegatorReward(address validator, address delegator) external view returns (uint256)
+```
+
+Gets delegators&#39;s unclaimed rewards with validator.
 
 
 
@@ -87,35 +162,14 @@ function isMaturingPosition(address staker) external view returns (bool)
 
 | Name | Type | Description |
 |---|---|---|
-| staker | address | undefined |
+| validator | address | Address of validator |
+| delegator | address | Address of delegator |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | bool | undefined |
-
-### isStakerInVestingCycle
-
-```solidity
-function isStakerInVestingCycle(address staker) external view returns (bool)
-```
-
-Returns true if the staker is an active vesting position or not all rewards from the latest  active position are matured yet
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| staker | address | Address of the staker |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bool | undefined |
+| _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
 
 ### onNewDelegatePosition
 
@@ -157,7 +211,7 @@ sets the reward params for the new vested position
 ### onStake
 
 ```solidity
-function onStake(address staker, uint256 oldBalance) external nonpayable
+function onStake(address staker, uint256 amount, uint256 oldBalance) external nonpayable
 ```
 
 update the reward params for the vested position
@@ -169,6 +223,7 @@ update the reward params for the vested position
 | Name | Type | Description |
 |---|---|---|
 | staker | address | undefined |
+| amount | uint256 | undefined |
 | oldBalance | uint256 | undefined |
 
 ### onTopUpDelegatePosition
@@ -177,7 +232,7 @@ update the reward params for the vested position
 function onTopUpDelegatePosition(address validator, address delegator, uint256 newBalance, uint256 currentEpochId) external nonpayable
 ```
 
-
+top up to a delegate positions
 
 
 
@@ -190,13 +245,37 @@ function onTopUpDelegatePosition(address validator, address delegator, uint256 n
 | newBalance | uint256 | undefined |
 | currentEpochId | uint256 | undefined |
 
+### onUndelegate
+
+```solidity
+function onUndelegate(address delegator, address validator, uint256 amount) external nonpayable returns (uint256 reward)
+```
+
+withdraws from the delegation pools and claims rewards
+
+*returns the reward in order to make the withdrawal in the delegation contract*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| delegator | address | undefined |
+| validator | address | undefined |
+| amount | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| reward | uint256 | undefined |
+
 ### onUnstake
 
 ```solidity
 function onUnstake(address staker, uint256 amountUnstaked, uint256 amountLeft) external nonpayable returns (uint256 amountToWithdraw)
 ```
 
-update the reward params for the new vested position.
+update the reward params for the new vested position
 
 
 

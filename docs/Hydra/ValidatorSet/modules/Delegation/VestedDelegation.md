@@ -1,4 +1,4 @@
-# DelegationVesting
+# VestedDelegation
 
 
 
@@ -10,13 +10,13 @@
 
 ## Methods
 
-### claimPositionReward
+### getUserVestManagers
 
 ```solidity
-function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+function getUserVestManagers(address user) external view returns (address[])
 ```
 
-Claims delegator rewards for sender.
+Gets the vesting managers per user address for fast off-chain lookup.
 
 
 
@@ -24,26 +24,13 @@ Claims delegator rewards for sender.
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | Validator to claim from |
-| epochNumber | uint256 | Epoch where the last claimable reward is distributed. We need it because not all rewards are matured at the moment of claiming. |
-| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
+| user | address | undefined |
 
-### cutPosition
-
-```solidity
-function cutPosition(address validator, uint256 amount) external nonpayable
-```
-
-Undelegates amount from validator. Apply penalty in case vesting is not finished. Can be called by vesting positions&#39; managers only.
-
-
-
-#### Parameters
+#### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | Validator to undelegate from |
-| amount | uint256 | Amount to be undelegated |
+| _0 | address[] | undefined |
 
 ### implementation
 
@@ -68,7 +55,7 @@ function implementation() external view returns (address)
 function isVestingManager(address delegator) external view returns (bool)
 ```
 
-
+Claims that a delegator is a vest manager or not.
 
 
 
@@ -76,7 +63,7 @@ function isVestingManager(address delegator) external view returns (bool)
 
 | Name | Type | Description |
 |---|---|---|
-| delegator | address | undefined |
+| delegator | address | Delegator&#39;s address |
 
 #### Returns
 
@@ -95,13 +82,13 @@ Creates new vesting manager which owner is the caller. Every new instance is pro
 
 
 
-### openDelegatorPosition
+### userVestManagers
 
 ```solidity
-function openDelegatorPosition(address validator, uint256 durationWeeks) external payable
+function userVestManagers(address, uint256) external view returns (address)
 ```
 
-Delegates sent amount to validator. Set vesting position data. Delete old top-ups data if exists. Can be called by vesting positions&#39; managers only.
+Additional mapping to store all vesting managers per user address for fast off-chain lookup
 
 
 
@@ -109,24 +96,14 @@ Delegates sent amount to validator. Set vesting position data. Delete old top-up
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | Validator to delegate to |
-| durationWeeks | uint256 | Duration of the vesting in weeks |
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
 
-### topUpPosition
-
-```solidity
-function topUpPosition(address validator) external payable
-```
-
-Delegates sent amount to validator. Add top-up data. Modify vesting position data. Can be called by vesting positions&#39; managers only.
-
-
-
-#### Parameters
+#### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | Validator to delegate to |
+| _0 | address | undefined |
 
 ### vestManagers
 
@@ -134,7 +111,7 @@ Delegates sent amount to validator. Add top-up data. Modify vesting position dat
 function vestManagers(address) external view returns (address)
 ```
 
-
+vesting manager =&gt; owner
 
 
 

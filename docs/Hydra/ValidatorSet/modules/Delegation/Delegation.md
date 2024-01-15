@@ -44,6 +44,23 @@ function DOMAIN_SEPARATOR() external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
+### WITHDRAWAL_WAIT_PERIOD
+
+```solidity
+function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### allowance
 
 ```solidity
@@ -175,23 +192,6 @@ function checkpoints(address account, uint32 pos) external view returns (struct 
 |---|---|---|
 | _0 | ERC20VotesUpgradeable.Checkpoint | undefined |
 
-### claimDelegatorReward
-
-```solidity
-function claimDelegatorReward(address validator, bool restake) external nonpayable
-```
-
-Claims delegator rewards for sender.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to claim from |
-| restake | bool | Whether to redelegate the claimed rewards |
-
 ### claimPositionReward
 
 ```solidity
@@ -227,10 +227,10 @@ function currentEpochId() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### cutPosition
+### cutDelegatePosition
 
 ```solidity
-function cutPosition(address validator, uint256 amount) external nonpayable
+function cutDelegatePosition(address validator, uint256 amount) external nonpayable
 ```
 
 Undelegates amount from validator. Apply penalty in case vesting is not finished. Can be called by vesting positions&#39; managers only.
@@ -383,28 +383,6 @@ Gets amount delegated by delegator to validator.
 |---|---|---|
 | _0 | uint256 | Amount delegated (in MATIC wei) |
 
-### getDelegationPoolOf
-
-```solidity
-function getDelegationPoolOf(address validator) external pure returns (address)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
 ### getDelegatorReward
 
 ```solidity
@@ -494,6 +472,28 @@ function getPastVotes(address account, uint256 blockNumber) external view return
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### getUserVestManagers
+
+```solidity
+function getUserVestManagers(address user) external view returns (address[])
+```
+
+Gets the vesting managers per user address for fast off-chain lookup.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| user | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
 
 ### getValidator
 
@@ -590,7 +590,7 @@ function increaseAllowance(address spender, uint256 addedValue) external nonpaya
 function isVestingManager(address delegator) external view returns (bool)
 ```
 
-
+Claims that a delegator is a vest manager or not.
 
 
 
@@ -598,7 +598,7 @@ function isVestingManager(address delegator) external view returns (bool)
 
 | Name | Type | Description |
 |---|---|---|
-| delegator | address | undefined |
+| delegator | address | Delegator&#39;s address |
 
 #### Returns
 
@@ -629,7 +629,7 @@ Returns the address of the liquidity token.
 function minDelegation() external view returns (uint256)
 ```
 
-
+The minimum delegation amount to be delegated
 
 
 
@@ -735,23 +735,6 @@ function onRewardClaimed(address validator, uint256 amount) external nonpayable
 function openDelegatePosition(address validator, uint256 durationWeeks) external payable
 ```
 
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| durationWeeks | uint256 | undefined |
-
-### openDelegatorPosition
-
-```solidity
-function openDelegatorPosition(address validator, uint256 durationWeeks) external payable
-```
-
 Delegates sent amount to validator. Set vesting position data. Delete old top-ups data if exists. Can be called by vesting positions&#39; managers only.
 
 
@@ -762,6 +745,28 @@ Delegates sent amount to validator. Set vesting position data. Delete old top-up
 |---|---|---|
 | validator | address | Validator to delegate to |
 | durationWeeks | uint256 | Duration of the vesting in weeks |
+
+### pendingWithdrawals
+
+```solidity
+function pendingWithdrawals(address account) external view returns (uint256)
+```
+
+Calculates how much is yet to become withdrawable for account.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account | address | The account to calculate amount for |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
 
 ### permit
 
@@ -823,22 +828,6 @@ function symbol() external view returns (string)
 
 ```solidity
 function topUpDelegatePosition(address validator) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
-### topUpPosition
-
-```solidity
-function topUpPosition(address validator) external payable
 ```
 
 Delegates sent amount to validator. Add top-up data. Modify vesting position data. Can be called by vesting positions&#39; managers only.
@@ -998,6 +987,29 @@ Undelegates amount from validator for sender. Claims rewards beforehand.
 | validator | address | Validator to undelegate from |
 | amount | uint256 | The amount to undelegate |
 
+### userVestManagers
+
+```solidity
+function userVestManagers(address, uint256) external view returns (address)
+```
+
+Additional mapping to store all vesting managers per user address for fast off-chain lookup
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### validators
 
 ```solidity
@@ -1052,7 +1064,7 @@ function validatorsAddresses(uint256) external view returns (address)
 function vestManagers(address) external view returns (address)
 ```
 
-
+vesting manager =&gt; owner
 
 
 
@@ -1067,6 +1079,44 @@ function vestManagers(address) external view returns (address)
 | Name | Type | Description |
 |---|---|---|
 | _0 | address | undefined |
+
+### withdraw
+
+```solidity
+function withdraw(address to) external nonpayable
+```
+
+Withdraws sender&#39;s withdrawable amount to specified address.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| to | address | Address to withdraw to |
+
+### withdrawable
+
+```solidity
+function withdrawable(address account) external view returns (uint256 amount)
+```
+
+Calculates how much can be withdrawn for account in this epoch.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account | address | The account to calculate amount for |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| amount | uint256 | Amount withdrawable (in MATIC wei) |
 
 
 
@@ -1359,9 +1409,61 @@ event Undelegated(address indexed delegator, address indexed validator, uint256 
 | validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
+### WithdrawalFinished
+
+```solidity
+event WithdrawalFinished(address indexed account, address indexed to, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account `indexed` | address | undefined |
+| to `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### WithdrawalRegistered
+
+```solidity
+event WithdrawalRegistered(address indexed account, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
 
 
 ## Errors
+
+### DelegateRequirement
+
+```solidity
+error DelegateRequirement(string src, string msg)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| src | string | undefined |
+| msg | string | undefined |
 
 ### NotVestingManager
 

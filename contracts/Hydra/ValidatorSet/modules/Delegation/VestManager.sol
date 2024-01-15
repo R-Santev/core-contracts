@@ -6,14 +6,17 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./IDelegationVesting.sol";
+import "./IDelegation.sol";
 import "./../Withdrawal/IWithdrawal.sol";
 import "./../Staking/ILiquidStaking.sol";
 
 contract VestManager is Initializable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
+    /// @notice The staking address
     address public staking;
+
+    // _______________ Events _______________
 
     event Claimed(address indexed account, uint256 amount);
 
@@ -21,19 +24,23 @@ contract VestManager is Initializable, OwnableUpgradeable {
         _disableInitializers();
     }
 
+    // _______________ Initializer _______________
+
     function initialize(address owner) public initializer {
         _transferOwnership(owner);
         staking = msg.sender;
     }
 
+    // _______________ External functions _______________
+
     function openDelegatorPosition(address validator, uint256 durationWeeks) external payable onlyOwner {
-        IDelegationVesting(staking).openDelegatorPosition{value: msg.value}(validator, durationWeeks);
+        IDelegation(staking).openDelegatePosition{value: msg.value}(validator, durationWeeks);
 
         _sendLiquidTokens(msg.sender, msg.value);
     }
 
     function topUpPosition(address validator) external payable onlyOwner {
-        IDelegationVesting(staking).topUpPosition{value: msg.value}(validator);
+        IDelegation(staking).topUpDelegatePosition{value: msg.value}(validator);
 
         _sendLiquidTokens(msg.sender, msg.value);
     }
@@ -41,7 +48,7 @@ contract VestManager is Initializable, OwnableUpgradeable {
     function cutPosition(address validator, uint256 amount) external payable onlyOwner {
         _fulfillLiquidTokens(msg.sender, amount);
 
-        IDelegationVesting(staking).cutPosition(validator, amount);
+        IDelegation(staking).cutDelegatePosition(validator, amount);
     }
 
     function claimPositionReward(
@@ -49,12 +56,18 @@ contract VestManager is Initializable, OwnableUpgradeable {
         uint256 epochNumber,
         uint256 topUpIndex
     ) external payable onlyOwner {
-        IDelegationVesting(staking).claimPositionReward(validator, epochNumber, topUpIndex);
+        IDelegation(staking).claimPositionReward(validator, epochNumber, topUpIndex);
     }
 
     function withdraw(address to) external {
         IWithdrawal(staking).withdraw(to);
     }
+
+    // _______________ Public functions _______________
+
+    // _______________ Internal functions _______________
+
+    // _______________ Private functions _______________
 
     /**
      * Sends the received after stake liquid tokens to the position owner

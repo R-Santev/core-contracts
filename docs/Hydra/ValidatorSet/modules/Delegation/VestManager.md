@@ -112,7 +112,7 @@ function renounceOwnership() external nonpayable
 function staking() external view returns (address)
 ```
 
-
+The staking address
 
 
 

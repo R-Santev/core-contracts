@@ -1,4 +1,4 @@
-# VestingData
+# Vesting
 
 
 
@@ -74,7 +74,7 @@ function beforeTopUpParams(address, address) external view returns (uint256 rewa
 
 
 
-
+*Keep the account parameters before the top-up, so we can separately calculate the rewards made before a top-up is madeThis is because we need to apply the RSI bonus to the rewards made before the top-upand not apply the RSI bonus to the rewards made after the top-up*
 
 #### Parameters
 
@@ -97,9 +97,9 @@ function beforeTopUpParams(address, address) external view returns (uint256 rewa
 function delegationPoolParamsHistory(address, address, uint256) external view returns (uint256 balance, int256 correction, uint256 epochNum)
 ```
 
+Historical Validator Delegation Pool&#39;s Params per delegator
 
-
-
+*Validator =&gt; Delegator =&gt; Top-up data*
 
 #### Parameters
 
@@ -123,9 +123,9 @@ function delegationPoolParamsHistory(address, address, uint256) external view re
 function delegationPositions(address, address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
 ```
 
+The vesting positions for every delegator.
 
-
-
+*Validator =&gt; Delegator =&gt; VestingPosition*
 
 #### Parameters
 
@@ -144,25 +144,6 @@ function delegationPositions(address, address) external view returns (uint256 du
 | base | uint256 | undefined |
 | vestBonus | uint256 | undefined |
 | rsiBonus | uint256 | undefined |
-
-### distributeRewardsFor
-
-```solidity
-function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uint256 epochSize) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| epochId | uint256 | undefined |
-| epoch | Epoch | undefined |
-| uptime | Uptime[] | undefined |
-| epochSize | uint256 | undefined |
 
 ### getBase
 
@@ -311,28 +292,6 @@ function getValRewardsHistoryValues(address validator) external view returns (st
 |---|---|---|
 | _0 | ValRewardHistory[] | undefined |
 
-### getValidatorReward
-
-```solidity
-function getValidatorReward(address validator) external view returns (uint256)
-```
-
-Returns the generated rewards for a validator
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Address of the staker |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### getVestingBonus
 
 ```solidity
@@ -361,9 +320,9 @@ function getVestingBonus(uint256 weeksCount) external view returns (uint256 nomi
 function historyRPS(address, uint256) external view returns (uint192 value, uint64 timestamp)
 ```
 
+Keeps the history of the RPS for the validators
 
-
-
+*This is used to keep the history RPS in order to calculate properly the rewards*
 
 #### Parameters
 
@@ -452,7 +411,7 @@ function isMaturingPosition(address staker) external view returns (bool)
 function isStakerInVestingCycle(address staker) external view returns (bool)
 ```
 
-Returns true if the staker is an active vesting position or not all rewards from the latest  active position are matured yet
+
 
 
 
@@ -460,7 +419,7 @@ Returns true if the staker is an active vesting position or not all rewards from
 
 | Name | Type | Description |
 |---|---|---|
-| staker | address | Address of the staker |
+| staker | address | undefined |
 
 #### Returns
 
@@ -468,110 +427,13 @@ Returns true if the staker is an active vesting position or not all rewards from
 |---|---|---|
 | _0 | bool | undefined |
 
-### onNewDelegatePosition
-
-```solidity
-function onNewDelegatePosition(address validator, address delegator, uint256 durationWeeks, uint256 currentEpochId, uint256 newBalance) external nonpayable
-```
-
-sets the reward params for the new vested delegation position
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| delegator | address | undefined |
-| durationWeeks | uint256 | undefined |
-| currentEpochId | uint256 | undefined |
-| newBalance | uint256 | undefined |
-
-### onNewPosition
-
-```solidity
-function onNewPosition(address staker, uint256 durationWeeks) external nonpayable
-```
-
-sets the reward params for the new vested position
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| staker | address | undefined |
-| durationWeeks | uint256 | undefined |
-
-### onStake
-
-```solidity
-function onStake(address staker, uint256 oldBalance) external nonpayable
-```
-
-update the reward params for the vested position
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| staker | address | undefined |
-| oldBalance | uint256 | undefined |
-
-### onTopUpDelegatePosition
-
-```solidity
-function onTopUpDelegatePosition(address validator, address delegator, uint256 newBalance, uint256 currentEpochId) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| delegator | address | undefined |
-| newBalance | uint256 | undefined |
-| currentEpochId | uint256 | undefined |
-
-### onUnstake
-
-```solidity
-function onUnstake(address staker, uint256 amountUnstaked, uint256 amountLeft) external nonpayable returns (uint256 amountToWithdraw)
-```
-
-update the reward params for the new vested position.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| staker | address | undefined |
-| amountUnstaked | uint256 | undefined |
-| amountLeft | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| amountToWithdraw | uint256 | undefined |
-
 ### positions
 
 ```solidity
 function positions(address) external view returns (uint256 duration, uint256 start, uint256 end, uint256 base, uint256 vestBonus, uint256 rsiBonus)
 ```
 
-
+The vesting positions for every validator
 
 
 
@@ -598,7 +460,7 @@ function positions(address) external view returns (uint256 duration, uint256 sta
 function valRewardHistory(address, uint256) external view returns (uint256 totalReward, uint256 epoch, uint256 timestamp)
 ```
 
-
+Keeps the rewards history of the validators
 
 
 
@@ -639,60 +501,6 @@ function vestingBonus(uint256) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-
-
-## Events
-
-### DelegatorRewardDistributed
-
-```solidity
-event DelegatorRewardDistributed(address indexed validator, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator `indexed` | address | undefined |
-| amount  | uint256 | undefined |
-
-### ValidatorRewardClaimed
-
-```solidity
-event ValidatorRewardClaimed(address indexed validator, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator `indexed` | address | undefined |
-| amount  | uint256 | undefined |
-
-### ValidatorRewardDistributed
-
-```solidity
-event ValidatorRewardDistributed(address indexed validator, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator `indexed` | address | undefined |
-| amount  | uint256 | undefined |
 
 
 

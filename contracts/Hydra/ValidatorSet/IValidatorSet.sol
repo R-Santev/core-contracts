@@ -44,7 +44,7 @@ interface IValidatorSet {
 
     function onRewardClaimed(address validator, uint256 amount) external;
 
-    function getDelegationPoolOf(address validator) external view returns (address);
+    // function getDelegationPoolOf(address validator) external view returns (address);
 
     /**
      * @notice Gets validator by address.

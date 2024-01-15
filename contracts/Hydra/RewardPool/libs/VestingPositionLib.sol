@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "./../modules/VestingData.sol";
+import "./../modules/Vesting.sol";
 
 library VestingPositionLib {
     function isActive(VestingPosition memory position) internal view returns (bool) {
