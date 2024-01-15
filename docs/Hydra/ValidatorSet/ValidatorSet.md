@@ -50,7 +50,7 @@ function DOMAIN_SEPARATOR() external view returns (bytes32)
 function DOUBLE_SIGNING_SLASHING_PERCENT() external view returns (uint256)
 ```
 
-
+Constant used to keep the slashing percent
 
 
 
@@ -67,7 +67,7 @@ function DOUBLE_SIGNING_SLASHING_PERCENT() external view returns (uint256)
 function MAX_COMMISSION() external view returns (uint256)
 ```
 
-
+A constant for the maximum comission
 
 
 
@@ -355,23 +355,6 @@ function checkpoints(address account, uint32 pos) external view returns (struct 
 |---|---|---|
 | _0 | ERC20VotesUpgradeable.Checkpoint | undefined |
 
-### claimDelegatorReward
-
-```solidity
-function claimDelegatorReward(address validator, bool restake) external nonpayable
-```
-
-Claims delegator rewards for sender.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to claim from |
-| restake | bool | Whether to redelegate the claimed rewards |
-
 ### claimPositionReward
 
 ```solidity
@@ -425,10 +408,10 @@ function currentEpochId() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### cutPosition
+### cutDelegatePosition
 
 ```solidity
-function cutPosition(address validator, uint256 amount) external nonpayable
+function cutDelegatePosition(address validator, uint256 amount) external nonpayable
 ```
 
 Undelegates amount from validator. Apply penalty in case vesting is not finished. Can be called by vesting positions&#39; managers only.
@@ -587,9 +570,9 @@ Gets amount delegated by delegator to validator.
 function doubleSignerSlashes(uint256, uint256, address) external view returns (bool)
 ```
 
+Keeps the flag for the slashing per epoch and pbft round
 
-
-
+*epochNumber -&gt; roundNumber -&gt; validator address -&gt; bool*
 
 #### Parameters
 
@@ -611,7 +594,7 @@ function doubleSignerSlashes(uint256, uint256, address) external view returns (b
 function epochEndBlocks(uint256) external view returns (uint256)
 ```
 
-
+Array with epoch end blocks
 
 
 
@@ -633,7 +616,7 @@ function epochEndBlocks(uint256) external view returns (uint256)
 function epochs(uint256) external view returns (uint256 startBlock, uint256 endBlock, bytes32 epochRoot)
 ```
 
-
+Epoch data linked with the epoch id
 
 
 
@@ -650,28 +633,6 @@ function epochs(uint256) external view returns (uint256 startBlock, uint256 endB
 | startBlock | uint256 | undefined |
 | endBlock | uint256 | undefined |
 | epochRoot | bytes32 | undefined |
-
-### getDelegationPoolOf
-
-```solidity
-function getDelegationPoolOf(address validator) external pure returns (address)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
 
 ### getDelegatorReward
 
@@ -780,6 +741,28 @@ function getPastVotes(address account, uint256 blockNumber) external view return
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
+
+### getUserVestManagers
+
+```solidity
+function getUserVestManagers(address user) external view returns (address[])
+```
+
+Gets the vesting managers per user address for fast off-chain lookup.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| user | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | undefined |
 
 ### getValidator
 
@@ -914,7 +897,7 @@ function initialize(InitStruct init, ValidatorInit[] newValidators, contract IBL
 function isVestingManager(address delegator) external view returns (bool)
 ```
 
-
+Claims that a delegator is a vest manager or not.
 
 
 
@@ -922,7 +905,7 @@ function isVestingManager(address delegator) external view returns (bool)
 
 | Name | Type | Description |
 |---|---|---|
-| delegator | address | undefined |
+| delegator | address | Delegator&#39;s address |
 
 #### Returns
 
@@ -953,7 +936,7 @@ Returns the address of the liquidity token.
 function minDelegation() external view returns (uint256)
 ```
 
-
+The minimum delegation amount to be delegated
 
 
 
@@ -970,7 +953,7 @@ function minDelegation() external view returns (uint256)
 function minStake() external view returns (uint256)
 ```
 
-
+A state variable to keep the minimum amount for stake
 
 
 
@@ -1074,23 +1057,6 @@ function onRewardClaimed(address validator, uint256 amount) external nonpayable
 
 ```solidity
 function openDelegatePosition(address validator, uint256 durationWeeks) external payable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-| durationWeeks | uint256 | undefined |
-
-### openDelegatorPosition
-
-```solidity
-function openDelegatorPosition(address validator, uint256 durationWeeks) external payable
 ```
 
 Delegates sent amount to validator. Set vesting position data. Delete old top-ups data if exists. Can be called by vesting positions&#39; managers only.
@@ -1327,22 +1293,6 @@ function symbol() external view returns (string)
 function topUpDelegatePosition(address validator) external payable
 ```
 
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
-### topUpPosition
-
-```solidity
-function topUpPosition(address validator) external payable
-```
-
 Delegates sent amount to validator. Add top-up data. Modify vesting position data. Can be called by vesting positions&#39; managers only.
 
 
@@ -1548,6 +1498,29 @@ Set new pending exponent, to be activated in the next commit epoch
 |---|---|---|
 | newValue | uint256 | New Voting Power Exponent Numerator |
 
+### userVestManagers
+
+```solidity
+function userVestManagers(address, uint256) external view returns (address)
+```
+
+Additional mapping to store all vesting managers per user address for fast off-chain lookup
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+| _1 | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### validators
 
 ```solidity
@@ -1602,7 +1575,7 @@ function validatorsAddresses(uint256) external view returns (address)
 function vestManagers(address) external view returns (address)
 ```
 
-
+vesting manager =&gt; owner
 
 
 
@@ -2152,6 +2125,23 @@ error AlreadyRegistered(address validator)
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
+
+### DelegateRequirement
+
+```solidity
+error DelegateRequirement(string src, string msg)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| src | string | undefined |
+| msg | string | undefined |
 
 ### InvalidSignature
 

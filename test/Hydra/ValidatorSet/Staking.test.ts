@@ -126,7 +126,7 @@ export function RunStakingTests(): void {
 
       const validator = await validatorSet.getValidator(this.signers.validators[0].address);
       expect(validator.stake, "staked amount").to.equal(this.minStake);
-      expect(validator.totalStake, "total stake").to.equal(this.minStake.mul(2));
+      expect(validator.totalStake, "total stake").to.equal(this.minStake);
     });
 
     it("should get all active validators", async function () {

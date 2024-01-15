@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-// import "./../../ValidatorSet/IValidatorSet.sol";
-import "./../IRewardPool.sol";
 import "./APR.sol";
-import "./../libs/VestingPositionLib.sol";
+import "./../IRewardPool.sol";
 import "./../../common/CommonStructs.sol";
+import "./../libs/VestingPositionLib.sol";
 
 struct VestingPosition {
     uint256 duration;
@@ -39,22 +38,48 @@ struct RewardParams {
     int256 correction;
 }
 
-abstract contract VestingData is IRewardPool, APR {
+error NotVestingManager();
+
+abstract contract Vesting is APR {
     using VestingPositionLib for VestingPosition;
 
+    /// @notice The vesting positions for every validator
     mapping(address => VestingPosition) public positions;
+
+    /// @notice The vesting positions for every delegator.
+    /// @dev Validator => Delegator => VestingPosition
     mapping(address => mapping(address => VestingPosition)) public delegationPositions;
 
+    /// @notice Keeps the history of the RPS for the validators
+    /// @dev This is used to keep the history RPS in order to calculate properly the rewards
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
+
+    /// @notice Keeps the rewards history of the validators
     mapping(address => ValRewardHistory[]) public valRewardHistory;
-    // Historical Validator Delegation Pool's Params per delegator
-    // validator => delegator => top-up data
+
+    /// @notice Historical Validator Delegation Pool's Params per delegator
+    /// @dev Validator => Delegator => Top-up data
     mapping(address => mapping(address => DelegationPoolParams[])) public delegationPoolParamsHistory;
-    // keep the account parameters before the top-up, so we can separately calculate the rewards made before  a top-up is made
-    // This is because we need to apply the RSI bonus to the rewards made before the top-up
-    // and not apply the RSI bonus to the rewards made after the top-up
+
+    /// @dev Keep the account parameters before the top-up, so we can separately calculate the rewards made before a top-up is made
+    /// @dev This is because we need to apply the RSI bonus to the rewards made before the top-up
+    /// @dev and not apply the RSI bonus to the rewards made after the top-up
     mapping(address => mapping(address => RewardParams)) public beforeTopUpParams;
 
+    // _______________ External functions _______________
+
+    // External functions that are view
+    // function getValRewardsValues(address validator) external view returns (ValReward[] memory) {
+    //     return valRewards[validator];
+    // }
+
+    function getValRewardsHistoryValues(address validator) external view returns (ValRewardHistory[] memory) {
+        return valRewardHistory[validator];
+    }
+
+    // _______________ Public functions _______________
+
+    // Public functions that are view
     function isActivePosition(address staker) public view returns (bool) {
         VestingPosition memory position = positions[staker];
         return position.isActive();
@@ -74,25 +99,7 @@ abstract contract VestingData is IRewardPool, APR {
         return positions[staker].isStakerInVestingCycle();
     }
 
-    // function getValRewardsValues(address validator) external view returns (ValReward[] memory) {
-    //     return valRewards[validator];
-    // }
-
-    function getValRewardsHistoryValues(address validator) external view returns (ValRewardHistory[] memory) {
-        return valRewardHistory[validator];
-    }
-
-    /** @param amount Amount of tokens to be slashed
-     * @dev Invoke only when position is active, otherwise - underflow
-     */
-    function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
-        // Calculate what part of the balance to be slashed
-        uint256 leftPeriod = position.end - block.timestamp;
-        uint256 fullPeriod = position.duration;
-        uint256 slash = (amount * leftPeriod) / fullPeriod;
-
-        return slash;
-    }
+    // _______________ Internal functions _______________
 
     /**
      * Handles the logic to be executed when a validator in vesting position stakes
@@ -105,19 +112,20 @@ abstract contract VestingData is IRewardPool, APR {
         positions[staker].rsiBonus = 0;
     }
 
-    function _calculateDurationIncrease(
-        uint256 amount,
-        uint256 oldBalance,
-        uint256 duration
-    ) private pure returns (uint256) {
-        // duration increase must not be bigger than double
-        if (amount >= oldBalance) {
-            return duration;
-        } else {
-            return (amount * duration) / oldBalance;
-        }
+    // Internal functions that are view
+    /** @param amount Amount of tokens to be slashed
+     * @dev Invoke only when position is active, otherwise - underflow
+     */
+    function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
+        // Calculate what part of the balance to be slashed
+        uint256 leftPeriod = position.end - block.timestamp;
+        uint256 fullPeriod = position.duration;
+        uint256 slash = (amount * leftPeriod) / fullPeriod;
+
+        return slash;
     }
 
+    // Internal functions that are pure
     function _applyCustomReward(
         VestingPosition memory position,
         uint256 reward,
@@ -133,6 +141,22 @@ abstract contract VestingData is IRewardPool, APR {
         return (reward * bonus) / divider / EPOCHS_YEAR;
     }
 
+    // _______________ Private functions _______________
+
+    // Private functions that are view
+    function _calculateDurationIncrease(
+        uint256 amount,
+        uint256 oldBalance,
+        uint256 duration
+    ) private pure returns (uint256) {
+        // duration increase must not be bigger than double
+        if (amount >= oldBalance) {
+            return duration;
+        } else {
+            return (amount * duration) / oldBalance;
+        }
+    }
+
     function _saveEpochRPS(address validator, uint256 rewardPerShare, uint256 epochNumber) internal {
         require(rewardPerShare > 0, "rewardPerShare must be greater than 0");
 
@@ -140,5 +164,10 @@ abstract contract VestingData is IRewardPool, APR {
         require(validatorRPSes.value == 0, "RPS already saved");
 
         historyRPS[validator][epochNumber] = RPS({value: uint192(rewardPerShare), timestamp: uint64(block.timestamp)});
+    }
+
+    function _burnAmount(uint256 amount) internal {
+        (bool success, ) = address(0).call{value: amount}("");
+        require(success, "Failed to burn amount");
     }
 }

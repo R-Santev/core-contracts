@@ -20,12 +20,27 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     using SafeMathInt for int256;
     using ArraysUpgradeable for uint256[];
 
+    /// @notice Constant used to keep the slashing percent
     uint256 public constant DOUBLE_SIGNING_SLASHING_PERCENT = 10;
-    // epochNumber -> roundNumber -> validator address -> bool
+
+    /// @notice Keeps the flag for the slashing per epoch and pbft round
+    /// @dev epochNumber -> roundNumber -> validator address -> bool
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public doubleSignerSlashes;
 
+    /// @notice Epoch data linked with the epoch id
     mapping(uint256 => Epoch) public epochs;
+
+    /// @notice Array with epoch end blocks
     uint256[] public epochEndBlocks;
+
+    // _______________ Modifiers _______________
+
+    modifier onlyRewardPool() {
+        if (msg.sender != address(rewardPool)) revert Unauthorized("REWARD_POOL");
+        _;
+    }
+
+    // _______________ Initializer _______________
 
     /**
      * @notice Initializer function for genesis contract, called by v3 client at genesis to set up the initial set.
@@ -66,10 +81,7 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         }
     }
 
-    modifier onlyRewardPool() {
-        if (msg.sender != address(rewardPool)) revert Unauthorized("REWARD_POOL");
-        _;
-    }
+    // _______________ External functions _______________
 
     function commitEpoch(uint256 id, Epoch calldata epoch, uint256 epochSize) external payable onlySystemCall {
         uint256 newEpochId = currentEpochId++;
@@ -92,6 +104,7 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         _registerWithdrawal(validator, amount);
     }
 
+    // External View functions
     /// @notice Get the validator by its address
     /// @param validatorAddress address
     function getValidator(
@@ -111,7 +124,8 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         Validator memory v = validators[validatorAddress];
         blsKey = v.blsKey;
         stake = this.balanceOf(validatorAddress);
-        totalStake = stake + this.totalDelegationOf(validatorAddress);
+        // totalStake = stake + this.totalDelegationOf(validatorAddress);
+        totalStake = stake + rewardPool.getDelegationPoolSupplyOf(validatorAddress);
         commission = v.commission;
         withdrawableRewards = rewardPool.getValidatorReward(validatorAddress);
         active = v.active;
@@ -132,6 +146,12 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         uint256 epochIndex = epochEndBlocks.findUpperBound(blockNumber);
         return epochs[epochIndex];
     }
+
+    // _______________ Public functions _______________
+
+    // _______________ Internal functions _______________
+
+    // _______________ Private functions _______________
 
     // OpenZeppelin Overrides
 

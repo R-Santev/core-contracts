@@ -111,28 +111,6 @@ function currentEpochId() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### getDelegationPoolOf
-
-```solidity
-function getDelegationPoolOf(address validator) external view returns (address)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
 ### getEpochByBlock
 
 ```solidity

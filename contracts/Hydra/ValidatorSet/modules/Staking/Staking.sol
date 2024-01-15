@@ -19,8 +19,20 @@ abstract contract Staking is
     StateSyncer,
     AccessControl
 {
+    /// @notice A constant for the maximum comission
     uint256 public constant MAX_COMMISSION = 100;
+
+    /// @notice A state variable to keep the minimum amount for stake
     uint256 public minStake;
+
+    // _______________ Modifiers _______________
+
+    modifier onlyValidator() {
+        if (!validators[msg.sender].active) revert Unauthorized("VALIDATOR");
+        _;
+    }
+
+    // _______________ Initializer _______________
 
     function __Staking_init(uint256 newMinStake, address newLiquidToken) internal onlyInitializing {
         __ERC20_init("ValidatorSet", "VSET");
@@ -33,23 +45,16 @@ abstract contract Staking is
         minStake = newMinStake;
     }
 
-    modifier onlyValidator() {
-        if (!validators[msg.sender].active) revert Unauthorized("VALIDATOR");
-        _;
-    }
+    // _______________ External functions _______________
 
     /**
-     * @inheritdoc IValidatorSet
+     * @inheritdoc IStaking
      */
-    function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256) {
-        return super.getPastVotes(account, _commitBlockNumbers[epochNumber]);
-    }
-
-    /**
-     * @inheritdoc IValidatorSet
-     */
-    function totalSupplyAt(uint256 epochNumber) external view returns (uint256) {
-        return super.getPastTotalSupply(_commitBlockNumbers[epochNumber]);
+    function setCommission(uint256 newCommission) external onlyValidator {
+        require(newCommission <= MAX_COMMISSION, "INVALID_COMMISSION");
+        Validator storage validator = validators[msg.sender];
+        emit CommissionUpdated(msg.sender, validator.commission, newCommission);
+        validator.commission = newCommission;
     }
 
     /**
@@ -67,27 +72,6 @@ abstract contract Staking is
     /**
      * @inheritdoc IStaking
      */
-    function setCommission(uint256 newCommission) external onlyValidator {
-        require(newCommission <= MAX_COMMISSION, "INVALID_COMMISSION");
-        Validator storage validator = validators[msg.sender];
-        emit CommissionUpdated(msg.sender, validator.commission, newCommission);
-        validator.commission = newCommission;
-    }
-
-    /**
-     * @inheritdoc IStaking
-     */
-    function openVestedPosition(uint256 durationWeeks) external payable onlyValidator {
-        _requireNotInVestingCycle();
-        _ensureStakeIsInRange(msg.value, balanceOf(msg.sender));
-
-        _processStake(msg.sender, msg.value);
-        rewardPool.onNewPosition(msg.sender, durationWeeks);
-    }
-
-    /**
-     * @inheritdoc IStaking
-     */
     function stake() external payable onlyValidator {
         uint256 currentBalance = balanceOf(msg.sender);
         _ensureStakeIsInRange(msg.value, currentBalance);
@@ -95,6 +79,33 @@ abstract contract Staking is
         _processStake(msg.sender, msg.value);
         rewardPool.onStake(msg.sender, msg.value, currentBalance);
     }
+
+    /**
+     * @inheritdoc IStaking
+     */
+    function openVestedPosition(uint256 durationWeeks) external payable onlyValidator {
+        _ensureStakeIsInRange(msg.value, balanceOf(msg.sender));
+
+        _processStake(msg.sender, msg.value);
+        rewardPool.onNewPosition(msg.sender, durationWeeks);
+    }
+
+    // External functions that are view
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256) {
+        return super.getPastVotes(account, _commitBlockNumbers[epochNumber]);
+    }
+
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function totalSupplyAt(uint256 epochNumber) external view returns (uint256) {
+        return super.getPastTotalSupply(_commitBlockNumbers[epochNumber]);
+    }
+
+    // _______________ Public functions _______________
 
     /**
      * @inheritdoc IStaking
@@ -109,6 +120,16 @@ abstract contract Staking is
         emit Unstaked(msg.sender, amount);
     }
 
+    // Public functions that are view
+    /**
+     * @inheritdoc IStaking
+     */
+    function getValidators() public view returns (address[] memory) {
+        return validatorsAddresses;
+    }
+
+    // _______________ Internal functions _______________
+
     function _register(address validator, uint256[2] calldata signature, uint256[4] calldata pubkey) internal {
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
@@ -121,6 +142,8 @@ abstract contract Staking is
         _stake(account, amount);
         _postStakeAction(account, amount);
     }
+
+    // _______________ Private functions _______________
 
     function _stake(address account, uint256 amount) private {
         _mint(account, amount);
@@ -148,17 +171,6 @@ abstract contract Staking is
         return balanceAfterUnstake;
     }
 
-    function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
-        if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
-        assert(currentBalance + amount <= _maxSupply());
-    }
-
-    function _requireNotInVestingCycle() private view {
-        if (rewardPool.isStakerInVestingCycle(msg.sender)) {
-            revert StakeRequirement({src: "vesting", msg: "ALREADY_IN_VESTING"});
-        }
-    }
-
     function _removeIfValidatorUnstaked(address validator, uint256 newStake) private {
         if (newStake == 0) {
             validators[validator].active = false;
@@ -166,11 +178,10 @@ abstract contract Staking is
         }
     }
 
-    /**
-     * @inheritdoc IStaking
-     */
-    function getValidators() public view returns (address[] memory) {
-        return validatorsAddresses;
+    // Private functions that are view
+    function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
+        if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
+        assert(currentBalance + amount <= _maxSupply());
     }
 
     // slither-disable-next-line unused-state,naming-convention
