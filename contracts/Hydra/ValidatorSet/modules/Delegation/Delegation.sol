@@ -22,21 +22,10 @@ abstract contract Delegation is
 {
     using DelegationPoolLib for DelegationPool;
 
-    /// @notice The minimum delegation amount to be delegated
-    uint256 public minDelegation;
-
-    /// @notice Keeps the validator's balances for every delegator
-    mapping(address => mapping(address => uint256)) balances;
-
     // _______________ Initializer _______________
 
-    function __Delegation_init(uint256 newMinDelegation) internal onlyInitializing {
+    function __Delegation_init() internal onlyInitializing {
         __VestFactory_init();
-        __Delegation_init_unchained(newMinDelegation);
-    }
-
-    function __Delegation_init_unchained(uint256 newMinDelegation) internal onlyInitializing {
-        minDelegation = newMinDelegation;
     }
 
     // _______________ External functions _______________
@@ -44,40 +33,25 @@ abstract contract Delegation is
     /**
      * @inheritdoc IDelegation
      */
-    function delegate(address validator, bool restake) external payable {
+    function delegateToValidator(address validator) public payable {
         if (msg.value == 0) revert DelegateRequirement({src: "delegate", msg: "DELEGATING_AMOUNT_ZERO"});
 
-        uint256 delegatedAmount = balances[validator][msg.sender];
-        if (delegatedAmount + msg.value < minDelegation)
-            revert DelegateRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
-
-        _processDelegate(validator, msg.sender, restake, msg.value);
+        _processDelegate(validator, msg.sender, msg.value);
     }
 
     /**
      * @inheritdoc IDelegation
      */
     function undelegate(address validator, uint256 amount) external {
-        uint256 delegatedAmount = balanceOf(msg.sender);
-        if (amount > delegatedAmount) revert DelegateRequirement({src: "undelegate", msg: "INSUFFICIENT_BALANCE"});
-
-        uint256 amounAfterUndelegate = delegatedAmount - amount;
-        if (amounAfterUndelegate < minDelegation && amounAfterUndelegate != 0)
-            revert DelegateRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
-
         _processUndelegate(validator, msg.sender, amount);
     }
 
     /**
      * @inheritdoc IDelegation
      */
-    function openDelegatePosition(address validator, uint256 durationWeeks) external payable onlyManager {
-        uint256 balance = balances[validator][msg.sender];
-        uint256 newBalance = balance + msg.value;
-        if (newBalance < minDelegation) revert StakeRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
-
-        _delegateToVal(msg.sender, validator, msg.value);
-        rewardPool.onNewDelegatePosition(validator, msg.sender, durationWeeks, currentEpochId, newBalance);
+    function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable onlyManager {
+        _delegateToVal(validator, msg.sender, msg.value);
+        rewardPool.onNewDelegatePosition(validator, msg.sender, durationWeeks, currentEpochId, msg.value);
 
         emit PositionOpened(msg.sender, validator, durationWeeks, msg.value);
     }
@@ -86,11 +60,8 @@ abstract contract Delegation is
      * @inheritdoc IDelegation
      */
     function topUpDelegatePosition(address validator) external payable onlyManager {
-        uint256 balance = balances[validator][msg.sender];
-        if (balance + msg.value < minDelegation) revert StakeRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
-
-        _delegateToVal(msg.sender, validator, msg.value);
-        rewardPool.onTopUpDelegatePosition(validator, msg.sender, balance + msg.value, currentEpochId);
+        _delegateToVal(validator, msg.sender, msg.value);
+        rewardPool.onTopUpDelegatePosition(validator, msg.sender, currentEpochId, msg.value);
 
         emit PositionTopUp(msg.sender, validator, msg.value);
     }
@@ -99,92 +70,67 @@ abstract contract Delegation is
      * @inheritdoc IDelegation
      */
     function cutDelegatePosition(address validator, uint256 amount) external onlyManager {
-        uint256 delegatedAmount = balances[validator][msg.sender];
-        if (amount > delegatedAmount) revert DelegateRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
+        (uint256 penalty, uint256 fullReward) = rewardPool.onCutPosition(validator, msg.sender, amount, 0);
 
-        uint256 amountAfterUndelegate = delegatedAmount - amount;
-        if (amountAfterUndelegate < minDelegation && amountAfterUndelegate != 0)
-            revert DelegateRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
+        uint256 amountAfterPenalty = amount - penalty;
 
+        _burnAmount(penalty + fullReward);
+        _registerWithdrawal(msg.sender, amountAfterPenalty);
         _postUndelegateAction(msg.sender, validator, amount);
 
-        amount = rewardPool.onCutPosition(validator, msg.sender, amount, amountAfterUndelegate, 0);
-
-        _registerWithdrawal(msg.sender, amount);
-        emit PositionCut(msg.sender, validator, amount);
+        emit PositionCut(msg.sender, validator, amountAfterPenalty);
     }
 
     /**
      * @inheritdoc IDelegation
      */
     function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external onlyManager {
-        uint256 amount = rewardPool.onClaimPositionReward(validator, msg.sender, epochNumber, topUpIndex);
+        // uint256 amount = rewardPool.onClaimPositionReward(validator, msg.sender, epochNumber, topUpIndex);
+        (uint256 amount, uint256 remainder) = rewardPool.onClaimPositionReward(
+            validator,
+            msg.sender,
+            epochNumber,
+            topUpIndex
+        );
         if (amount == 0) return;
+
+        if (remainder > 0) {
+            _burnAmount(remainder);
+        }
 
         _registerWithdrawal(msg.sender, amount);
 
         emit PositionRewardClaimed(msg.sender, validator, amount);
     }
 
-    // External View functions
-    /**
-     * @inheritdoc IDelegation
-     */
-    function getDelegatorReward(address validator, address delegator) external view returns (uint256) {
-        return rewardPool.onGetDelegatorReward(validator, delegator);
-    }
-
-    /**
-     * @inheritdoc IDelegation
-     */
-    function delegationOf(address validator, address delegator) external view returns (uint256) {
-        return balances[validator][delegator];
-    }
-
-    /**
-     * @inheritdoc IDelegation
-     */
-    function totalDelegationOf(address validator) external view returns (uint256) {
-        return balanceOf(validator);
-    }
-
     // _______________ Public functions _______________
 
     // _______________ Internal functions _______________
 
-    function _processDelegate(address validator, address delegator, bool restake, uint256 amount) internal {
-        uint256 reward = rewardPool.claimDelegatorReward(delegator, validator, restake);
+    function _processDelegate(address validator, address delegator, uint256 amount) internal {
+        _delegateToVal(validator, delegator, amount);
+
+        uint256 reward = rewardPool.onDelegate(validator, delegator, amount);
         if (reward != 0) {
-            if (!restake) _registerWithdrawal(delegator, reward);
-
-            emit DelegatorRewardClaimed(delegator, validator, restake, reward);
+            _registerWithdrawal(delegator, reward);
         }
-
-        _mint(delegator, amount);
-        _delegate(delegator, delegator);
-        _postDelegateAction(validator, delegator, amount);
-        emit Delegated(delegator, validator, amount);
     }
 
     function _processUndelegate(address validator, address delegator, uint256 amount) internal {
-        uint256 reward = rewardPool.onUndelegate(delegator, validator, amount);
+        uint256 reward = rewardPool.onUndelegate(validator, delegator, amount);
         uint256 amountInclReward = amount + reward;
 
-        _postUndelegateAction(validator, delegator, amountInclReward);
         _registerWithdrawal(delegator, amountInclReward);
-        emit Undelegated(delegator, validator, amountInclReward);
+        _postUndelegateAction(validator, delegator, amount);
     }
 
     // _______________ Private functions _______________
 
-    function _delegateToVal(address delegator, address validator, uint256 amount) private {
+    function _delegateToVal(address validator, address delegator, uint256 amount) private {
         if (!validators[validator].active) revert Unauthorized("INVALID_VALIDATOR");
+
         _increaseValidatorBalance(validator, amount);
-        balances[validator][delegator] += amount;
-
         _postDelegateAction(validator, delegator, amount);
-
-        emit Delegated(delegator, validator, amount);
     }
 
     function _increaseValidatorBalance(address validator, uint256 amount) private {
@@ -195,10 +141,19 @@ abstract contract Delegation is
     function _postDelegateAction(address validator, address delegator, uint256 amount) private {
         StateSyncer._syncStake(validator, amount);
         LiquidStaking._onDelegate(delegator, amount);
+
+        emit Delegated(validator, delegator, amount);
     }
 
     function _postUndelegateAction(address validator, address delegator, uint256 amount) private {
         StateSyncer._syncUnstake(validator, amount);
         LiquidStaking._onUndelegate(delegator, amount);
+
+        emit Undelegated(validator, delegator, amount);
+    }
+
+    function _burnAmount(uint256 amount) private {
+        (bool success, ) = address(0).call{value: amount}("");
+        require(success, "Failed to burn amount");
     }
 }

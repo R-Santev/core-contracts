@@ -1,7 +1,16 @@
+/* eslint-disable camelcase */
 /* eslint-disable node/no-extraneous-import */
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { BigNumber, BigNumberish, ContractTransaction } from "ethers";
-import { BLS, LiquidityToken, RewardPool, System, ValidatorSet } from "../../typechain-types";
+import {
+  BLS,
+  LiquidityToken,
+  RewardPool,
+  System,
+  ValidatorSet,
+  VestManager,
+  VestManager__factory,
+} from "../../typechain-types";
 
 export interface Signers {
   accounts: SignerWithAddress[];
@@ -95,6 +104,48 @@ export interface Fixtures {
       bls: BLS;
       rewardPool: RewardPool;
       liquidToken: LiquidityToken;
+    }>;
+  };
+  delegatedFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+    }>;
+  };
+  vestManagerFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+      VestManagerFactory: VestManager__factory;
+      vestManager: VestManager;
+    }>;
+  };
+  vestedDelegationFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+      VestManagerFactory: VestManager__factory;
+      vestManager: VestManager;
+    }>;
+  };
+  multipleVestedDelegationsFixture: {
+    (): Promise<{
+      validatorSet: ValidatorSet;
+      systemValidatorSet: ValidatorSet;
+      bls: BLS;
+      rewardPool: RewardPool;
+      liquidToken: LiquidityToken;
+      managerFactories: VestManager__factory[];
+      vestManagers: VestManager[];
     }>;
   };
 }

@@ -2,22 +2,14 @@
 pragma solidity 0.8.17;
 
 interface IDelegation {
-    event Delegated(address indexed delegator, address indexed validator, uint256 amount);
-    event Undelegated(address indexed delegator, address indexed validator, uint256 amount);
-    event DelegatorRewardClaimed(
-        address indexed delegator,
-        address indexed validator,
-        bool indexed restake,
-        uint256 amount
-    );
-    event DelegatorRewardDistributed(address indexed validator, uint256 amount);
+    event Delegated(address indexed validator, address indexed delegator, uint256 amount);
+    event Undelegated(address indexed validator, address indexed delegator, uint256 amount);
 
     /**
      * @notice Delegates sent amount to validator. Claims rewards beforehand.
      * @param validator Validator to delegate to
-     * @param restake Whether to redelegate the claimed rewards
      */
-    function delegate(address validator, bool restake) external payable;
+    function delegateToValidator(address validator) external payable;
 
     /**
      * @notice Undelegates amount from validator for sender. Claims rewards beforehand.
@@ -32,7 +24,7 @@ interface IDelegation {
      * @param validator Validator to delegate to
      * @param durationWeeks Duration of the vesting in weeks
      */
-    function openDelegatePosition(address validator, uint256 durationWeeks) external payable;
+    function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable;
 
     /**
      * @notice Delegates sent amount to validator. Add top-up data.
@@ -57,27 +49,4 @@ interface IDelegation {
      * @param topUpIndex Whether to redelegate the claimed rewards
      */
     function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external;
-
-    /**
-     * @notice Gets delegators's unclaimed rewards with validator.
-     * @param validator Address of validator
-     * @param delegator Address of delegator
-     * @return Delegator's unclaimed rewards with validator (in MATIC wei)
-     */
-    function getDelegatorReward(address validator, address delegator) external view returns (uint256);
-
-    /**
-     * @notice Gets amount delegated by delegator to validator.
-     * @param validator Address of validator
-     * @param delegator Address of delegator
-     * @return Amount delegated (in MATIC wei)
-     */
-    function delegationOf(address validator, address delegator) external view returns (uint256);
-
-    /**
-     * @notice Gets the total amount delegated to a validator.
-     * @param validator Address of validator
-     * @return Amount delegated (in MATIC wei)
-     */
-    function totalDelegationOf(address validator) external view returns (uint256);
 }

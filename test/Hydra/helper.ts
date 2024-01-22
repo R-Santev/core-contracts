@@ -1,10 +1,12 @@
+/* eslint-disable camelcase */
 /* eslint-disable node/no-extraneous-import */
+import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import * as hre from "hardhat";
-import { BigNumber } from "ethers";
+import { BigNumber, ContractTransaction } from "ethers";
 
 import * as mcl from "../../ts/mcl";
-import { RewardPool, ValidatorSet } from "../../typechain-types";
+import { RewardPool, ValidatorSet, VestManager, VestManager__factory } from "../../typechain-types";
 import { CHAIN_ID, DOMAIN } from "./constants";
 
 interface RewardParams {
@@ -14,6 +16,38 @@ interface RewardParams {
 export async function getMaxEpochReward(validatorSet: ValidatorSet, epochId: BigNumber) {
   const totalStake = await validatorSet.totalSupplyAt(epochId);
   return totalStake;
+}
+
+export async function commitEpoch(
+  systemValidatorSet: ValidatorSet,
+  rewardPool: RewardPool,
+  validators: SignerWithAddress[],
+  epochSize: BigNumber
+): Promise<{ commitEpochTx: ContractTransaction; distributeRewardsTx: ContractTransaction }> {
+  const currEpochId = await systemValidatorSet.currentEpochId();
+  const prevEpochId = currEpochId.sub(1);
+  const previousEpoch = await systemValidatorSet.epochs(prevEpochId);
+  const newEpoch = {
+    startBlock: previousEpoch.endBlock.add(1),
+    endBlock: previousEpoch.endBlock.add(epochSize),
+    epochRoot: hre.ethers.utils.randomBytes(32),
+  };
+
+  const validatorsUptime = [];
+  for (const validator of validators) {
+    validatorsUptime.push({ validator: validator.address, signedBlocks: 64 });
+  }
+
+  const maxReward = await getMaxEpochReward(systemValidatorSet, prevEpochId);
+  const commitEpochTx = await systemValidatorSet.commitEpoch(currEpochId, newEpoch, epochSize, {
+    value: maxReward,
+  });
+
+  const distributeRewardsTx = await rewardPool
+    .connect(systemValidatorSet.signer)
+    .distributeRewardsFor(currEpochId, newEpoch, validatorsUptime, epochSize);
+
+  return { commitEpochTx, distributeRewardsTx };
 }
 
 export async function commitEpochs(
@@ -26,28 +60,7 @@ export async function commitEpochs(
   if (epochSize.isZero() || numOfEpochsToCommit === 0) return;
 
   for (let i = 0; i < numOfEpochsToCommit; i++) {
-    const currEpochId = await systemValidatorSet.currentEpochId();
-    const prevEpochId = currEpochId.sub(1);
-    const previousEpoch = await systemValidatorSet.epochs(prevEpochId);
-    const newEpoch = {
-      startBlock: previousEpoch.endBlock.add(1),
-      endBlock: previousEpoch.endBlock.add(epochSize),
-      epochRoot: hre.ethers.utils.randomBytes(32),
-    };
-
-    const validatorsUptime = [];
-    for (const validator of validators) {
-      validatorsUptime.push({ validator: validator.address, signedBlocks: 64 });
-    }
-
-    const maxReward = await getMaxEpochReward(systemValidatorSet, prevEpochId);
-    await systemValidatorSet.commitEpoch(currEpochId, newEpoch, epochSize, {
-      value: maxReward,
-    });
-
-    await rewardPool
-      .connect(systemValidatorSet.signer)
-      .distributeRewardsFor(currEpochId, newEpoch, validatorsUptime, epochSize);
+    await commitEpoch(systemValidatorSet, rewardPool, validators, epochSize);
   }
 }
 
@@ -113,4 +126,83 @@ export function findProperRPSIndex<T extends RewardParams>(arr: T[], timestamp: 
   }
 
   return closestIndex;
+}
+
+export async function calculatePenalty(position: any, amount: BigNumber) {
+  const latestTimestamp = await time.latest();
+  const nextTimestamp = latestTimestamp + 2;
+  await time.setNextBlockTimestamp(nextTimestamp);
+  const duration = position.duration;
+  const leftDuration = position.end.sub(nextTimestamp);
+  const penalty = amount.mul(leftDuration).div(duration);
+  return penalty;
+}
+
+export async function getUserManager(
+  validatorSet: ValidatorSet,
+  account: any,
+  VestManagerFactory: any
+): Promise<VestManager> {
+  // Find user vesting position based on the emitted  events
+  const filter = validatorSet.filters.NewClone(account.address);
+  const positionAddr = (await validatorSet.queryFilter(filter))[0].args.newClone;
+  const manager = VestManagerFactory.attach(positionAddr);
+
+  return manager.connect(account);
+}
+
+export async function claimPositionRewards(
+  validatorSet: ValidatorSet,
+  rewardPool: RewardPool,
+  vestManager: VestManager,
+  validator: string
+) {
+  const position = await rewardPool.delegationPositions(validator, vestManager.address);
+  const currentEpochId = await validatorSet.currentEpochId();
+  const rpsValues = await rewardPool.getRPSValues(validator, currentEpochId);
+  const rpsIndex = findProperRPSIndex(rpsValues, position.end);
+  await vestManager.claimPositionReward(validator, rpsIndex, 0);
+}
+
+export async function createNewVestManager(validatorSet: ValidatorSet, owner: SignerWithAddress) {
+  const tx = await validatorSet.connect(owner).newManager();
+  const receipt = await tx.wait();
+  const event = receipt.events?.find((e) => e.event === "NewClone");
+  const address = event?.args?.newClone;
+
+  const VestManagerFactory = new VestManager__factory(owner);
+  const vestManager: VestManager = VestManagerFactory.attach(address);
+
+  return { newManagerFactory: VestManagerFactory, newManager: vestManager };
+}
+
+export async function calculateExpectedDelegatorRewards(
+  rewardPool: RewardPool,
+  validator: string,
+  delegator: string,
+  epochsInYear: number
+) {
+  // calculate base reward
+  const baseReward = await rewardPool.getRawDelegatorReward(validator, delegator);
+  const base = await rewardPool.getBase();
+  const vestBonus = await rewardPool.getVestingBonus(1);
+  const rsi = await rewardPool.getRSI();
+  const expectedReward = base
+    .add(vestBonus)
+    .mul(rsi)
+    .mul(baseReward)
+    .div(10000 * 10000)
+    .div(epochsInYear);
+
+  // calculate max reward
+  const maxRSI = await rewardPool.getMaxRSI();
+  const maxVestBonus = await rewardPool.getVestingBonus(52);
+  const maxReward = base
+    .add(maxVestBonus)
+    .mul(maxRSI)
+    .mul(baseReward)
+    .div(10000 * 10000)
+    .div(epochsInYear);
+
+  return { expectedReward, maxReward };
 }

@@ -32,12 +32,20 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     /// @notice Keeps the delegation pools
     mapping(address => DelegationPool) public delegationPools;
 
+    /// @notice The minimum delegation amount to be delegated
+    uint256 public minDelegation;
+
     // _______________ Initializer _______________
 
-    function initialize(IValidatorSet newValidatorSet, address newRewardWallet) external initializer onlySystemCall {
+    function initialize(
+        IValidatorSet newValidatorSet,
+        address newRewardWallet,
+        uint256 newMinDelegation
+    ) external initializer onlySystemCall {
         require(newRewardWallet != address(0) && address(newValidatorSet) != address(0), "ZERO_ADDRESS");
         validatorSet = newValidatorSet;
         rewardWallet = newRewardWallet;
+        minDelegation = newMinDelegation;
     }
 
     // _______________ External functions _______________
@@ -70,9 +78,16 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     /**
      * @inheritdoc IRewardPool
      */
+    function onCreatePool(address validator) external {
+        DelegationPool storage delegation = getDelegationPoolOf(validator);
+        delegation.validator = validator;
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
     function onStake(address staker, uint256 amount, uint256 oldBalance) external {
-        VestingPosition memory position = positions[staker];
-        if (position.isActive()) {
+        if (isActivePosition(staker)) {
             _handleStake(staker, amount, oldBalance);
         }
     }
@@ -105,7 +120,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     /**
      * @inheritdoc IRewardPool
      */
-    function onNewPosition(address staker, uint256 durationWeeks) external {
+    function onNewStakePosition(address staker, uint256 durationWeeks) external {
         if (isStakerInVestingCycle(staker)) {
             revert StakeRequirement({src: "vesting", msg: "ALREADY_IN_VESTING"});
         }
@@ -123,6 +138,37 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         delete valRewards[staker];
     }
 
+    function onDelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward) {
+        DelegationPool storage delegation = getDelegationPoolOf(validator);
+
+        uint256 delegatedAmount = delegation.balanceOf(delegator);
+        if (delegatedAmount + amount < minDelegation)
+            revert DelegateRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
+
+        reward = this.claimDelegatorReward(validator, delegator);
+        delegation.deposit(delegator, amount);
+
+        return reward;
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function onUndelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward) {
+        DelegationPool storage delegation = getDelegationPoolOf(validator);
+
+        uint256 delegatedAmount = delegation.balanceOf(delegator);
+        if (amount > delegatedAmount) revert DelegateRequirement({src: "undelegate", msg: "INSUFFICIENT_BALANCE"});
+
+        uint256 amounAfterUndelegate = delegatedAmount - amount;
+        if (amounAfterUndelegate < minDelegation && amounAfterUndelegate != 0)
+            revert DelegateRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
+
+        delegation.withdraw(delegator, amount);
+        reward = delegation.claimRewards(delegator);
+        reward = _applyCustomReward(reward);
+    }
+
     /**
      * @inheritdoc IRewardPool
      */
@@ -131,22 +177,28 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         address delegator,
         uint256 durationWeeks,
         uint256 currentEpochId,
-        uint256 newBalance
+        uint256 amount
     ) external {
-        VestingPosition memory position = delegationPositions[validator][delegator];
-        if (position.isMaturing()) {
-            revert StakeRequirement({src: "vesting", msg: "POSITION_MATURING"});
+        DelegationPool storage delegation = getDelegationPoolOf(validator);
+
+        uint256 balance = delegation.balanceOf(delegator);
+        uint256 newBalance = balance + amount;
+        if (newBalance < minDelegation) revert DelegateRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
+
+        if (isMaturingDelegatePosition(validator, delegator)) {
+            revert DelegateRequirement({src: "vesting", msg: "POSITION_MATURING"});
         }
 
-        if (position.isActive()) {
-            revert StakeRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
+        if (isActiveDelegatePosition(validator, delegator)) {
+            revert DelegateRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
         }
 
         // ensure previous rewards are claimed
-        DelegationPool storage delegation = delegationPools[validator];
         if (delegation.claimableRewards(delegator) > 0) {
-            revert StakeRequirement({src: "vesting", msg: "REWARDS_NOT_CLAIMED"});
+            revert DelegateRequirement({src: "vesting", msg: "REWARDS_NOT_CLAIMED"});
         }
+
+        delegation.deposit(delegator, amount);
 
         // If is a position which is not active and not in maturing state,
         // we can recreate/create the position
@@ -166,9 +218,10 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         // keep the change in the delegation pool params per account
         _addNewDelegationPoolParam(
             validator,
+            delegator,
             DelegationPoolParams({
                 balance: newBalance,
-                correction: delegation.correctionOf(msg.sender),
+                correction: delegation.correctionOf(delegator),
                 epochNum: currentEpochId
             })
         );
@@ -180,15 +233,21 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     function onTopUpDelegatePosition(
         address validator,
         address delegator,
-        uint256 newBalance,
-        uint256 currentEpochId
+        uint256 currentEpochId,
+        uint256 amount
     ) external {
         DelegationPool storage delegation = delegationPools[validator];
-        if (!_isTopUpMade(validator, msg.sender)) {
-            _saveFirstTopUp(validator, delegation, newBalance);
+
+        uint256 balance = delegation.balanceOf(delegator);
+        uint256 newBalance = balance + amount;
+        if (newBalance < minDelegation) revert DelegateRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
+
+        if (!_isTopUpMade(validator, delegator)) {
+            _saveFirstTopUp(validator, delegator, delegation, balance);
         }
 
-        _topUpPosition(validator, delegator, delegation, currentEpochId);
+        delegation.deposit(delegator, amount);
+        _topUpDelegatePosition(validator, delegator, delegation, currentEpochId, amount);
     }
 
     /**
@@ -198,46 +257,37 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         address validator,
         address delegator,
         uint256 amount,
-        uint256 delegatedAmount,
         uint256 currentEpochId
-    ) external returns (uint256) {
+    ) external returns (uint256 penalty, uint256 fullReward) {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
+
+        uint256 delegatedAmount = delegation.balanceOf(delegator);
+        if (amount > delegatedAmount) revert DelegateRequirement({src: "vesting", msg: "INSUFFICIENT_BALANCE"});
+
+        uint256 delegatedAmountLeft = delegatedAmount - amount;
+        if (delegatedAmountLeft < minDelegation && delegatedAmountLeft != 0)
+            revert DelegateRequirement({src: "vesting", msg: "DELEGATION_TOO_LOW"});
+
         delegation.withdraw(delegator, amount);
 
         VestingPosition memory position = delegationPositions[validator][delegator];
         if (position.isActive()) {
-            // revert StakeRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
-            uint256 penalty = _calcSlashing(position, amount);
+            penalty = _calcSlashing(position, amount);
             // apply the max Vesting bonus, because the full reward must be burned
-            uint256 fullReward = applyMaxReward(delegation.claimRewards(msg.sender));
-            _burnAmount(penalty + fullReward);
-
-            amount -= penalty;
+            fullReward = applyMaxReward(delegation.claimRewards(delegator));
 
             // if position is closed when active, top-up must not be available as well as reward must not be available
             // so we delete the vesting data
-            if (delegatedAmount == 0) {
-                delete delegationPositions[validator][msg.sender];
-                delete delegationPoolParamsHistory[validator][msg.sender];
+            if (delegatedAmountLeft == 0) {
+                delete delegationPositions[validator][delegator];
+                delete delegationPoolParamsHistory[validator][delegator];
             } else {
                 // keep the change in the account pool params
-                uint256 balance = delegation.balanceOf(msg.sender);
-                int256 correction = delegation.correctionOf(msg.sender);
-                _onAccountParamsChange(validator, balance, correction, currentEpochId);
+                uint256 balance = delegation.balanceOf(delegator);
+                int256 correction = delegation.correctionOf(delegator);
+                _onAccountParamsChange(validator, delegator, balance, correction, currentEpochId);
             }
         }
-
-        return amount;
-    }
-
-    /**
-     * @inheritdoc IRewardPool
-     */
-    function onUndelegate(address delegator, address validator, uint256 amount) external returns (uint256 reward) {
-        DelegationPool storage delegation = getDelegationPoolOf(validator);
-        delegation.withdraw(delegator, amount);
-        reward = delegation.claimRewards(delegator);
-        reward = _applyCustomReward(reward);
     }
 
     function claimValidatorReward() external {
@@ -259,18 +309,13 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     /**
      * @inheritdoc IRewardPool
      */
-    function claimDelegatorReward(address delegator, address validator, bool restake) external returns (uint256) {
+    function claimDelegatorReward(address validator, address delegator) external returns (uint256) {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
         uint256 reward = delegation.claimRewards(delegator);
         reward = _applyCustomReward(reward);
         if (reward == 0) return 0;
 
-        if (restake) {
-            (, , , , , bool active) = validatorSet.getValidator(validator);
-            if (!active) revert Unauthorized("INVALID_VALIDATOR");
-
-            delegation.deposit(delegator, reward);
-        }
+        emit DelegatorRewardClaimed(validator, delegator, reward);
 
         return reward;
     }
@@ -288,13 +333,13 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         address delegator,
         uint256 epochNumber,
         uint256 topUpIndex
-    ) external returns (uint256) {
+    ) external returns (uint256 sumReward, uint256 remainder) {
         VestingPosition memory position = delegationPositions[validator][delegator];
         if (noRewardConditions(position)) {
-            return 0;
+            return (0, 0);
         }
 
-        uint256 sumReward;
+        // uint256 sumReward;
         uint256 sumMaxReward;
         DelegationPool storage delegationPool = getDelegationPoolOf(validator);
         bool rsi = true;
@@ -334,12 +379,13 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
             sumMaxReward += maxAdditionalReward;
         }
 
-        uint256 remainder = sumMaxReward - sumReward;
-        if (remainder > 0) {
-            _burnAmount(remainder);
-        }
+        // uint256 remainder = sumMaxReward - sumReward;
+        // if (remainder > 0) {
+        //     _burnAmount(remainder);
+        // }
+        remainder = sumMaxReward - sumReward;
 
-        return sumReward;
+        // return (sumReward, remainder);
     }
 
     /**
@@ -349,10 +395,37 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         return getDelegationPoolOf(validator).supply;
     }
 
+    // External View functions
     /**
      * @inheritdoc IRewardPool
      */
-    function onGetDelegatorReward(address validator, address delegator) external view returns (uint256) {
+    function delegationOf(address validator, address delegator) external view returns (uint256) {
+        DelegationPool storage delegation = delegationPools[validator];
+
+        return delegation.balanceOf(delegator);
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function totalDelegationOf(address validator) external view returns (uint256) {
+        DelegationPool storage delegation = delegationPools[validator];
+
+        return delegation.supply;
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function getRawDelegatorReward(address validator, address delegator) external view returns (uint256) {
+        DelegationPool storage delegation = getDelegationPoolOf(validator);
+        return delegation.claimableRewards(delegator);
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function getDelegatorReward(address validator, address delegator) external view returns (uint256) {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
         uint256 reward = delegation.claimableRewards(delegator);
         return _applyCustomReward(reward);
@@ -380,13 +453,17 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
      * @notice Checks if balance change was already made in the current epoch
      * @param validator Validator to delegate to
      */
-    function isBalanceChangeMade(address validator, uint256 currentEpochNum) public view returns (bool) {
-        uint256 length = delegationPoolParamsHistory[validator][msg.sender].length;
+    function isBalanceChangeMade(
+        address validator,
+        address delegator,
+        uint256 currentEpochNum
+    ) public view returns (bool) {
+        uint256 length = delegationPoolParamsHistory[validator][delegator].length;
         if (length == 0) {
             return false;
         }
 
-        DelegationPoolParams memory data = delegationPoolParamsHistory[validator][msg.sender][length - 1];
+        DelegationPoolParams memory data = delegationPoolParamsHistory[validator][delegator][length - 1];
         if (data.epochNum == currentEpochNum) {
             return true;
         }
@@ -396,33 +473,38 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
 
     // _______________ Internal functions _______________
 
-    function _addNewDelegationPoolParam(address validator, DelegationPoolParams memory params) internal {
-        if (isBalanceChangeMade(validator, params.epochNum)) {
+    function _addNewDelegationPoolParam(
+        address validator,
+        address delegator,
+        DelegationPoolParams memory params
+    ) internal {
+        if (isBalanceChangeMade(validator, delegator, params.epochNum)) {
             // Top up can be made only once per epoch
             revert StakeRequirement({src: "vesting", msg: "TOPUP_ALREADY_MADE"});
         }
 
-        delegationPoolParamsHistory[validator][msg.sender].push(params);
+        delegationPoolParamsHistory[validator][delegator].push(params);
     }
 
-    function _topUpPosition(
+    function _topUpDelegatePosition(
         address validator,
         address delegator,
         DelegationPool storage delegation,
-        uint256 currentEpochId
+        uint256 currentEpochId,
+        uint256 amount
     ) internal {
         if (!isActiveDelegatePosition(validator, delegator)) {
-            revert StakeRequirement({src: "vesting", msg: "POSITION_NOT_ACTIVE"});
+            revert DelegateRequirement({src: "vesting", msg: "POSITION_NOT_ACTIVE"});
         }
 
-        if (delegationPoolParamsHistory[validator][msg.sender].length > 52) {
-            revert StakeRequirement({src: "vesting", msg: "TOO_MANY_TOP_UPS"});
+        if (delegationPoolParamsHistory[validator][delegator].length > 52) {
+            revert DelegateRequirement({src: "vesting", msg: "TOO_MANY_TOP_UPS"});
         }
 
         // keep the change in the account pool params
-        uint256 balance = delegation.balanceOf(msg.sender);
-        int256 correction = delegation.correctionOf(msg.sender);
-        _onAccountParamsChange(validator, balance, correction, currentEpochId);
+        uint256 balance = delegation.balanceOf(delegator);
+        int256 correction = delegation.correctionOf(delegator);
+        _onAccountParamsChange(validator, delegator, balance, correction, currentEpochId);
 
         // Modify end period of position, decrease RSI bonus
         // balance / old balance = increase coefficient
@@ -430,22 +512,27 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         // TODO: Optimize gas costs
         uint256 timeIncrease;
 
-        uint256 oldBalance = balance - msg.value;
-        uint256 duration = delegationPositions[validator][msg.sender].duration;
-        if (msg.value >= oldBalance) {
+        uint256 oldBalance = balance - amount;
+        uint256 duration = delegationPositions[validator][delegator].duration;
+        if (amount >= oldBalance) {
             timeIncrease = duration;
         } else {
-            timeIncrease = (msg.value * duration) / oldBalance;
+            timeIncrease = (amount * duration) / oldBalance;
         }
 
-        delegationPositions[validator][msg.sender].duration = duration + timeIncrease;
-        delegationPositions[validator][msg.sender].end = delegationPositions[validator][msg.sender].end + timeIncrease;
+        delegationPositions[validator][delegator].duration = duration + timeIncrease;
+        delegationPositions[validator][delegator].end = delegationPositions[validator][delegator].end + timeIncrease;
     }
 
-    function _saveFirstTopUp(address validator, DelegationPool storage delegation, uint256 balance) internal {
-        int256 correction = delegation.magnifiedRewardCorrections[msg.sender];
+    function _saveFirstTopUp(
+        address validator,
+        address delegator,
+        DelegationPool storage delegation,
+        uint256 balance
+    ) internal {
+        int256 correction = delegation.magnifiedRewardCorrections[delegator];
         uint256 rewardPerShare = delegation.magnifiedRewardPerShare;
-        beforeTopUpParams[validator][msg.sender] = RewardParams({
+        beforeTopUpParams[validator][delegator] = RewardParams({
             rewardPerShare: rewardPerShare,
             balance: balance,
             correction: correction
@@ -454,16 +541,17 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
 
     function _onAccountParamsChange(
         address validator,
+        address delegator,
         uint256 balance,
         int256 correction,
         uint256 currentEpochId
     ) internal {
-        if (isBalanceChangeMade(validator, currentEpochId)) {
+        if (isBalanceChangeMade(validator, delegator, currentEpochId)) {
             // Top up can be made only once on epoch
-            revert StakeRequirement({src: "vesting", msg: "TOPUP_ALREADY_MADE"});
+            revert DelegateRequirement({src: "vesting", msg: "TOPUP_ALREADY_MADE"});
         }
 
-        delegationPoolParamsHistory[validator][msg.sender].push(
+        delegationPoolParamsHistory[validator][delegator].push(
             DelegationPoolParams({balance: balance, correction: correction, epochNum: currentEpochId})
         );
     }
@@ -547,11 +635,11 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
 
         RPS memory rpsData = historyRPS[validator][epochNumber];
         if (rpsData.timestamp == 0) {
-            revert StakeRequirement({src: "vesting", msg: "INVALID_EPOCH"});
+            revert DelegateRequirement({src: "vesting", msg: "INVALID_EPOCH"});
         }
         // If the given RPS is for future time - it is wrong, so revert
         if (rpsData.timestamp > alreadyMatured) {
-            revert StakeRequirement({src: "vesting", msg: "WRONG_RPS"});
+            revert DelegateRequirement({src: "vesting", msg: "WRONG_RPS"});
         }
 
         uint256 rewardPerShare = rpsData.value;
@@ -567,12 +655,12 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         uint256 paramsIndex
     ) internal view returns (uint256 balance, int256 correction) {
         if (paramsIndex >= delegationPoolParamsHistory[validator][manager].length) {
-            revert StakeRequirement({src: "vesting", msg: "INVALID_TOP_UP_INDEX"});
+            revert DelegateRequirement({src: "vesting", msg: "INVALID_TOP_UP_INDEX"});
         }
 
         DelegationPoolParams memory params = delegationPoolParamsHistory[validator][manager][paramsIndex]; // poolParamsChanges[validator][manager][paramsIndex];
         if (params.epochNum > epochNumber) {
-            revert StakeRequirement({src: "vesting", msg: "LATER_TOP_UP"});
+            revert DelegateRequirement({src: "vesting", msg: "LATER_TOP_UP"});
         } else if (params.epochNum == epochNumber) {
             // If balance change is made exactly in the epoch with the given index - it is the valid one for sure
             // because the balance change is made exactly before the distribution of the reward in this epoch
@@ -591,7 +679,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
                     // If the next balance change is made in an epoch before the handled one or in the same epoch
                     // and is bigger than the provided balance change - the provided one is not valid.
                     // Because when the reward was distributed for the given epoch, the account balance was different
-                    revert StakeRequirement({src: "vesting", msg: "EARLIER_TOP_UP"});
+                    revert DelegateRequirement({src: "vesting", msg: "EARLIER_TOP_UP"});
                 }
             }
         }

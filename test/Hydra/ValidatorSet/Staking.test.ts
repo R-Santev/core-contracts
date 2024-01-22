@@ -3,12 +3,12 @@ import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import { expect } from "chai";
 import * as hre from "hardhat";
-import { BigNumber } from "ethers";
+// import { BigNumber } from "ethers";
 
 import * as mcl from "../../../ts/mcl";
-import { RewardPool } from "../../../typechain-types";
+// import { RewardPool } from "../../../typechain-types";
 import { DOMAIN, CHAIN_ID, WEEK, VESTING_DURATION_WEEKS } from "../constants";
-import { commitEpochs, findProperRPSIndex, getValidatorReward, registerValidator } from "../helper";
+import { calculatePenalty, commitEpochs, findProperRPSIndex, getValidatorReward, registerValidator } from "../helper";
 
 export function RunStakingTests(): void {
   describe("Register", function () {
@@ -293,18 +293,18 @@ export function RunStakingTests(): void {
     });
 
     describe("decrease staking position with unstake()", function () {
-      async function calculatePenalty(rewardPool: RewardPool, unstakeAmount: BigNumber) {
-        const position = await rewardPool.positions(staker.address);
-        const latestTimestamp = await time.latest();
-        const nextTimestamp = latestTimestamp + 2;
-        await time.setNextBlockTimestamp(nextTimestamp);
-        const duration = position.duration;
-        const leftDuration = position.end.sub(nextTimestamp);
-        const penalty = unstakeAmount.mul(leftDuration).div(duration);
-        return penalty;
-      }
+      // async function calculatePenalty(rewardPool: RewardPool, unstakeAmount: BigNumber) {
+      //   const position = await rewardPool.positions(staker.address);
+      //   const latestTimestamp = await time.latest();
+      //   const nextTimestamp = latestTimestamp + 2;
+      //   await time.setNextBlockTimestamp(nextTimestamp);
+      //   const duration = position.duration;
+      //   const leftDuration = position.end.sub(nextTimestamp);
+      //   const penalty = unstakeAmount.mul(leftDuration).div(duration);
+      //   return penalty;
+      // }
 
-      it("should decrease staking position", async function () {
+      it("should decrease staking position and apply slashing penalty", async function () {
         const { stakerValidatorSet, systemValidatorSet, rewardPool } = await loadFixture(
           this.fixtures.newVestingValidatorFixture
         );
@@ -320,7 +320,10 @@ export function RunStakingTests(): void {
         );
 
         const unstakeAmount = this.minStake.div(2);
-        const penalty = await calculatePenalty(rewardPool, unstakeAmount);
+        const position = await rewardPool.positions(staker.address);
+        const penalty = await calculatePenalty(position, unstakeAmount);
+        console.log("=== unstakeAmount: ", unstakeAmount);
+        console.log("=== penalty: ", penalty);
         await stakerValidatorSet.unstake(unstakeAmount);
 
         const withdrawalAmount = await stakerValidatorSet.pendingWithdrawals(staker.address);
@@ -378,6 +381,7 @@ export function RunStakingTests(): void {
       });
     });
 
+    // TODO: vito: move this to the reward pool tests
     describe("claim position reward", function () {
       it("should not be able to claim when active", async function () {
         const { stakerValidatorSet, systemValidatorSet, rewardPool } = await loadFixture(

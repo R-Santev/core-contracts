@@ -13,7 +13,7 @@ import {
   ValidatorSet__factory,
 } from "../../typechain-types";
 import { CHAIN_ID, DOMAIN, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
-import { getMaxEpochReward, commitEpochs, registerValidator } from "./helper";
+import { getMaxEpochReward, commitEpochs, registerValidator, createNewVestManager } from "./helper";
 
 async function systemFixtureFunction(this: Mocha.Context) {
   const SystemFactory = new System__factory(this.signers.admin);
@@ -65,7 +65,9 @@ async function initializedValidatorSetStateFixtureFunction(this: Mocha.Context) 
     this.fixtures.presetValidatorSetStateFixture
   );
 
-  await rewardPool.connect(this.signers.system).initialize(validatorSet.address, this.signers.rewardWallet.address);
+  await rewardPool
+    .connect(this.signers.system)
+    .initialize(validatorSet.address, this.signers.rewardWallet.address, this.minDelegation);
   await liquidToken.initialize("Liquidity Token", "LQT", this.signers.governance.address, systemValidatorSet.address);
   await systemValidatorSet.initialize(
     {
@@ -253,6 +255,99 @@ async function withdrawableFixtureFunction(this: Mocha.Context) {
   return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
 }
 
+async function delegatedFixtureFunction(this: Mocha.Context) {
+  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+    this.fixtures.withdrawableFixture
+  );
+
+  const delegateAmount = this.minDelegation.mul(2);
+
+  await validatorSet.connect(this.signers.delegator).delegateToValidator(this.signers.validators[0].address, {
+    value: delegateAmount,
+  });
+
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+    3, // number of epochs to commit
+    this.epochSize
+  );
+
+  return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
+}
+
+async function vestManagerFixtureFunction(this: Mocha.Context) {
+  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+    this.fixtures.delegatedFixture
+  );
+
+  const { newManagerFactory, newManager } = await createNewVestManager(validatorSet, this.signers.accounts[4]);
+
+  return {
+    validatorSet,
+    systemValidatorSet,
+    bls,
+    rewardPool,
+    liquidToken,
+    VestManagerFactory: newManagerFactory,
+    vestManager: newManager,
+  };
+}
+
+async function vestedDelegationFixtureFunction(this: Mocha.Context) {
+  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager } =
+    await loadFixture(this.fixtures.vestManagerFixture);
+
+  const validator = this.signers.validators[2].address;
+  const vestingDuration = 52; // in weeks
+  await vestManager.openDelegatorPosition(validator, vestingDuration, {
+    value: this.minDelegation,
+  });
+
+  // Commit epochs so rewards to be distributed
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+    3, // number of epochs to commit
+    this.epochSize
+  );
+
+  return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager };
+}
+
+async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
+  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager } =
+    await loadFixture(this.fixtures.vestedDelegationFixture);
+
+  const { newManagerFactory, newManager } = await createNewVestManager(validatorSet, this.signers.accounts[5]);
+
+  const vestingDuration = 52; // in weeks
+  await newManager.openDelegatorPosition(this.signers.validators[1].address, vestingDuration, {
+    value: this.minDelegation.mul(2),
+  });
+
+  // Commit epochs so rewards to be distributed
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+    5, // number of epochs to commit
+    this.epochSize
+  );
+
+  return {
+    validatorSet,
+    systemValidatorSet,
+    bls,
+    rewardPool,
+    liquidToken,
+    managerFactories: [VestManagerFactory, newManagerFactory],
+    vestManagers: [vestManager, newManager],
+  };
+}
+
 async function blsFixtureFunction(this: Mocha.Context) {
   const BLSFactory = new BLS__factory(this.signers.admin);
   const BLS = await BLSFactory.deploy();
@@ -285,4 +380,8 @@ export async function generateFixtures(context: Mocha.Context) {
   context.fixtures.newVestingValidatorFixture = newVestingValidatorFixtureFunction.bind(context);
   context.fixtures.vestingRewardsFixture = vestingRewardsFixtureFunction.bind(context);
   context.fixtures.withdrawableFixture = withdrawableFixtureFunction.bind(context);
+  context.fixtures.delegatedFixture = delegatedFixtureFunction.bind(context);
+  context.fixtures.vestManagerFixture = vestManagerFixtureFunction.bind(context);
+  context.fixtures.vestedDelegationFixture = vestedDelegationFixtureFunction.bind(context);
+  context.fixtures.multipleVestedDelegationsFixture = multipleVestedDelegationsFixtureFunction.bind(context);
 }
