@@ -11,6 +11,7 @@ library VestingPositionLib {
     function isMaturing(VestingPosition memory position) internal view returns (bool) {
         uint256 vestingEnd = position.end;
         uint256 matureEnd = vestingEnd + position.duration;
+
         return vestingEnd < block.timestamp && block.timestamp < matureEnd;
     }
 

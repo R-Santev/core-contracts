@@ -77,6 +77,17 @@ abstract contract Vesting is APR {
         return valRewardHistory[validator];
     }
 
+    function getRPSValues(address validator, uint256 currentEpochId) external view returns (RPS[] memory) {
+        RPS[] memory values = new RPS[](currentEpochId);
+        for (uint256 i = 0; i < currentEpochId; i++) {
+            if (historyRPS[validator][i].value != 0) {
+                values[i] = (historyRPS[validator][i]);
+            }
+        }
+
+        return values;
+    }
+
     // _______________ Public functions _______________
 
     // Public functions that are view
@@ -92,6 +103,11 @@ abstract contract Vesting is APR {
 
     function isMaturingPosition(address staker) public view returns (bool) {
         VestingPosition memory position = positions[staker];
+        return position.isMaturing();
+    }
+
+    function isMaturingDelegatePosition(address validator, address delegator) public view returns (bool) {
+        VestingPosition memory position = delegationPositions[validator][delegator];
         return position.isMaturing();
     }
 
@@ -164,10 +180,5 @@ abstract contract Vesting is APR {
         require(validatorRPSes.value == 0, "RPS already saved");
 
         historyRPS[validator][epochNumber] = RPS({value: uint192(rewardPerShare), timestamp: uint64(block.timestamp)});
-    }
-
-    function _burnAmount(uint256 amount) internal {
-        (bool success, ) = address(0).call{value: amount}("");
-        require(success, "Failed to burn amount");
     }
 }

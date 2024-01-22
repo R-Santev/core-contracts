@@ -87,7 +87,7 @@ abstract contract Staking is
         _ensureStakeIsInRange(msg.value, balanceOf(msg.sender));
 
         _processStake(msg.sender, msg.value);
-        rewardPool.onNewPosition(msg.sender, durationWeeks);
+        rewardPool.onNewStakePosition(msg.sender, durationWeeks);
     }
 
     // External functions that are view
@@ -136,6 +136,7 @@ abstract contract Staking is
         validators[validator].active = true;
         validators[validator].registered = true;
         validatorsAddresses.push(validator);
+        rewardPool.onCreatePool(validator);
     }
 
     function _processStake(address account, uint256 amount) internal {

@@ -33,21 +33,38 @@ struct Validator {
 interface IValidatorSet {
     event NewEpoch(uint256 indexed id, uint256 indexed startBlock, uint256 indexed endBlock, bytes32 epochRoot);
 
-    /// @notice total amount of blocks in a given epoch
+    /**
+     * @notice Total amount of blocks in a given epoch
+     * @param epochId The number of the epoch
+     * @return length Total blocks for an epoch
+     */
     function totalBlocks(uint256 epochId) external view returns (uint256 length);
 
-    /// @notice returns a validator balance for a given epoch
+    /**
+     * @notice Returns a validator balance for a given epoch
+     * @param account The address of the validator
+     * @param epochNumber The number of the epoch
+     * @return Validator's balance
+     */
     function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256);
 
-    /// @notice returns the total supply for a given epoch
+    /**
+     * @notice Returns the total supply for a given epoch
+     * @param epochNumber The number of the epoch
+     * @return Total supply
+     */
     function totalSupplyAt(uint256 epochNumber) external view returns (uint256);
 
+    /**
+     * @notice Registers a withdrawal of rewards
+     * @param validator The address of the validator
+     * @param amount Amount to delegate
+     */
     function onRewardClaimed(address validator, uint256 amount) external;
-
-    // function getDelegationPoolOf(address validator) external view returns (address);
 
     /**
      * @notice Gets validator by address.
+     * @param validator Address of the validator
      * @return blsKey BLS public key
      * @return stake self-stake
      * @return totalStake self-stake + delegation

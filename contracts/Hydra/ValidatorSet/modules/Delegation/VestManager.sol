@@ -33,8 +33,9 @@ contract VestManager is Initializable, OwnableUpgradeable {
 
     // _______________ External functions _______________
 
+    // TODO: vito: think of better naming of all methods related to vested delegation
     function openDelegatorPosition(address validator, uint256 durationWeeks) external payable onlyOwner {
-        IDelegation(staking).openDelegatePosition{value: msg.value}(validator, durationWeeks);
+        IDelegation(staking).openVestedDelegatePosition{value: msg.value}(validator, durationWeeks);
 
         _sendLiquidTokens(msg.sender, msg.value);
     }

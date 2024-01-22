@@ -12,11 +12,17 @@ struct Uptime {
 interface IRewardPool {
     event ValidatorRewardClaimed(address indexed validator, uint256 amount);
     event ValidatorRewardDistributed(address indexed validator, uint256 amount);
+    event DelegatorRewardClaimed(address indexed validator, address indexed delegator, uint256 amount);
     event DelegatorRewardDistributed(address indexed validator, uint256 amount);
 
-    /// @notice distributes rewards for the given epoch
-    /// @dev transfers funds from sender to this contract
-    /// @param uptime uptime data for every validator
+    /**
+     * @notice Distributes rewards for the given epoch
+     * @dev Transfers funds from sender to this contract
+     * @param epochId The epoch number
+     * @param epoch Epoch details
+     * @param uptime uptime data for every validator
+     * @param epochSize Number of blocks per epoch
+     */
     function distributeRewardsFor(
         uint256 epochId,
         Epoch calldata epoch,
@@ -24,75 +30,139 @@ interface IRewardPool {
         uint256 epochSize
     ) external;
 
-    /// @notice sets the reward params for the new vested position
-    function onNewPosition(address staker, uint256 durationWeeks) external;
-
-    /// @notice sets the reward params for the new vested delegation position
-    function onNewDelegatePosition(
-        address validator,
-        address delegator,
-        uint256 durationWeeks,
-        uint256 currentEpochId,
-        uint256 newBalance
-    ) external;
-
-    /// @notice top up to a delegate positions
-    function onTopUpDelegatePosition(
-        address validator,
-        address delegator,
-        uint256 newBalance,
-        uint256 currentEpochId
-    ) external;
-
-    /// @notice update the reward params for the vested position
+    /**
+     * @notice Update the reward params for the vested position
+     * @param staker Address of the staker
+     * @param amount Amount to stake
+     * @param oldBalance Balance before stake
+     */
     function onStake(address staker, uint256 amount, uint256 oldBalance) external;
 
-    /// @notice update the reward params for the new vested position
+    /**
+     * @notice Unstakes and updates the reward params for the vested position
+     * @dev If vested position is active, then it will calculate a penalty in the returned amount
+     * @param staker Address of the staker
+     * @param amountUnstaked Unstaked amount
+     * @param amountLeft The staked amount left
+     * @return amountToWithdraw The calcualted amount to withdraw
+     */
     function onUnstake(
         address staker,
         uint256 amountUnstaked,
         uint256 amountLeft
     ) external returns (uint256 amountToWithdraw);
 
-    /// @notice withdraws from the delegation pools and claims rewards
-    /// @dev returns the reward in order to make the withdrawal in the delegation contract
-    function onUndelegate(address delegator, address validator, uint256 amount) external returns (uint256 reward);
+    /**
+     * @notice Delegates to a validator delegation pool
+     * @dev Claims rewards and returns it in order to make the withdrawal in the delegation contract
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param amount Amount to delegate
+     * @return reward Calculates delegator's unclaimed rewards with validator
+     */
+    function onDelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward);
 
-    /// @notice cuts a vesting position from the delegation pool
-    /// @dev applies penalty (slashing) if the vesting period is active and returns the updated amount
+    /**
+     * @notice Undelegates from the delegation pools and claims rewards
+     * @dev Returns the reward in order to make the withdrawal in the delegation contract
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param amount Amount to delegate
+     * @return reward Calculates delegator's unclaimed rewards with validator
+     */
+    function onUndelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward);
+
+    /**
+     * @notice Creates a pool
+     * @dev Sets the validator of the pool
+     * @param validator The address of the validator
+     */
+    function onCreatePool(address validator) external;
+
+    /**
+     * @notice Sets the reward params for the new vested position
+     * @param staker Address of the staker
+     * @param durationWeeks Vesting duration in weeks
+     */
+    function onNewStakePosition(address staker, uint256 durationWeeks) external;
+
+    /**
+     * @notice Sets the reward params for the new vested delegation position
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param durationWeeks Vesting duration in weeks
+     * @param currentEpochId The currenct epoch number
+     * @param amount Delegate amount to open position with
+     */
+    function onNewDelegatePosition(
+        address validator,
+        address delegator,
+        uint256 durationWeeks,
+        uint256 currentEpochId,
+        uint256 amount
+    ) external;
+
+    /**
+     * @notice Top up to a delegate positions
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param currentEpochId The currenct epoch number
+     * @param amount Delegate amount to top-up with
+     */
+    function onTopUpDelegatePosition(
+        address validator,
+        address delegator,
+        uint256 currentEpochId,
+        uint256 amount
+    ) external;
+
+    /**
+     * @notice Cuts a vesting position from the delegation pool
+     * @dev Applies penalty (slashing) if the vesting period is active and returns the updated amount
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param amount Amount to delegate
+     * @param currentEpochId The currenct epoch number
+     * @return penalty The penalty which will be taken from the delgator's amount and burned, if the position is active
+     * @return fullReward The full reward that is going to be burned, if the position is active
+     */
     function onCutPosition(
         address validator,
         address delegator,
         uint256 amount,
-        uint256 delegatedAmount,
         uint256 currentEpochId
-    ) external returns (uint256);
+    ) external returns (uint256 penalty, uint256 fullReward);
 
     /**
      * @notice Claims delegator rewards for sender.
      * @param validator Validator to claim from
-     * @param restake Whether to redelegate the claimed rewards
+     * @return Delegator's rewards
      */
-    function claimDelegatorReward(address delegator, address validator, bool restake) external returns (uint256);
+    function claimDelegatorReward(address delegator, address validator) external returns (uint256);
 
     /**
-     * Returns true if the staker is an active vesting position or not all rewards from the latest
-     *  active position are matured yet
-     * @param staker Address of the staker
+     * @notice Returns the generated rewards for a validator
+     * @dev Applies penalty (slashing) if the vesting period is active and returns the updated amount
+     * @param validator The address of the validator
+     * @return Delgator's unclaimed rewards
      */
-    // function isStakerInVestingCycle(address staker) external view returns (bool);
-
-    /// @notice Returns the generated rewards for a validator
-    /// @param validator Address of the staker
     function getValidatorReward(address validator) external view returns (uint256);
 
     /**
-     * @notice Gets delegators's unclaimed rewards with validator
+     * @notice Gets delegators's unclaimed rewards without rewards
      * @param validator Address of validator
      * @param delegator Address of delegator
      * @return Delegator's unclaimed rewards with validator (in MATIC wei)
      */
-    function onGetDelegatorReward(address validator, address delegator) external view returns (uint256);
+    function getRawDelegatorReward(address validator, address delegator) external view returns (uint256);
+
+    /**
+     * @notice Gets delegators's unclaimed rewards including rewards
+     * @param validator Address of validator
+     * @param delegator Address of delegator
+     * @return Delegator's unclaimed rewards with validator (in MATIC wei)
+     */
+    function getDelegatorReward(address validator, address delegator) external view returns (uint256);
 
     /**
      * @notice Claims delegator rewards for sender.
@@ -102,12 +172,18 @@ interface IRewardPool {
      * We need it because not all rewards are matured at the moment of claiming.
      * @param topUpIndex Whether to redelegate the claimed rewards
      */
+    // function onClaimPositionReward(
+    //     address validator,
+    //     address delegator,
+    //     uint256 epochNumber,
+    //     uint256 topUpIndex
+    // ) external returns (uint256);
     function onClaimPositionReward(
         address validator,
         address delegator,
         uint256 epochNumber,
         uint256 topUpIndex
-    ) external returns (uint256);
+    ) external returns (uint256 sumReward, uint256 remainder);
 
     /**
      * @notice returns the supply of the delegation pool of the requested validator
@@ -115,4 +191,19 @@ interface IRewardPool {
      * @return supply of the delegation pool
      */
     function getDelegationPoolSupplyOf(address validator) external view returns (uint256);
+
+    /**
+     * @notice Gets amount delegated by delegator to validator.
+     * @param validator Address of validator
+     * @param delegator Address of delegator
+     * @return Amount delegated (in MATIC wei)
+     */
+    function delegationOf(address validator, address delegator) external view returns (uint256);
+
+    /**
+     * @notice Gets the total amount delegated to a validator.
+     * @param validator Address of validator
+     * @return Amount delegated (in MATIC wei)
+     */
+    function totalDelegationOf(address validator) external view returns (uint256);
 }

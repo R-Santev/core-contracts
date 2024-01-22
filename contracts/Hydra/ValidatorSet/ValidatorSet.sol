@@ -67,7 +67,7 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         __PowerExponent_init();
         __AccessControl_init(governance);
         __Staking_init(init.minStake, liquidToken);
-        __Delegation_init(init.minDelegation);
+        __Delegation_init();
         __ReentrancyGuard_init();
         _initialize(newValidators);
     }
