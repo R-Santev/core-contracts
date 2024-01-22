@@ -6,10 +6,10 @@ import * as hre from "hardhat";
 
 import * as mcl from "../../ts/mcl";
 import {
+  System__factory,
   BLS__factory,
   LiquidityToken__factory,
   RewardPool__factory,
-  System__factory,
   ValidatorSet__factory,
 } from "../../typechain-types";
 import { CHAIN_ID, DOMAIN, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
@@ -301,7 +301,7 @@ async function vestedDelegationFixtureFunction(this: Mocha.Context) {
 
   const validator = this.signers.validators[2].address;
   const vestingDuration = 52; // in weeks
-  await vestManager.openDelegatorPosition(validator, vestingDuration, {
+  await vestManager.openVestedDelegatePosition(validator, vestingDuration, {
     value: this.minDelegation,
   });
 
@@ -324,7 +324,7 @@ async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
   const { newManagerFactory, newManager } = await createNewVestManager(validatorSet, this.signers.accounts[5]);
 
   const vestingDuration = 52; // in weeks
-  await newManager.openDelegatorPosition(this.signers.validators[1].address, vestingDuration, {
+  await newManager.openVestedDelegatePosition(this.signers.validators[1].address, vestingDuration, {
     value: this.minDelegation.mul(2),
   });
 

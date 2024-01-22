@@ -6,7 +6,10 @@ import * as hre from "hardhat";
 import { BigNumber, ContractTransaction } from "ethers";
 
 import * as mcl from "../../ts/mcl";
-import { RewardPool, ValidatorSet, VestManager, VestManager__factory } from "../../typechain-types";
+import { ValidatorSet } from "../../typechain-types/contracts/Hydra/ValidatorSet";
+import { RewardPool } from "../../typechain-types/contracts/Hydra/RewardPool";
+import { VestManager } from "../../typechain-types/contracts/Hydra/ValidatorSet/modules/Delegation";
+import { VestManager__factory } from "../../typechain-types/factories/contracts/Hydra/ValidatorSet/modules/Delegation";
 import { CHAIN_ID, DOMAIN } from "./constants";
 
 interface RewardParams {
@@ -161,7 +164,7 @@ export async function claimPositionRewards(
   const currentEpochId = await validatorSet.currentEpochId();
   const rpsValues = await rewardPool.getRPSValues(validator, currentEpochId);
   const rpsIndex = findProperRPSIndex(rpsValues, position.end);
-  await vestManager.claimPositionReward(validator, rpsIndex, 0);
+  await vestManager.claimVestedPositionReward(validator, rpsIndex, 0);
 }
 
 export async function createNewVestManager(validatorSet: ValidatorSet, owner: SignerWithAddress) {
@@ -176,33 +179,48 @@ export async function createNewVestManager(validatorSet: ValidatorSet, owner: Si
   return { newManagerFactory: VestManagerFactory, newManager: vestManager };
 }
 
-export async function calculateExpectedDelegatorRewards(
+export async function retrieveRPSData(
+  validatorSet: ValidatorSet,
   rewardPool: RewardPool,
   validator: string,
-  delegator: string,
-  epochsInYear: number
+  manager: string
 ) {
+  const position = await rewardPool.delegationPositions(validator, manager);
+  const end = position.end;
+  const currentEpochId = await validatorSet.currentEpochId();
+  const rpsValues = await rewardPool.getRPSValues(validator, currentEpochId);
+  const epochNum = findProperRPSIndex(rpsValues, end);
+  const topUpIndex = 0;
+
+  return { position, epochNum, topUpIndex };
+}
+
+export async function calculateExpectedBaseReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
   // calculate base reward
-  const baseReward = await rewardPool.getRawDelegatorReward(validator, delegator);
   const base = await rewardPool.getBase();
   const vestBonus = await rewardPool.getVestingBonus(1);
   const rsi = await rewardPool.getRSI();
   const expectedReward = base
     .add(vestBonus)
     .mul(rsi)
-    .mul(baseReward)
+    .mul(reward)
     .div(10000 * 10000)
     .div(epochsInYear);
 
+  return expectedReward;
+}
+
+export async function calculateExpectedMaxBaseReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
   // calculate max reward
-  const maxRSI = await rewardPool.getMaxRSI();
+  const base = await rewardPool.getBase();
   const maxVestBonus = await rewardPool.getVestingBonus(52);
+  const maxRSI = await rewardPool.getMaxRSI();
   const maxReward = base
     .add(maxVestBonus)
     .mul(maxRSI)
-    .mul(baseReward)
+    .mul(reward)
     .div(10000 * 10000)
     .div(epochsInYear);
 
-  return { expectedReward, maxReward };
+  return maxReward;
 }
