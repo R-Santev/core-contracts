@@ -13,10 +13,10 @@
 ### balanceOfAt
 
 ```solidity
-function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256)
+function balanceOfAt(address account) external view returns (uint256)
 ```
 
-returns a validator balance for a given epoch
+Returns the total balance of a given validator
 
 
 
@@ -24,14 +24,13 @@ returns a validator balance for a given epoch
 
 | Name | Type | Description |
 |---|---|---|
-| account | address | undefined |
-| epochNumber | uint256 | undefined |
+| account | address | The address of the validator |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | undefined |
+| _0 | uint256 | Validator&#39;s balance |
 
 ### getEpochByBlock
 
@@ -69,7 +68,7 @@ Gets validator by address.
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | undefined |
+| validator | address | Address of the validator |
 
 #### Returns
 
@@ -88,7 +87,7 @@ Gets validator by address.
 function onRewardClaimed(address validator, uint256 amount) external nonpayable
 ```
 
-
+Registers a withdrawal of rewards
 
 
 
@@ -96,8 +95,8 @@ function onRewardClaimed(address validator, uint256 amount) external nonpayable
 
 | Name | Type | Description |
 |---|---|---|
-| validator | address | undefined |
-| amount | uint256 | undefined |
+| validator | address | The address of the validator |
+| amount | uint256 | Amount to delegate |
 
 ### totalBlocks
 
@@ -105,7 +104,7 @@ function onRewardClaimed(address validator, uint256 amount) external nonpayable
 function totalBlocks(uint256 epochId) external view returns (uint256 length)
 ```
 
-total amount of blocks in a given epoch
+Total amount of blocks in a given epoch
 
 
 
@@ -113,35 +112,30 @@ total amount of blocks in a given epoch
 
 | Name | Type | Description |
 |---|---|---|
-| epochId | uint256 | undefined |
+| epochId | uint256 | The number of the epoch |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| length | uint256 | undefined |
+| length | uint256 | Total blocks for an epoch |
 
 ### totalSupplyAt
 
 ```solidity
-function totalSupplyAt(uint256 epochNumber) external view returns (uint256)
+function totalSupplyAt() external view returns (uint256)
 ```
 
-returns the total supply for a given epoch
+Returns the total supply
 
 
 
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| epochNumber | uint256 | undefined |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | undefined |
+| _0 | uint256 | Total supply |
 
 
 

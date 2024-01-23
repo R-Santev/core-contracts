@@ -123,8 +123,7 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     {
         Validator memory v = validators[validatorAddress];
         blsKey = v.blsKey;
-        stake = this.balanceOf(validatorAddress);
-        // totalStake = stake + this.totalDelegationOf(validatorAddress);
+        stake = balanceOf(validatorAddress);
         totalStake = stake + rewardPool.getDelegationPoolSupplyOf(validatorAddress);
         commission = v.commission;
         withdrawableRewards = rewardPool.getValidatorReward(validatorAddress);
@@ -152,18 +151,6 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     // _______________ Internal functions _______________
 
     // _______________ Private functions _______________
-
-    // OpenZeppelin Overrides
-
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
-        require(from == address(0) || to == address(0), "TRANSFER_FORBIDDEN");
-        super._beforeTokenTransfer(from, to, amount);
-    }
-
-    function _delegate(address delegator, address delegatee) internal override {
-        if (delegator != delegatee) revert("DELEGATION_FORBIDDEN");
-        super._delegate(delegator, delegatee);
-    }
 
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;

@@ -3,98 +3,11 @@ import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import * as hre from "hardhat";
 
-import * as mcl from "../../../ts/mcl";
-import { DOMAIN, CHAIN_ID, WEEK, VESTING_DURATION_WEEKS } from "../constants";
+import { WEEK, VESTING_DURATION_WEEKS } from "../constants";
 import { calculatePenalty, commitEpochs, registerValidator } from "../helper";
 import { RunStakingClaimTests } from "../RewardPool/RewardPool.test";
 
 export function RunStakingTests(): void {
-  describe("Register", function () {
-    it("should be able to register only whitelisted", async function () {
-      const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
-
-      await expect(validatorSet.connect(this.signers.accounts[10]).register([0, 0], [0, 0, 0, 0]))
-        .to.be.revertedWithCustomError(validatorSet, "Unauthorized")
-        .withArgs("WHITELIST");
-    });
-
-    it("should not be able to register with invalid signature", async function () {
-      const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
-
-      const keyPair = mcl.newKeyPair();
-      const signature = mcl.signValidatorMessage(
-        DOMAIN,
-        CHAIN_ID,
-        this.signers.accounts[10].address,
-        keyPair.secret
-      ).signature;
-
-      await expect(
-        validatorSet.connect(this.signers.validators[1]).register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey))
-      )
-        .to.be.revertedWithCustomError(validatorSet, "InvalidSignature")
-        .withArgs(this.signers.validators[1].address);
-    });
-
-    it("should register", async function () {
-      const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
-
-      expect((await validatorSet.validators(this.signers.validators[0].address)).whitelisted, "whitelisted = true").to
-        .be.true;
-
-      const keyPair = mcl.newKeyPair();
-      const signature = mcl.signValidatorMessage(
-        DOMAIN,
-        CHAIN_ID,
-        this.signers.validators[0].address,
-        keyPair.secret
-      ).signature;
-
-      const tx = await validatorSet
-        .connect(this.signers.validators[0])
-        .register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey));
-
-      await expect(tx, "emit NewValidator")
-        .to.emit(validatorSet, "NewValidator")
-        .withArgs(
-          this.signers.validators[0].address,
-          mcl.g2ToHex(keyPair.pubkey).map((x) => hre.ethers.BigNumber.from(x))
-        );
-
-      expect((await validatorSet.validators(this.signers.validators[0].address)).whitelisted, "whitelisted = false").to
-        .be.false;
-      const validator = await validatorSet.getValidator(this.signers.validators[0].address);
-
-      expect(validator.stake, "stake").to.equal(0);
-      expect(validator.totalStake, "total stake").to.equal(0);
-      expect(validator.commission).to.equal(0);
-      expect(validator.active).to.equal(true);
-      expect(validator.blsKey.map((x) => x.toHexString())).to.deep.equal(mcl.g2ToHex(keyPair.pubkey));
-    });
-
-    it("should revert when attempt to register twice", async function () {
-      // * Only the first two validators are being registered
-      const { validatorSet } = await loadFixture(this.fixtures.registeredValidatorsStateFixture);
-
-      expect((await validatorSet.validators(this.signers.validators[0].address)).active, "active = true").to.be.true;
-
-      const keyPair = mcl.newKeyPair();
-      const signature = mcl.signValidatorMessage(
-        DOMAIN,
-        CHAIN_ID,
-        this.signers.validators[0].address,
-        keyPair.secret
-      ).signature;
-
-      await expect(
-        validatorSet.connect(this.signers.validators[0]).register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey)),
-        "register"
-      )
-        .to.be.revertedWithCustomError(validatorSet, "AlreadyRegistered")
-        .withArgs(this.signers.validators[0].address);
-    });
-  });
-
   describe("Stake", function () {
     it("should allow only registered validators to stake", async function () {
       // * Only the first three validators are being registered

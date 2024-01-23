@@ -287,7 +287,30 @@ function getMaxRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
-### getRoleAdmin
+### getRPSValues
+
+```solidity
+function getRPSValues(address validator, uint256 currentEpochId) external view returns (struct RPS[])
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| currentEpochId | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | RPS[] | undefined |
+
+### getRSI
 
 ```solidity
 function getRoleAdmin(bytes32 role) external view returns (bytes32)
@@ -455,6 +478,29 @@ function isActivePosition(address staker) external view returns (bool)
 | Name | Type | Description |
 |---|---|---|
 | staker | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isMaturingDelegatePosition
+
+```solidity
+function isMaturingDelegatePosition(address validator, address delegator) external view returns (bool)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | undefined |
+| delegator | address | undefined |
 
 #### Returns
 

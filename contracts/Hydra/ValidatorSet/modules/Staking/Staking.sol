@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "./IStaking.sol";
 import "./StateSyncer.sol";
 import "./LiquidStaking.sol";
+import "./BalanceState.sol";
 import "./../Withdrawal/Withdrawal.sol";
 import "./../AccessControl/AccessControl.sol";
 
@@ -13,7 +13,7 @@ import "./../AccessControl/AccessControl.sol";
 abstract contract Staking is
     IStaking,
     ValidatorSetBase,
-    ERC20VotesUpgradeable,
+    BalanceState,
     Withdrawal,
     LiquidStaking,
     StateSyncer,
@@ -35,7 +35,6 @@ abstract contract Staking is
     // _______________ Initializer _______________
 
     function __Staking_init(uint256 newMinStake, address newLiquidToken) internal onlyInitializing {
-        __ERC20_init("ValidatorSet", "VSET");
         __LiquidStaking_init(newLiquidToken);
         __Staking_init_unchained(newMinStake);
     }
@@ -94,15 +93,15 @@ abstract contract Staking is
     /**
      * @inheritdoc IValidatorSet
      */
-    function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256) {
-        return super.getPastVotes(account, _commitBlockNumbers[epochNumber]);
+    function balanceOfAt(address account) external view returns (uint256) {
+        return super.balanceOf(account);
     }
 
     /**
      * @inheritdoc IValidatorSet
      */
-    function totalSupplyAt(uint256 epochNumber) external view returns (uint256) {
-        return super.getPastTotalSupply(_commitBlockNumbers[epochNumber]);
+    function totalSupplyAt() external view returns (uint256) {
+        return super.totalSupply();
     }
 
     // _______________ Public functions _______________
@@ -148,8 +147,6 @@ abstract contract Staking is
 
     function _stake(address account, uint256 amount) private {
         _mint(account, amount);
-        _delegate(account, account);
-
         emit Staked(account, amount);
     }
 
@@ -182,7 +179,6 @@ abstract contract Staking is
     // Private functions that are view
     function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
         if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
-        assert(currentBalance + amount <= _maxSupply());
     }
 
     // slither-disable-next-line unused-state,naming-convention
