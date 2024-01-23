@@ -41,19 +41,17 @@ interface IValidatorSet {
     function totalBlocks(uint256 epochId) external view returns (uint256 length);
 
     /**
-     * @notice Returns a validator balance for a given epoch
+     * @notice Returns the total balance of a given validator
      * @param account The address of the validator
-     * @param epochNumber The number of the epoch
      * @return Validator's balance
      */
-    function balanceOfAt(address account, uint256 epochNumber) external view returns (uint256);
+    function balanceOfAt(address account) external view returns (uint256);
 
     /**
-     * @notice Returns the total supply for a given epoch
-     * @param epochNumber The number of the epoch
+     * @notice Returns the total supply
      * @return Total supply
      */
-    function totalSupplyAt(uint256 epochNumber) external view returns (uint256);
+    function totalSupplyAt() external view returns (uint256);
 
     /**
      * @notice Registers a withdrawal of rewards

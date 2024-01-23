@@ -10,10 +10,10 @@
 
 ## Methods
 
-### claimPositionReward
+### claimVestedPositionReward
 
 ```solidity
-function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external payable
+function claimVestedPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external payable
 ```
 
 
@@ -28,10 +28,10 @@ function claimPositionReward(address validator, uint256 epochNumber, uint256 top
 | epochNumber | uint256 | undefined |
 | topUpIndex | uint256 | undefined |
 
-### cutPosition
+### cutVestedDelegatePosition
 
 ```solidity
-function cutPosition(address validator, uint256 amount) external payable
+function cutVestedDelegatePosition(address validator, uint256 amount) external payable
 ```
 
 
@@ -61,10 +61,10 @@ function initialize(address owner) external nonpayable
 |---|---|---|
 | owner | address | undefined |
 
-### openDelegatorPosition
+### openVestedDelegatePosition
 
 ```solidity
-function openDelegatorPosition(address validator, uint256 durationWeeks) external payable
+function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable
 ```
 
 
@@ -123,10 +123,10 @@ The staking address
 |---|---|---|
 | _0 | address | undefined |
 
-### topUpPosition
+### topUpVestedDelegatePosition
 
 ```solidity
-function topUpPosition(address validator) external payable
+function topUpVestedDelegatePosition(address validator) external payable
 ```
 
 

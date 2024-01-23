@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "./IDelegation.sol";
 import "./VestedDelegation.sol";
 import "./../Staking/StateSyncer.sol";
 import "./../Staking/LiquidStaking.sol";
+import "./../Staking/BalanceState.sol";
 import "./../Withdrawal/Withdrawal.sol";
 import "./../../ValidatorSetBase.sol";
 import "./../../../common/CommonStructs.sol";
@@ -14,7 +15,7 @@ import "./libs/DelegationPoolLib.sol";
 abstract contract Delegation is
     IDelegation,
     ValidatorSetBase,
-    ERC20VotesUpgradeable,
+    BalanceState,
     VestedDelegation,
     Withdrawal,
     LiquidStaking,
@@ -85,7 +86,6 @@ abstract contract Delegation is
      * @inheritdoc IDelegation
      */
     function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external onlyManager {
-        // uint256 amount = rewardPool.onClaimPositionReward(validator, msg.sender, epochNumber, topUpIndex);
         (uint256 amount, uint256 remainder) = rewardPool.onClaimPositionReward(
             validator,
             msg.sender,
@@ -135,7 +135,6 @@ abstract contract Delegation is
 
     function _increaseValidatorBalance(address validator, uint256 amount) private {
         _mint(validator, amount);
-        _delegate(validator, validator);
     }
 
     function _postDelegateAction(address validator, address delegator, uint256 amount) private {

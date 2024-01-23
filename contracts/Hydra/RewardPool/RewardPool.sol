@@ -63,7 +63,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         uint256 totalBlocks = validatorSet.totalBlocks(epochId);
         require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
 
-        uint256 totalSupply = validatorSet.totalSupplyAt(epochId);
+        uint256 totalSupply = validatorSet.totalSupplyAt();
         uint256 reward = _calcReward(epoch, totalSupply, epochSize);
 
         uint256 length = uptime.length;
@@ -698,7 +698,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     ) private returns (uint256 reward) {
         require(uptime.signedBlocks <= totalBlocks, "SIGNED_BLOCKS_EXCEEDS_TOTAL");
 
-        uint256 balance = validatorSet.balanceOfAt(uptime.validator, epochId);
+        uint256 balance = validatorSet.balanceOfAt(uptime.validator);
         DelegationPool storage delegationPool = delegationPools[uptime.validator];
         uint256 delegation = delegationPool.supply;
 

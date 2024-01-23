@@ -116,8 +116,7 @@ describe("ValidatorSet", function () {
       this.validatorSetSize = Math.floor(Math.random() * (5 - 1) + 5); // Randomly pick 5-9
       this.validatorStake = hre.ethers.utils.parseEther(String(Math.floor(Math.random() * (10000 - 1000) + 1000)));
 
-      const epochId = await systemValidatorSet.currentEpochId();
-      expect(await systemValidatorSet.totalSupplyAt(epochId)).to.equal(0);
+      expect(await systemValidatorSet.totalSupplyAt()).to.equal(0);
 
       await expect(
         systemValidatorSet.initialize(
@@ -141,9 +140,8 @@ describe("ValidatorSet", function () {
 
     it("should have zero total supply", async function () {
       const { systemValidatorSet } = await loadFixture(this.fixtures.presetValidatorSetStateFixture);
-      const epochId = await systemValidatorSet.currentEpochId();
 
-      expect(await systemValidatorSet.totalSupplyAt(epochId), "totalSupply").to.equal(0);
+      expect(await systemValidatorSet.totalSupplyAt(), "totalSupply").to.equal(0);
     });
 
     it("should initialize successfully", async function () {
@@ -354,6 +352,94 @@ describe("ValidatorSet", function () {
         ).to.not.be.reverted;
 
         expect((await validatorSet.validators(this.signers.validators[1].address)).whitelisted).to.be.false;
+      });
+    });
+
+    describe("Register", function () {
+      it("should be able to register only whitelisted", async function () {
+        const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
+
+        await expect(validatorSet.connect(this.signers.accounts[10]).register([0, 0], [0, 0, 0, 0]))
+          .to.be.revertedWithCustomError(validatorSet, "Unauthorized")
+          .withArgs("WHITELIST");
+      });
+
+      it("should not be able to register with invalid signature", async function () {
+        const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
+
+        const keyPair = mcl.newKeyPair();
+        const signature = mcl.signValidatorMessage(
+          DOMAIN,
+          CHAIN_ID,
+          this.signers.accounts[10].address,
+          keyPair.secret
+        ).signature;
+
+        await expect(
+          validatorSet.connect(this.signers.validators[1]).register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey))
+        )
+          .to.be.revertedWithCustomError(validatorSet, "InvalidSignature")
+          .withArgs(this.signers.validators[1].address);
+      });
+
+      it("should register", async function () {
+        const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
+
+        expect((await validatorSet.validators(this.signers.validators[0].address)).whitelisted, "whitelisted = true").to
+          .be.true;
+
+        const keyPair = mcl.newKeyPair();
+        const signature = mcl.signValidatorMessage(
+          DOMAIN,
+          CHAIN_ID,
+          this.signers.validators[0].address,
+          keyPair.secret
+        ).signature;
+
+        const tx = await validatorSet
+          .connect(this.signers.validators[0])
+          .register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey));
+
+        await expect(tx, "emit NewValidator")
+          .to.emit(validatorSet, "NewValidator")
+          .withArgs(
+            this.signers.validators[0].address,
+            mcl.g2ToHex(keyPair.pubkey).map((x) => hre.ethers.BigNumber.from(x))
+          );
+
+        expect((await validatorSet.validators(this.signers.validators[0].address)).whitelisted, "whitelisted = false")
+          .to.be.false;
+        const validator = await validatorSet.getValidator(this.signers.validators[0].address);
+
+        expect(validator.stake, "stake").to.equal(0);
+        expect(validator.totalStake, "total stake").to.equal(0);
+        expect(validator.commission).to.equal(0);
+        expect(validator.active).to.equal(true);
+        expect(validator.blsKey.map((x) => x.toHexString())).to.deep.equal(mcl.g2ToHex(keyPair.pubkey));
+      });
+
+      it("should revert when attempt to register twice", async function () {
+        // * Only the first two validators are being registered
+        const { validatorSet } = await loadFixture(this.fixtures.registeredValidatorsStateFixture);
+
+        expect((await validatorSet.validators(this.signers.validators[0].address)).active, "active = true").to.be.true;
+
+        const keyPair = mcl.newKeyPair();
+        const signature = mcl.signValidatorMessage(
+          DOMAIN,
+          CHAIN_ID,
+          this.signers.validators[0].address,
+          keyPair.secret
+        ).signature;
+
+        await expect(
+          validatorSet
+            .connect(this.signers.validators[0])
+            .register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey)),
+          "register"
+        )
+          .to.be.revertedWithCustomError(validatorSet, "AlreadyRegistered")
+          .withArgs(this.signers.validators[0].address);
       });
     });
 
