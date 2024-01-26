@@ -25,12 +25,12 @@ contract Faucet is AccessControl {
 
         nextAccessTime[account] = block.timestamp + lockTime;
 
-        sendHYDRA(account, withdrawalAmount);
+        _sendHYDRA(account, withdrawalAmount);
 
         emit Distribution(account, withdrawalAmount);
     }
 
-    function sendHYDRA(address to, uint256 amount) public {
+    function _sendHYDRA(address to, uint256 amount) private {
         (bool sent, ) = payable(to).call{value: amount}("");
         require(sent, "Failed to send Ether");
     }
@@ -55,7 +55,7 @@ contract Faucet is AccessControl {
      * @notice Claim the whole HYDRA balance.
      */
     function claimHYDRA() public onlyRole(DEFAULT_ADMIN_ROLE) {
-        sendHYDRA(msg.sender, address(this).balance);
+        _sendHYDRA(msg.sender, address(this).balance);
     }
 
     /**
