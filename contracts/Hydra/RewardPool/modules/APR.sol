@@ -1,33 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-contract APR {
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract APR is Initializable, AccessControl {
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant EPOCHS_YEAR = 31500;
+    bytes32 public constant MANAGER_ROLE = keccak256("manager_role");
 
+    uint256 public base;
+    uint256 public macroFactor;
+    uint256 public rsi;
     uint256[52] public vestingBonus;
 
-    function initialize() internal {
+    function __APR_init(address manager) internal onlyInitializing {
         initializeVestingBonus();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, manager);
     }
 
-    // TODO: fetch from oracles when they are ready
-    function getBase() public pure returns (uint256 nominator) {
-        return 500;
+    function setBase(uint256 newBase) public onlyRole(MANAGER_ROLE) {
+        base = newBase;
     }
 
     function getVestingBonus(uint256 weeksCount) public view returns (uint256 nominator) {
         return vestingBonus[weeksCount - 1];
     }
 
-    // TODO: fetch from oracles when they are ready
-    function getMacro() public pure returns (uint256 nominator) {
-        return 7500;
+    function setMacro(uint256 newMacroFactor) public onlyRole(MANAGER_ROLE) {
+        macroFactor = newMacroFactor;
     }
 
-    // TODO: fetch from oracles when they are ready
-    function getRSI() public pure returns (uint256 nominator) {
-        return 11000;
+    function setRSI(uint256 newRSI) public onlyRole(MANAGER_ROLE) {
+        require(newRSI <= getMaxRSI(), "TOO_HIGH_RSI");
+
+        rsi = newRSI;
     }
 
     function getDefaultRSI() public pure returns (uint256 nominator) {
@@ -41,11 +50,8 @@ contract APR {
 
     function getMaxAPR() public view returns (uint256 nominator, uint256 denominator) {
         // TODO: Base + vesting and RSI must return the max possible value here (implement max base)
-        uint256 base = getBase();
         uint256 vesting = getVestingBonus(52);
         uint256 rsiBonusFactor = getMaxRSI();
-        // TODO: Macro must return the right value for that epoch
-        uint256 macroFactor = getMacro();
 
         nominator = (base + vesting) * macroFactor * rsiBonusFactor;
         denominator = 10000 * 10000 * 10000;
@@ -53,8 +59,6 @@ contract APR {
 
     function applyMaxReward(uint256 reward) public view returns (uint256) {
         // TODO: Consider setting max base
-        uint256 base = getBase();
-        uint256 rsi = getMaxRSI();
         // max vesting bonus is 52 weeks
         uint256 vestBonus = getVestingBonus(52);
 
@@ -76,9 +80,7 @@ contract APR {
     }
 
     // TODO: Calculate per epoch - currently yearly reward is used
-    function applyMacro(uint256 totalStaked) internal pure returns (uint256 reward) {
-        uint256 macroFactor = getMacro();
-
+    function applyMacro(uint256 totalStaked) internal view returns (uint256 reward) {
         return (totalStaked * macroFactor) / DENOMINATOR;
     }
 
@@ -86,12 +88,11 @@ contract APR {
         return 1e18;
     }
 
-    function _applyCustomReward(uint256 reward) internal pure returns (uint256) {
+    function _applyCustomReward(uint256 reward) internal view returns (uint256) {
         return _applyBaseAPR(reward) / EPOCHS_YEAR;
     }
 
-    function _applyBaseAPR(uint256 amount) private pure returns (uint256) {
-        uint256 base = getBase();
+    function _applyBaseAPR(uint256 amount) private view returns (uint256) {
         return (amount * base) / DENOMINATOR;
     }
 
