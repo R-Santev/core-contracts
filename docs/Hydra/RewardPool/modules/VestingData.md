@@ -10,6 +10,23 @@
 
 ## Methods
 
+### DEFAULT_ADMIN_ROLE
+
+```solidity
+function DEFAULT_ADMIN_ROLE() external view returns (bytes32)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
+
 ### DENOMINATOR
 
 ```solidity
@@ -44,6 +61,23 @@ function EPOCHS_YEAR() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### MANAGER_ROLE
+
+```solidity
+function MANAGER_ROLE() external view returns (bytes32)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
+
 ### applyMaxReward
 
 ```solidity
@@ -59,6 +93,23 @@ function applyMaxReward(uint256 reward) external view returns (uint256)
 | Name | Type | Description |
 |---|---|---|
 | reward | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### base
+
+```solidity
+function base() external view returns (uint256)
+```
+
+
+
+
+
 
 #### Returns
 
@@ -164,23 +215,6 @@ function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uin
 | uptime | Uptime[] | undefined |
 | epochSize | uint256 | undefined |
 
-### getBase
-
-```solidity
-function getBase() external pure returns (uint256 nominator)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
-
 ### getDefaultRSI
 
 ```solidity
@@ -220,23 +254,6 @@ function getEpochMaxReward(uint256 totalStaked) external view returns (uint256 r
 |---|---|---|
 | reward | uint256 | undefined |
 
-### getMacro
-
-```solidity
-function getMacro() external pure returns (uint256 nominator)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
-
 ### getMaxAPR
 
 ```solidity
@@ -272,22 +289,27 @@ function getMaxRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
-### getRSI
+### getRoleAdmin
 
 ```solidity
-function getRSI() external pure returns (uint256 nominator)
+function getRoleAdmin(bytes32 role) external view returns (bytes32)
 ```
 
 
 
+*Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role&#39;s admin, use {_setRoleAdmin}.*
 
+#### Parameters
 
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
 
 #### Returns
 
 | Name | Type | Description |
 |---|---|---|
-| nominator | uint256 | undefined |
+| _0 | bytes32 | undefined |
 
 ### getValRewardsHistoryValues
 
@@ -354,6 +376,46 @@ function getVestingBonus(uint256 weeksCount) external view returns (uint256 nomi
 | Name | Type | Description |
 |---|---|---|
 | nominator | uint256 | undefined |
+
+### grantRole
+
+```solidity
+function grantRole(bytes32 role, address account) external nonpayable
+```
+
+
+
+*Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``&#39;s admin role. May emit a {RoleGranted} event.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+### hasRole
+
+```solidity
+function hasRole(bytes32 role, address account) external view returns (bool)
+```
+
+
+
+*Returns `true` if `account` has been granted `role`.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
 
 ### historyRPS
 
@@ -468,6 +530,23 @@ Returns true if the staker is an active vesting position or not all rewards from
 |---|---|---|
 | _0 | bool | undefined |
 
+### macroFactor
+
+```solidity
+function macroFactor() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### onNewDelegatePosition
 
 ```solidity
@@ -508,7 +587,7 @@ sets the reward params for the new vested position
 ### onStake
 
 ```solidity
-function onStake(address staker, uint256 oldBalance) external nonpayable
+function onStake(address staker, uint256 amount, uint256 oldBalance) external nonpayable
 ```
 
 update the reward params for the vested position
@@ -520,6 +599,7 @@ update the reward params for the vested position
 | Name | Type | Description |
 |---|---|---|
 | staker | address | undefined |
+| amount | uint256 | undefined |
 | oldBalance | uint256 | undefined |
 
 ### onTopUpDelegatePosition
@@ -592,6 +672,127 @@ function positions(address) external view returns (uint256 duration, uint256 sta
 | vestBonus | uint256 | undefined |
 | rsiBonus | uint256 | undefined |
 
+### renounceRole
+
+```solidity
+function renounceRole(bytes32 role, address account) external nonpayable
+```
+
+
+
+*Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function&#39;s purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been revoked `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`. May emit a {RoleRevoked} event.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+### revokeRole
+
+```solidity
+function revokeRole(bytes32 role, address account) external nonpayable
+```
+
+
+
+*Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``&#39;s admin role. May emit a {RoleRevoked} event.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+### rsi
+
+```solidity
+function rsi() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### setBase
+
+```solidity
+function setBase(uint256 newBase) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newBase | uint256 | undefined |
+
+### setMacro
+
+```solidity
+function setMacro(uint256 newMacroFactor) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newMacroFactor | uint256 | undefined |
+
+### setRSI
+
+```solidity
+function setRSI(uint256 newRSI) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newRSI | uint256 | undefined |
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external view returns (bool)
+```
+
+
+
+*See {IERC165-supportsInterface}.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| interfaceId | bytes4 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
 ### valRewardHistory
 
 ```solidity
@@ -659,6 +860,76 @@ event DelegatorRewardDistributed(address indexed validator, uint256 amount)
 |---|---|---|
 | validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
+
+### Initialized
+
+```solidity
+event Initialized(uint8 version)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| version  | uint8 | undefined |
+
+### RoleAdminChanged
+
+```solidity
+event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| previousAdminRole `indexed` | bytes32 | undefined |
+| newAdminRole `indexed` | bytes32 | undefined |
+
+### RoleGranted
+
+```solidity
+event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| account `indexed` | address | undefined |
+| sender `indexed` | address | undefined |
+
+### RoleRevoked
+
+```solidity
+event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| account `indexed` | address | undefined |
+| sender `indexed` | address | undefined |
 
 ### ValidatorRewardClaimed
 
