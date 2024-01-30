@@ -142,6 +142,30 @@ function beforeTopUpParams(address, address) external view returns (uint256 rewa
 | balance | uint256 | undefined |
 | correction | int256 | undefined |
 
+### calculateStakePositionPenalty
+
+```solidity
+function calculateStakePositionPenalty(address staker, uint256 amount) external view returns (uint256 penalty, uint256 reward)
+```
+
+Returns the penalty and reward that will be burned, if vested stake position is active
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| staker | address | The address of the staker |
+| amount | uint256 | The amount that is going to be unstaked |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| penalty | uint256 | for the staker |
+| reward | uint256 | of the staker |
+
 ### claimDelegatorReward
 
 ```solidity

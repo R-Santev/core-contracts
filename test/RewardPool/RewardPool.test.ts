@@ -95,7 +95,7 @@ export function RunStakingClaimTests(): void {
       const nextTimestampMaturing = position.end.add(position.duration);
       await time.setNextBlockTimestamp(nextTimestampMaturing.toNumber());
 
-      // check reward amount
+      // get reward amount
       const reward = await getValidatorReward(stakerValidatorSet, this.staker.address);
 
       // reward must be bigger than 0

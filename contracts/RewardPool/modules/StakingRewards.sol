@@ -106,6 +106,25 @@ abstract contract StakingRewards is IRewardPool, Vesting, RewardsWithdrawal {
         delete valRewards[staker];
     }
 
+    /**
+     * @notice Returns the penalty and reward that will be burned, if vested stake position is active
+     * @param staker The address of the staker
+     * @param amount The amount that is going to be unstaked
+     * @return penalty for the staker
+     * @return reward of the staker
+     */
+    function calculateStakePositionPenalty(
+        address staker,
+        uint256 amount
+    ) external view returns (uint256 penalty, uint256 reward) {
+        VestingPosition memory position = positions[staker];
+        if (position.isActive()) {
+            penalty = _calcSlashing(position, amount);
+            // staker left reward
+            reward = valRewards[staker].total - valRewards[staker].taken;
+        }
+    }
+
     function getValidatorReward(address validator) external view returns (uint256) {
         return valRewards[validator].total - valRewards[validator].taken;
     }
