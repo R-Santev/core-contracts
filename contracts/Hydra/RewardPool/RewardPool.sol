@@ -471,6 +471,47 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         return false;
     }
 
+    /**
+     * @notice Returns the penalty and reward that will be burned, if vested stake position is active
+     * @param staker The address of the staker
+     * @param amount The amount that is going to be unstaked
+     * @return penalty for the staker
+     * @return reward of the staker
+     */
+    function calculateStakePositionPenalty(
+        address staker,
+        uint256 amount
+    ) public view returns (uint256 penalty, uint256 reward) {
+        VestingPosition memory position = positions[staker];
+        if (position.isActive()) {
+            penalty = _calcSlashing(position, amount);
+            // staker left reward
+            reward = valRewards[staker].total - valRewards[staker].taken;
+        }
+    }
+
+    /**
+     * @notice Returns the penalty and reward that will be burned, if vested delegate position is active
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param amount The amount that is going to be undelegated
+     * @return penalty for the delegator
+     * @return reward of the delegator
+     */
+    function calculateDelegatePositionPenalty(
+        address validator,
+        address delegator,
+        uint256 amount
+    ) public view returns (uint256 penalty, uint256 reward) {
+        DelegationPool storage pool = getDelegationPoolOf(validator);
+        VestingPosition memory position = delegationPositions[validator][delegator];
+        if (position.isActive()) {
+            penalty = _calcSlashing(position, amount);
+            // apply the max Vesting bonus, because the full reward must be burned
+            reward = applyMaxReward(pool.claimableRewards(delegator));
+        }
+    }
+
     // _______________ Internal functions _______________
 
     function _addNewDelegationPoolParam(

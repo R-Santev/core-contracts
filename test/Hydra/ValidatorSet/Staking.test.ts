@@ -4,7 +4,7 @@ import { expect } from "chai";
 import * as hre from "hardhat";
 
 import { WEEK, VESTING_DURATION_WEEKS } from "../constants";
-import { calculatePenalty, commitEpochs, registerValidator } from "../helper";
+import { calculatePenalty, commitEpochs, getValidatorReward, registerValidator } from "../helper";
 import { RunStakingClaimTests } from "../RewardPool/RewardPool.test";
 
 export function RunStakingTests(): void {
@@ -203,6 +203,39 @@ export function RunStakingTests(): void {
     });
 
     describe("decrease staking position with unstake()", function () {
+      it("should get staker penalty and rewards that will be burned, if closing from active position", async function () {
+        const { stakerValidatorSet, systemValidatorSet, rewardPool } = await loadFixture(
+          this.fixtures.newVestingValidatorFixture
+        );
+
+        // commit some more epochs to generate additional rewards
+        await commitEpochs(
+          systemValidatorSet,
+          rewardPool,
+          [this.signers.validators[0], this.signers.validators[1], this.staker],
+          5, // number of epochs to commit
+          this.epochSize
+        );
+
+        // get validator's reward amount
+        const validatorReward = await getValidatorReward(stakerValidatorSet, this.staker.address);
+
+        // reward must be bigger than 0
+        expect(validatorReward, "validatorReward").to.be.gt(0);
+
+        // calculate penalty locally
+        const position = await rewardPool.positions(this.staker.address);
+        const latestTimestamp = await time.latest();
+        const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
+
+        // get the penalty and reward from the contract
+        const { penalty, reward } = await rewardPool.calculateStakePositionPenalty(this.staker.address, this.minStake);
+
+        expect(penalty, "penalty").to.be.gt(0);
+        expect(penalty, "penalty = calculatedPenalty").to.be.equal(calculatedPenalty);
+        expect(reward, "reward").to.be.equal(validatorReward);
+      });
+
       it("should decrease staking position and apply slashing penalty", async function () {
         const { stakerValidatorSet, systemValidatorSet, rewardPool } = await loadFixture(
           this.fixtures.newVestingValidatorFixture
@@ -220,7 +253,10 @@ export function RunStakingTests(): void {
 
         const unstakeAmount = this.minStake.div(2);
         const position = await rewardPool.positions(this.staker.address);
-        const penalty = await calculatePenalty(position, unstakeAmount);
+        const latestTimestamp = await time.latest();
+        const nextTimestamp = latestTimestamp + 2;
+        await time.setNextBlockTimestamp(nextTimestamp);
+        const penalty = await calculatePenalty(position, nextTimestamp, unstakeAmount);
         await stakerValidatorSet.unstake(unstakeAmount);
 
         const withdrawalAmount = await stakerValidatorSet.pendingWithdrawals(this.staker.address);

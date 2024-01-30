@@ -1,6 +1,5 @@
 /* eslint-disable camelcase */
 /* eslint-disable node/no-extraneous-import */
-import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
 import * as hre from "hardhat";
 import { BigNumber, ContractTransaction } from "ethers";
@@ -131,12 +130,9 @@ export function findProperRPSIndex<T extends RewardParams>(arr: T[], timestamp: 
   return closestIndex;
 }
 
-export async function calculatePenalty(position: any, amount: BigNumber) {
-  const latestTimestamp = await time.latest();
-  const nextTimestamp = latestTimestamp + 2;
-  await time.setNextBlockTimestamp(nextTimestamp);
+export async function calculatePenalty(position: any, timestamp: number, amount: BigNumber) {
   const duration = position.duration;
-  const leftDuration = position.end.sub(nextTimestamp);
+  const leftDuration = position.end.sub(timestamp);
   const penalty = amount.mul(leftDuration).div(duration);
   return penalty;
 }
