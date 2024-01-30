@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "../interfaces/Errors.sol";
 
 contract Faucet is AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("manager_role");
@@ -19,9 +20,9 @@ contract Faucet is AccessControl {
     }
 
     function requestHYDRA(address account) public onlyRole(MANAGER_ROLE) {
-        require(account != address(0), "must be non-zero addr");
+        if (account == address(0)) revert ZeroAddress();
 
-        require(block.timestamp > nextAccessTime[account], "insufficient cooldown");
+        if (block.timestamp <= nextAccessTime[account]) revert InsufficientCooldown();
 
         nextAccessTime[account] = block.timestamp + lockTime;
 
@@ -32,7 +33,7 @@ contract Faucet is AccessControl {
 
     function _sendHYDRA(address to, uint256 amount) private {
         (bool sent, ) = payable(to).call{value: amount}("");
-        require(sent, "Failed to send Ether");
+        if (!sent) revert SendFailed();
     }
 
     /**
