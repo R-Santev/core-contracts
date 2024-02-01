@@ -157,7 +157,7 @@ sets the reward params for the new vested position
 ### onStake
 
 ```solidity
-function onStake(address staker, uint256 oldBalance) external nonpayable
+function onStake(address staker, uint256 amount, uint256 oldBalance) external nonpayable
 ```
 
 update the reward params for the vested position
@@ -169,6 +169,7 @@ update the reward params for the vested position
 | Name | Type | Description |
 |---|---|---|
 | staker | address | undefined |
+| amount | uint256 | undefined |
 | oldBalance | uint256 | undefined |
 
 ### onTopUpDelegatePosition

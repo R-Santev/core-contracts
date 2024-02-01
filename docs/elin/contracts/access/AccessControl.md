@@ -1,4 +1,4 @@
-# APR
+# AccessControl
 
 
 
@@ -6,7 +6,7 @@
 
 
 
-
+*Contract module that allows children to implement role-based access control mechanisms. This is a lightweight version that doesn&#39;t allow enumerating role members except through off-chain means by accessing the contract event logs. Some applications may benefit from on-chain enumerability, for those cases see {AccessControlEnumerable}. Roles are referred to by their `bytes32` identifier. These should be exposed in the external API and be unique. The best way to achieve this is by using `public constant` hash digests: ``` bytes32 public constant MY_ROLE = keccak256(&quot;MY_ROLE&quot;); ``` Roles can be used to represent a set of permissions. To restrict access to a function call, use {hasRole}: ``` function foo() public {     require(hasRole(MY_ROLE, msg.sender));     ... } ``` Roles can be granted and revoked dynamically via the {grantRole} and {revokeRole} functions. Each role has an associated admin role, and only accounts that have a role&#39;s admin role can call {grantRole} and {revokeRole}. By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means that only accounts with this role will be able to grant or revoke other roles. More complex role relationships can be created by using {_setRoleAdmin}. WARNING: The `DEFAULT_ADMIN_ROLE` is also its own admin: it has permission to grant and revoke this role. Extra precautions should be taken to secure accounts that have been granted it.*
 
 ## Methods
 
@@ -26,170 +26,6 @@ function DEFAULT_ADMIN_ROLE() external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
-
-### DENOMINATOR
-
-```solidity
-function DENOMINATOR() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### EPOCHS_YEAR
-
-```solidity
-function EPOCHS_YEAR() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### MANAGER_ROLE
-
-```solidity
-function MANAGER_ROLE() external view returns (bytes32)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bytes32 | undefined |
-
-### applyMaxReward
-
-```solidity
-function applyMaxReward(uint256 reward) external view returns (uint256)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| reward | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### base
-
-```solidity
-function base() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### getDefaultRSI
-
-```solidity
-function getDefaultRSI() external pure returns (uint256 nominator)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
-
-### getEpochMaxReward
-
-```solidity
-function getEpochMaxReward(uint256 totalStaked) external view returns (uint256 reward)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| totalStaked | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| reward | uint256 | undefined |
-
-### getMaxAPR
-
-```solidity
-function getMaxAPR() external view returns (uint256 nominator, uint256 denominator)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
-| denominator | uint256 | undefined |
-
-### getMaxRSI
-
-```solidity
-function getMaxRSI() external pure returns (uint256 nominator)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
 
 ### getRoleAdmin
 
@@ -212,28 +48,6 @@ function getRoleAdmin(bytes32 role) external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
-
-### getVestingBonus
-
-```solidity
-function getVestingBonus(uint256 weeksCount) external view returns (uint256 nominator)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| weeksCount | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
 
 ### grantRole
 
@@ -275,23 +89,6 @@ function hasRole(bytes32 role, address account) external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
-### macroFactor
-
-```solidity
-function macroFactor() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### renounceRole
 
 ```solidity
@@ -326,71 +123,6 @@ function revokeRole(bytes32 role, address account) external nonpayable
 | role | bytes32 | undefined |
 | account | address | undefined |
 
-### rsi
-
-```solidity
-function rsi() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### setBase
-
-```solidity
-function setBase(uint256 newBase) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| newBase | uint256 | undefined |
-
-### setMacro
-
-```solidity
-function setMacro(uint256 newMacroFactor) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| newMacroFactor | uint256 | undefined |
-
-### setRSI
-
-```solidity
-function setRSI(uint256 newRSI) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| newRSI | uint256 | undefined |
-
 ### supportsInterface
 
 ```solidity
@@ -413,47 +145,9 @@ function supportsInterface(bytes4 interfaceId) external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
-### vestingBonus
-
-```solidity
-function vestingBonus(uint256) external view returns (uint256)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 
 
 ## Events
-
-### Initialized
-
-```solidity
-event Initialized(uint8 version)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| version  | uint8 | undefined |
 
 ### RoleAdminChanged
 

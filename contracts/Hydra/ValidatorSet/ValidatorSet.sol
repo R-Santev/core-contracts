@@ -9,7 +9,6 @@ import "./modules/PowerExponent/PowerExponent.sol";
 import "./modules/Staking/Staking.sol";
 import "./modules/Delegation/Delegation.sol";
 import "./../common/System/System.sol";
-import "./../RewardPool/RewardPool.sol";
 
 import "../../libs/SafeMathInt.sol";
 
