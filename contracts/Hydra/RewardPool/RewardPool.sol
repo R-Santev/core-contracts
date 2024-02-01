@@ -10,7 +10,7 @@ import "./../common/System/System.sol";
 import "./../ValidatorSet/IValidatorSet.sol";
 import "./../ValidatorSet/modules/Delegation/libs/DelegationPoolLib.sol";
 
-contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
+contract RewardPool is IRewardPool, System, APR, VestingData {
     using VestingPositionLib for VestingPosition;
     using DelegationPoolLib for DelegationPool;
 
@@ -22,10 +22,15 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
     mapping(uint256 => uint256) public paidRewardPerEpoch;
     mapping(address => DelegationPool) public delegationPools;
 
-    function initialize(IValidatorSet newValidatorSet, address newRewardWallet) external initializer onlySystemCall {
+    function initialize(
+        IValidatorSet newValidatorSet,
+        address newRewardWallet,
+        address aprManager
+    ) external initializer onlySystemCall {
         require(newRewardWallet != address(0) && address(newValidatorSet) != address(0), "ZERO_ADDRESS");
         validatorSet = newValidatorSet;
         rewardWallet = newRewardWallet;
+        __APR_init(aprManager);
     }
 
     /**
@@ -78,9 +83,9 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
             duration: duration,
             start: block.timestamp,
             end: block.timestamp + duration,
-            base: getBase(),
+            base: base,
             vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
+            rsiBonus: uint248(rsi)
         });
 
         delete valRewards[staker];
@@ -118,9 +123,9 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
             duration: duration,
             start: block.timestamp,
             end: block.timestamp + duration,
-            base: getBase(),
+            base: base,
             vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
+            rsiBonus: uint248(rsi)
         });
 
         // keep the change in the delegation pool params per account
@@ -173,7 +178,6 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
         DelegationPool storage delegation,
         uint256 currentEpochId
     ) internal {
-        VestingPosition memory position = delegationPositions[validator][msg.sender];
         if (!isActiveDelegatePosition(validator, delegator)) {
             revert StakeRequirement({src: "vesting", msg: "POSITION_NOT_ACTIVE"});
         }
@@ -288,7 +292,7 @@ contract RewardPool is IRewardPool, System, APR, VestingData, Initializable {
      * @param activeStake Total active stake for the epoch
      * @param epochSize Number of blocks in the epoch
      */
-    function _calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) private pure returns (uint256) {
+    function _calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) private view returns (uint256) {
         uint256 modifiedEpochReward = applyMacro(activeStake);
         uint256 blocksNum = epoch.endBlock - epoch.startBlock;
         uint256 nominator = modifiedEpochReward * blocksNum * 100;
