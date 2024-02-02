@@ -149,7 +149,7 @@ interface IRewardPool {
     function getValidatorReward(address validator) external view returns (uint256);
 
     /**
-     * @notice Gets delegators's unclaimed rewards without rewards
+     * @notice Gets delegators's unclaimed rewards without custom rewards
      * @param validator Address of validator
      * @param delegator Address of delegator
      * @return Delegator's unclaimed rewards with validator (in MATIC wei)
@@ -157,12 +157,28 @@ interface IRewardPool {
     function getRawDelegatorReward(address validator, address delegator) external view returns (uint256);
 
     /**
-     * @notice Gets delegators's unclaimed rewards including rewards
+     * @notice Gets delegators's unclaimed rewards including custom rewards
      * @param validator Address of validator
      * @param delegator Address of delegator
      * @return Delegator's unclaimed rewards with validator (in MATIC wei)
      */
     function getDelegatorReward(address validator, address delegator) external view returns (uint256);
+
+    /**
+     * @notice Gets delegators's unclaimed rewards including custom rewards for a position
+     * @param validator Address of validator
+     * @param delegator Address of delegator
+     * @param epochNumber Epoch where the last claimable reward is distributed
+     * We need it because not all rewards are matured at the moment of claiming
+     * @param topUpIndex Whether to redelegate the claimed rewards
+     * @return Delegator's unclaimed rewards with validator (in MATIC wei)
+     */
+    function getDelegatorPositionReward(
+        address validator,
+        address delegator,
+        uint256 epochNumber,
+        uint256 topUpIndex
+    ) external view returns (uint256);
 
     /**
      * @notice Claims reward for the vest manager (delegator).

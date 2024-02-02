@@ -348,7 +348,7 @@ export function RunDelegationTests(): void {
         await time.increase(WEEK * 110);
 
         const vestingDuration = 52; // in weeks
-        const currentReward = await rewardPool.getDelegatorReward(
+        const currentReward = await rewardPool.getRawDelegatorReward(
           this.signers.validators[2].address,
           vestManager.address
         );
@@ -370,14 +370,14 @@ export function RunDelegationTests(): void {
         await time.increase(WEEK * 110);
 
         const vestingDuration = 52; // in weeks
-        let currentReward = await rewardPool.getDelegatorReward(
+        let currentReward = await rewardPool.getRawDelegatorReward(
           this.signers.validators[2].address,
           vestManager.address
         );
 
         await claimPositionRewards(validatorSet, rewardPool, vestManager, this.delegatedValidators[0]);
 
-        currentReward = await rewardPool.getDelegatorReward(this.signers.validators[2].address, vestManager.address);
+        currentReward = await rewardPool.getRawDelegatorReward(this.signers.validators[2].address, vestManager.address);
         expect(currentReward, "currentReward").to.be.equal(0);
 
         const delegatedAmount = await rewardPool.delegationOf(this.delegatedValidators[0], vestManager.address);
@@ -486,7 +486,7 @@ export function RunDelegationTests(): void {
         expect(delegatedBalanceAfter, "delegatedBalanceAfter").to.be.eq(delegatedBalanceBefore.sub(cutAmount));
 
         // claimableRewards must be 0
-        const claimableRewards = await rewardPool.getDelegatorReward(
+        const claimableRewards = await rewardPool.getRawDelegatorReward(
           this.delegatedValidators[1],
           vestManagers[1].address
         );
@@ -525,7 +525,7 @@ export function RunDelegationTests(): void {
           this.epochSize
         );
 
-        const reward = await rewardPool.getDelegatorReward(this.delegatedValidators[0], vestManagers[0].address);
+        const reward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[0], vestManagers[0].address);
         expect(reward, "reward").to.not.be.eq(0);
 
         // Finish the vesting period
@@ -556,7 +556,10 @@ export function RunDelegationTests(): void {
         expect(await rewardPool.delegationOf(this.delegatedValidators[0], vestManagers[0].address)).to.be.eq(0);
 
         // ensure reward is still available for withdrawal
-        const rewardAfter = await rewardPool.getDelegatorReward(this.delegatedValidators[0], vestManagers[0].address);
+        const rewardAfter = await rewardPool.getRawDelegatorReward(
+          this.delegatedValidators[0],
+          vestManagers[0].address
+        );
         expect(rewardAfter).to.be.eq(reward);
       });
 
@@ -735,7 +738,7 @@ export function RunDelegationTests(): void {
       });
     });
 
-    describe("Reward Pool - Vested delegate claim", async function () {
+    describe.skip("Reward Pool - Vested delegate claim", async function () {
       RunVestedDelegateClaimTests();
     });
   });

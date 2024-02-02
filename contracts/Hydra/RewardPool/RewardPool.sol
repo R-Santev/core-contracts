@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./IRewardPool.sol";
 import "./modules/APR.sol";
 import "./libs/VestingPositionLib.sol";
@@ -9,7 +8,7 @@ import "./modules/Vesting.sol";
 import "./../common/System/System.sol";
 import "./../ValidatorSet/modules/Delegation/libs/DelegationPoolLib.sol";
 
-contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
+contract RewardPool is IRewardPool, System, Vesting {
     using VestingPositionLib for VestingPosition;
     using DelegationPoolLib for DelegationPool;
 
@@ -76,87 +75,6 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         paidRewardPerEpoch[epochId] = totalReward;
     }
 
-    function claimValidatorReward() external {
-        if (isStakerInVestingCycle(msg.sender)) {
-            return;
-        }
-
-        uint256 reward = _calcValidatorReward(msg.sender);
-        if (reward == 0) {
-            return;
-        }
-
-        _claimValidatorReward(msg.sender, reward);
-        validatorSet.onRewardClaimed(msg.sender, reward);
-
-        emit ValidatorRewardClaimed(msg.sender, reward);
-    }
-
-    /**
-     * @inheritdoc IRewardPool
-     */
-    function onNewPosition(address staker, uint256 durationWeeks) external {
-        uint256 duration = durationWeeks * 1 weeks;
-        positions[staker] = VestingPosition({
-            duration: duration,
-            start: block.timestamp,
-            end: block.timestamp + duration,
-            base: base,
-            vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(rsi)
-        });
-
-        delete valRewards[staker];
-    }
-
-    function onNewDelegatePosition(
-        address validator,
-        address delegator,
-        uint256 durationWeeks,
-        uint256 currentEpochId,
-        uint256 newBalance
-    ) external {
-        VestingPosition memory position = delegationPositions[validator][delegator];
-        if (position.isMaturing()) {
-            revert StakeRequirement({src: "vesting", msg: "POSITION_MATURING"});
-        }
-
-        if (position.isActive()) {
-            revert StakeRequirement({src: "vesting", msg: "POSITION_ACTIVE"});
-        }
-
-        // ensure previous rewards are claimed
-        DelegationPool storage delegation = delegationPools[validator];
-        if (delegation.claimableRewards(msg.sender) > 0) {
-            revert StakeRequirement({src: "vesting", msg: "REWARDS_NOT_CLAIMED"});
-        }
-
-        // If is a position which is not active and not in maturing state,
-        // we can recreate/create the position
-        uint256 duration = durationWeeks * 1 weeks;
-        delete delegationPoolParamsHistory[validator][delegator];
-        delete beforeTopUpParams[validator][delegator];
-        // TODO: calculate end of period instead of write in in the cold storage. It is cheaper
-        delegationPositions[validator][delegator] = VestingPosition({
-            duration: duration,
-            start: block.timestamp,
-            end: block.timestamp + duration,
-            base: base,
-            vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(rsi)
-        });
-
-        // keep the change in the delegation pool params per account
-        _addNewDelegationPoolParam(
-            validator,
-            DelegationPoolParams({
-                balance: newBalance,
-                correction: delegation.correctionOf(msg.sender),
-                epochNum: currentEpochId
-            })
-        );
-    }
-
     function _addNewDelegationPoolParam(address validator, DelegationPoolParams memory params) internal {
         if (isBalanceChangeMade(validator, params.epochNum)) {
             // Top up can be made only once per epoch
@@ -164,20 +82,6 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         }
 
         delegationPoolParamsHistory[validator][msg.sender].push(params);
-    }
-
-    function onTopUpDelegatePosition(
-        address validator,
-        address delegator,
-        uint256 newBalance,
-        uint256 currentEpochId
-    ) external {
-        DelegationPool storage delegation = delegationPools[validator];
-        if (!_isTopUpMade(validator, msg.sender)) {
-            _saveFirstTopUp(validator, delegation, newBalance);
-        }
-
-        _topUpPosition(validator, delegator, delegation, currentEpochId);
     }
 
     function _saveFirstTopUp(address validator, DelegationPool storage delegation, uint256 balance) internal {
@@ -241,10 +145,6 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         delegationPoolParamsHistory[validator][msg.sender].push(
             DelegationPoolParams({balance: balance, correction: correction, epochNum: currentEpochId})
         );
-    }
-
-    function _isTopUpMade(address validator, address manager) internal view returns (bool) {
-        return beforeTopUpParams[validator][manager].balance != 0;
     }
 
     // TODO: Check if the commitEpoch is the last transaction in the epoch, otherwise bug may occur
@@ -321,9 +221,9 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
             duration: duration,
             start: block.timestamp,
             end: block.timestamp + duration,
-            base: getBase(),
+            base: base,
             vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
+            rsiBonus: uint248(rsi)
         });
 
         delete valRewards[staker];
@@ -403,9 +303,9 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
             duration: duration,
             start: block.timestamp,
             end: block.timestamp + duration,
-            base: getBase(),
+            base: base,
             vestBonus: getVestingBonus(durationWeeks),
-            rsiBonus: uint248(getRSI())
+            rsiBonus: uint248(rsi)
         });
 
         // keep the change in the delegation pool params per account
@@ -527,7 +427,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
      */
     function claimPositionReward(address validator, address to, uint256 epochNumber, uint256 topUpIndex) external {
         VestingPosition memory position = delegationPositions[validator][msg.sender];
-        if (noRewardConditions(position)) {
+        if (_noRewardConditions(position)) {
             return;
         }
 
@@ -624,6 +524,55 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
         uint256 reward = delegation.claimableRewards(delegator);
         return _applyCustomReward(reward);
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
+    function getDelegatorPositionReward(
+        address validator,
+        address delegator,
+        uint256 epochNumber,
+        uint256 topUpIndex
+    ) external view returns (uint256) {
+        VestingPosition memory position = delegationPositions[validator][delegator];
+        if (_noRewardConditions(position)) {
+            return 0;
+        }
+
+        uint256 sumReward;
+        DelegationPool storage delegationPool = getDelegationPoolOf(validator);
+        bool rsi = true;
+        if (_isTopUpMade(validator, delegator)) {
+            rsi = false;
+            RewardParams memory params = beforeTopUpParams[validator][delegator];
+            uint256 rsiReward = delegationPool.claimableRewards(
+                delegator,
+                params.rewardPerShare,
+                params.balance,
+                params.correction
+            );
+            sumReward += _applyCustomReward(position, rsiReward, true);
+        }
+
+        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(
+            validator,
+            delegator,
+            epochNumber,
+            topUpIndex
+        );
+        uint256 reward = delegationPool.claimableRewards(delegator, epochRPS, balance, correction) - sumReward;
+        reward = _applyCustomReward(position, reward, rsi);
+        sumReward += reward;
+
+        // If the full maturing period is finished, withdraw also the reward made after the vesting period
+        if (block.timestamp > position.end + position.duration) {
+            uint256 additionalReward = delegationPool.claimableRewards(delegator) - sumReward;
+            additionalReward = _applyCustomReward(additionalReward);
+            sumReward += additionalReward;
+        }
+
+        return sumReward;
     }
 
     // _______________ Public functions _______________
@@ -948,7 +897,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     }
 
     // Private View functions
-    function noRewardConditions(VestingPosition memory position) private view returns (bool) {
+    function _noRewardConditions(VestingPosition memory position) private view returns (bool) {
         // If still unused position, there is no reward
         if (position.start == 0) {
             return true;
@@ -972,7 +921,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
      * @param activeStake Total active stake for the epoch
      * @param epochSize Number of blocks in the epoch
      */
-    function _calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) private pure returns (uint256) {
+    function _calcReward(Epoch calldata epoch, uint256 activeStake, uint256 epochSize) private view returns (uint256) {
         uint256 modifiedEpochReward = applyMacro(activeStake);
         uint256 blocksNum = epoch.endBlock - epoch.startBlock;
         uint256 nominator = modifiedEpochReward * blocksNum * 100;

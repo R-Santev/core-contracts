@@ -65,9 +65,16 @@ async function initializedValidatorSetStateFixtureFunction(this: Mocha.Context) 
     this.fixtures.presetValidatorSetStateFixture
   );
 
-  await rewardPool
-    .connect(this.signers.system)
-    .initialize(validatorSet.address, this.signers.rewardWallet.address, this.minDelegation);
+  const systemRewardPool = await rewardPool.connect(this.signers.system);
+  await systemRewardPool.initialize(
+    validatorSet.address,
+    this.signers.rewardWallet.address,
+    this.minDelegation,
+    this.signers.system.address
+  );
+  await systemRewardPool.setBase(500);
+  await systemRewardPool.setMacro(7500);
+  await systemRewardPool.setRSI(11000);
   await liquidToken.initialize("Liquidity Token", "LQT", this.signers.governance.address, systemValidatorSet.address);
   await systemValidatorSet.initialize(
     {

@@ -10,7 +10,7 @@ import { ValidatorSet } from "../../typechain-types/contracts/Hydra/ValidatorSet
 import { RewardPool } from "../../typechain-types/contracts/Hydra/RewardPool";
 import { VestManager } from "../../typechain-types/contracts/Hydra/ValidatorSet/modules/Delegation";
 import { VestManager__factory } from "../../typechain-types/factories/contracts/Hydra/ValidatorSet/modules/Delegation";
-import { CHAIN_ID, DOMAIN } from "./constants";
+import { CHAIN_ID, DOMAIN, EPOCHS_YEAR } from "./constants";
 
 interface RewardParams {
   timestamp: BigNumber;
@@ -201,9 +201,9 @@ export async function retrieveRPSData(
 
 export async function calculateExpectedBaseReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
   // calculate base reward
-  const base = await rewardPool.getBase();
+  const base = await rewardPool.base();
   const vestBonus = await rewardPool.getVestingBonus(1);
-  const rsi = await rewardPool.getRSI();
+  const rsi = await rewardPool.rsi();
   const expectedReward = base
     .add(vestBonus)
     .mul(rsi)
@@ -216,7 +216,7 @@ export async function calculateExpectedBaseReward(rewardPool: RewardPool, reward
 
 export async function calculateExpectedMaxBaseReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
   // calculate max reward
-  const base = await rewardPool.getBase();
+  const base = await rewardPool.base();
   const maxVestBonus = await rewardPool.getVestingBonus(52);
   const maxRSI = await rewardPool.getMaxRSI();
   const maxReward = base
@@ -227,4 +227,51 @@ export async function calculateExpectedMaxBaseReward(rewardPool: RewardPool, rew
     .div(epochsInYear);
 
   return maxReward;
+}
+
+export async function calculateExpectedReward(
+  base: BigNumber,
+  vestBonus: BigNumber,
+  rsi: BigNumber,
+  reward: BigNumber
+) {
+  // calculate expected reward based on the given apr factors
+  return base
+    .add(vestBonus)
+    .mul(rsi)
+    .mul(reward)
+    .div(10000 * 10000)
+    .div(EPOCHS_YEAR);
+}
+
+export async function applyMaxReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
+  const base = await rewardPool.base();
+  const rsi = await rewardPool.rsi();
+  const vestBonus = await rewardPool.getVestingBonus(52);
+
+  // calculate expected reward
+  return base
+    .add(vestBonus)
+    .mul(rsi)
+    .mul(reward)
+    .div(10000 * 10000)
+    .div(epochsInYear);
+}
+
+export async function applyCustomReward(
+  rewardPool: RewardPool,
+  validator: string,
+  delegator: string,
+  reward: BigNumber,
+  rsi: boolean
+) {
+  const position = await rewardPool.delegationPositions(validator, delegator);
+  const bonus = position.base.add(position.vestBonus);
+  let divider = 10000;
+  if (rsi) {
+    bonus.add(bonus.mul(position.rsiBonus));
+    divider *= 10000;
+  }
+
+  return reward.mul(bonus).div(divider).div(EPOCHS_YEAR);
 }

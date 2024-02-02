@@ -196,23 +196,6 @@ The vesting positions for every delegator.
 | vestBonus | uint256 | undefined |
 | rsiBonus | uint256 | undefined |
 
-### getBase
-
-```solidity
-function getBase() external pure returns (uint256 nominator)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| nominator | uint256 | undefined |
-
 ### getDefaultRSI
 
 ```solidity
@@ -310,7 +293,7 @@ function getRPSValues(address validator, uint256 currentEpochId) external view r
 |---|---|---|
 | _0 | RPS[] | undefined |
 
-### getRSI
+### getRoleAdmin
 
 ```solidity
 function getRoleAdmin(bytes32 role) external view returns (bytes32)
@@ -552,6 +535,23 @@ function isStakerInVestingCycle(address staker) external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
+### macroFactor
+
+```solidity
+function macroFactor() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### positions
 
 ```solidity
@@ -747,6 +747,79 @@ function vestingBonus(uint256) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+
+
+## Events
+
+### Initialized
+
+```solidity
+event Initialized(uint8 version)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| version  | uint8 | undefined |
+
+### RoleAdminChanged
+
+```solidity
+event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| previousAdminRole `indexed` | bytes32 | undefined |
+| newAdminRole `indexed` | bytes32 | undefined |
+
+### RoleGranted
+
+```solidity
+event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| account `indexed` | address | undefined |
+| sender `indexed` | address | undefined |
+
+### RoleRevoked
+
+```solidity
+event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| account `indexed` | address | undefined |
+| sender `indexed` | address | undefined |
 
 
 

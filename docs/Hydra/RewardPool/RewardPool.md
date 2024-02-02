@@ -473,13 +473,38 @@ returns the supply of the delegation pool of the requested validator
 |---|---|---|
 | _0 | uint256 | supply of the delegation pool |
 
+### getDelegatorPositionReward
+
+```solidity
+function getDelegatorPositionReward(address validator, address delegator, uint256 epochNumber, uint256 topUpIndex) external view returns (uint256)
+```
+
+Gets delegators&#39;s unclaimed rewards including custom rewards for a position
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Address of validator |
+| delegator | address | Address of delegator |
+| epochNumber | uint256 | Epoch where the last claimable reward is distributed We need it because not all rewards are matured at the moment of claiming |
+| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
+
 ### getDelegatorReward
 
 ```solidity
 function getDelegatorReward(address validator, address delegator) external view returns (uint256)
 ```
 
-Gets delegators&#39;s unclaimed rewards including rewards
+Gets delegators&#39;s unclaimed rewards including custom rewards
 
 
 
@@ -576,7 +601,30 @@ function getRPSValues(address validator, uint256 currentEpochId) external view r
 |---|---|---|
 | _0 | RPS[] | undefined |
 
-### getRSI
+### getRawDelegatorReward
+
+```solidity
+function getRawDelegatorReward(address validator, address delegator) external view returns (uint256)
+```
+
+Gets delegators&#39;s unclaimed rewards without custom rewards
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Address of validator |
+| delegator | address | Address of delegator |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
+
+### getRoleAdmin
 
 ```solidity
 function getRoleAdmin(bytes32 role) external view returns (bytes32)
@@ -597,29 +645,6 @@ function getRoleAdmin(bytes32 role) external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
-
-### getRawDelegatorReward
-
-```solidity
-function getRawDelegatorReward(address validator, address delegator) external view returns (uint256)
-```
-
-Gets delegators&#39;s unclaimed rewards without rewards
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Address of validator |
-| delegator | address | Address of delegator |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
 
 ### getValRewardsHistoryValues
 
@@ -767,8 +792,8 @@ function initialize(contract IValidatorSet newValidatorSet, address newRewardWal
 |---|---|---|
 | newValidatorSet | contract IValidatorSet | undefined |
 | newRewardWallet | address | undefined |
-| aprManager | address | undefined |
 | newMinDelegation | uint256 | undefined |
+| aprManager | address | undefined |
 
 ### isActiveDelegatePosition
 
@@ -831,6 +856,29 @@ Checks if balance change was already made in the current epoch
 |---|---|---|
 | validator | address | Validator to delegate to |
 | delegator | address | undefined |
+| currentEpochNum | uint256 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
+### isBalanceChangeMade
+
+```solidity
+function isBalanceChangeMade(address validator, uint256 currentEpochNum) external view returns (bool)
+```
+
+Checks if balance change was already made in the current epoch
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to delegate to |
 | currentEpochNum | uint256 | undefined |
 
 #### Returns
@@ -905,6 +953,23 @@ function isStakerInVestingCycle(address staker) external view returns (bool)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bool | undefined |
+
+### macroFactor
+
+```solidity
+function macroFactor() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 ### minDelegation
 
@@ -1199,6 +1264,93 @@ Reward Wallet
 |---|---|---|
 | _0 | address | undefined |
 
+### rsi
+
+```solidity
+function rsi() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### setBase
+
+```solidity
+function setBase(uint256 newBase) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newBase | uint256 | undefined |
+
+### setMacro
+
+```solidity
+function setMacro(uint256 newMacroFactor) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newMacroFactor | uint256 | undefined |
+
+### setRSI
+
+```solidity
+function setRSI(uint256 newRSI) external nonpayable
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| newRSI | uint256 | undefined |
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external view returns (bool)
+```
+
+
+
+*See {IERC165-supportsInterface}.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| interfaceId | bytes4 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
 ### totalDelegationOf
 
 ```solidity
@@ -1363,14 +1515,28 @@ event Initialized(uint8 version)
 |---|---|---|
 | version  | uint8 | undefined |
 
-### RoleAdminChanged
-
-```solidity
-event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
 ### PositionRewardClaimed
 
 ```solidity
 event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| manager `indexed` | address | undefined |
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### RoleAdminChanged
+
+```solidity
+event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
 ```
 
 
@@ -1420,9 +1586,6 @@ event RoleRevoked(bytes32 indexed role, address indexed account, address indexed
 | role `indexed` | bytes32 | undefined |
 | account `indexed` | address | undefined |
 | sender `indexed` | address | undefined |
-| manager `indexed` | address | undefined |
-| validator `indexed` | address | undefined |
-| amount  | uint256 | undefined |
 
 ### ValidatorRewardClaimed
 

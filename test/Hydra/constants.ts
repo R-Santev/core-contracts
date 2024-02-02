@@ -11,3 +11,4 @@ export const CHAIN_ID = 31337;
 export const MAX_COMMISSION = ethers.BigNumber.from(100);
 export const WEEK = 60 * 60 * 24 * 7;
 export const VESTING_DURATION_WEEKS = 10; // in weeks
+export const EPOCHS_YEAR = 31500;

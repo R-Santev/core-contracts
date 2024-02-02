@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "./APR.sol";
-import "./../IRewardPool.sol";
 import "./../../common/CommonStructs.sol";
 import "./../libs/VestingPositionLib.sol";
 

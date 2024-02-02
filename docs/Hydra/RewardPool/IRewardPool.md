@@ -116,13 +116,38 @@ returns the supply of the delegation pool of the requested validator
 |---|---|---|
 | _0 | uint256 | supply of the delegation pool |
 
+### getDelegatorPositionReward
+
+```solidity
+function getDelegatorPositionReward(address validator, address delegator, uint256 epochNumber, uint256 topUpIndex) external view returns (uint256)
+```
+
+Gets delegators&#39;s unclaimed rewards including custom rewards for a position
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Address of validator |
+| delegator | address | Address of delegator |
+| epochNumber | uint256 | Epoch where the last claimable reward is distributed We need it because not all rewards are matured at the moment of claiming |
+| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | Delegator&#39;s unclaimed rewards with validator (in MATIC wei) |
+
 ### getDelegatorReward
 
 ```solidity
 function getDelegatorReward(address validator, address delegator) external view returns (uint256)
 ```
 
-Gets delegators&#39;s unclaimed rewards including rewards
+Gets delegators&#39;s unclaimed rewards including custom rewards
 
 
 
@@ -145,7 +170,7 @@ Gets delegators&#39;s unclaimed rewards including rewards
 function getRawDelegatorReward(address validator, address delegator) external view returns (uint256)
 ```
 
-Gets delegators&#39;s unclaimed rewards without rewards
+Gets delegators&#39;s unclaimed rewards without custom rewards
 
 
 

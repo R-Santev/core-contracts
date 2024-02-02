@@ -147,9 +147,9 @@ export function RunStakingTests(): void {
         const start = await time.latest();
         expect(vestingData.start, "start").to.be.equal(start);
         expect(vestingData.end, "end").to.be.equal(start + vestingDuration);
-        expect(vestingData.base, "base").to.be.equal(await rewardPool.getBase());
+        expect(vestingData.base, "base").to.be.equal(await rewardPool.base());
         expect(vestingData.vestBonus, "vestBonus").to.be.equal(await rewardPool.getVestingBonus(10));
-        expect(vestingData.rsiBonus, "rsiBonus").to.be.equal(await rewardPool.getRSI());
+        expect(vestingData.rsiBonus, "rsiBonus").to.be.equal(await rewardPool.rsi());
 
         await commitEpochs(
           systemValidatorSet,
