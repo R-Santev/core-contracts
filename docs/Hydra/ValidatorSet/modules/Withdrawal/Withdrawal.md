@@ -44,10 +44,10 @@ function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### balanceOfAt
+### balanceOf
 
 ```solidity
-function balanceOfAt(address account) external view returns (uint256)
+function balanceOf(address account) external view returns (uint256)
 ```
 
 Returns the total balance of a given validator

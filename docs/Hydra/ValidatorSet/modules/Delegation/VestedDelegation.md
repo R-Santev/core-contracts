@@ -74,13 +74,18 @@ Claims that a delegator is a vest manager or not.
 ### newManager
 
 ```solidity
-function newManager() external nonpayable
+function newManager(address rewardPool) external nonpayable
 ```
 
 Creates new vesting manager which owner is the caller. Every new instance is proxy leading to base impl, so minimal fees are applied. Only Vesting manager can use the vesting functionality, so users need to create a manager first to be able to vest.
 
 
 
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| rewardPool | address | undefined |
 
 ### userVestManagers
 
@@ -199,24 +204,6 @@ event PositionOpened(address indexed manager, address indexed validator, uint256
 | manager `indexed` | address | undefined |
 | validator `indexed` | address | undefined |
 | weeksDuration `indexed` | uint256 | undefined |
-| amount  | uint256 | undefined |
-
-### PositionRewardClaimed
-
-```solidity
-event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| manager `indexed` | address | undefined |
-| validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
 ### PositionTopUp

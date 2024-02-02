@@ -7,7 +7,6 @@ import "./modules/APR.sol";
 import "./libs/VestingPositionLib.sol";
 import "./modules/Vesting.sol";
 import "./../common/System/System.sol";
-import "./../ValidatorSet/IValidatorSet.sol";
 import "./../ValidatorSet/modules/Delegation/libs/DelegationPoolLib.sol";
 
 contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
@@ -60,7 +59,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         Epoch calldata epoch,
         Uptime[] calldata uptime,
         uint256 epochSize
-    ) external onlySystemCall {
+    ) external payable onlySystemCall {
         require(paidRewardPerEpoch[epochId] == 0, "REWARD_ALREADY_DISTRIBUTED");
         uint256 totalBlocks = validatorSet.totalBlocks(epochId);
         require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
@@ -330,23 +329,23 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         delete valRewards[staker];
     }
 
-    function onDelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward) {
+    function onDelegate(address validator, address delegator, uint256 amount) external {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
 
         uint256 delegatedAmount = delegation.balanceOf(delegator);
         if (delegatedAmount + amount < minDelegation)
             revert DelegateRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
 
-        reward = this.claimDelegatorReward(validator, delegator);
+        uint256 reward = this.claimDelegatorReward(validator, delegator);
         delegation.deposit(delegator, amount);
 
-        return reward;
+        _withdraw(delegator, reward);
     }
 
     /**
      * @inheritdoc IRewardPool
      */
-    function onUndelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward) {
+    function onUndelegate(address validator, address delegator, uint256 amount) external {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
 
         uint256 delegatedAmount = delegation.balanceOf(delegator);
@@ -357,8 +356,10 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
             revert DelegateRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
 
         delegation.withdraw(delegator, amount);
-        reward = delegation.claimRewards(delegator);
+        uint256 reward = delegation.claimRewards(delegator);
         reward = _applyCustomReward(reward);
+
+        _withdraw(delegator, reward);
     }
 
     /**
@@ -480,6 +481,10 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
                 _onAccountParamsChange(validator, delegator, balance, correction, currentEpochId);
             }
         }
+
+        if (fullReward != 0) {
+            _burnAmount(fullReward);
+        }
     }
 
     function claimValidatorReward() external {
@@ -520,26 +525,21 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     /**
      * @inheritdoc IRewardPool
      */
-    function onClaimPositionReward(
-        address validator,
-        address delegator,
-        uint256 epochNumber,
-        uint256 topUpIndex
-    ) external returns (uint256 sumReward, uint256 remainder) {
-        VestingPosition memory position = delegationPositions[validator][delegator];
+    function claimPositionReward(address validator, address to, uint256 epochNumber, uint256 topUpIndex) external {
+        VestingPosition memory position = delegationPositions[validator][msg.sender];
         if (noRewardConditions(position)) {
-            return (0, 0);
+            return;
         }
 
-        // uint256 sumReward;
+        uint256 sumReward;
         uint256 sumMaxReward;
         DelegationPool storage delegationPool = getDelegationPoolOf(validator);
         bool rsi = true;
-        if (_isTopUpMade(validator, delegator)) {
+        if (_isTopUpMade(validator, msg.sender)) {
             rsi = false;
-            RewardParams memory params = beforeTopUpParams[validator][delegator];
+            RewardParams memory params = beforeTopUpParams[validator][msg.sender];
             uint256 rsiReward = delegationPool.claimRewards(
-                delegator,
+                msg.sender,
                 params.rewardPerShare,
                 params.balance,
                 params.correction
@@ -552,11 +552,11 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         // distribute the proper vesting reward
         (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(
             validator,
-            delegator,
+            msg.sender,
             epochNumber,
             topUpIndex
         );
-        uint256 reward = delegationPool.claimRewards(delegator, epochRPS, balance, correction);
+        uint256 reward = delegationPool.claimRewards(msg.sender, epochRPS, balance, correction);
         uint256 maxReward = applyMaxReward(reward);
         reward = _applyCustomReward(position, reward, rsi);
         sumReward += reward;
@@ -564,20 +564,23 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
 
         // If the full maturing period is finished, withdraw also the reward made after the vesting period
         if (block.timestamp > position.end + position.duration) {
-            uint256 additionalReward = delegationPool.claimRewards(delegator);
+            uint256 additionalReward = delegationPool.claimRewards(msg.sender);
             uint256 maxAdditionalReward = applyMaxReward(additionalReward);
             additionalReward = _applyCustomReward(additionalReward);
             sumReward += additionalReward;
             sumMaxReward += maxAdditionalReward;
         }
 
-        // uint256 remainder = sumMaxReward - sumReward;
-        // if (remainder > 0) {
-        //     _burnAmount(remainder);
-        // }
-        remainder = sumMaxReward - sumReward;
+        uint256 remainder = sumMaxReward - sumReward;
+        if (remainder > 0) {
+            _burnAmount(remainder);
+        }
 
-        // return (sumReward, remainder);
+        if (sumReward == 0) return;
+
+        _withdraw(to, sumReward);
+
+        emit PositionRewardClaimed(msg.sender, validator, sumReward);
     }
 
     /**
@@ -748,11 +751,6 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         );
     }
 
-    function _distributeDelegatorReward(address validator, uint256 reward) internal {
-        delegationPools[validator].distributeReward(reward);
-        emit DelegatorRewardDistributed(validator, reward);
-    }
-
     function _saveValRewardData(address validator, uint256 epoch) internal {
         ValRewardHistory memory rewardData = ValRewardHistory({
             totalReward: valRewards[validator].total,
@@ -890,7 +888,7 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
     ) private returns (uint256 reward) {
         require(uptime.signedBlocks <= totalBlocks, "SIGNED_BLOCKS_EXCEEDS_TOTAL");
 
-        uint256 balance = validatorSet.balanceOfAt(uptime.validator);
+        uint256 balance = validatorSet.balanceOf(uptime.validator);
         DelegationPool storage delegationPool = delegationPools[uptime.validator];
         uint256 delegation = delegationPool.supply;
 
@@ -930,6 +928,23 @@ contract RewardPool is IRewardPool, System, APR, Vesting, Initializable {
         valRewards[validator].total += reward;
 
         emit ValidatorRewardDistributed(validator, reward);
+    }
+
+    function _distributeDelegatorReward(address validator, uint256 reward) private {
+        delegationPools[validator].distributeReward(reward);
+        emit DelegatorRewardDistributed(validator, reward);
+    }
+
+    function _withdraw(address to, uint256 amount) private {
+        (bool success, ) = to.call{value: amount}("");
+        require(success, "WITHDRAWAL_FAILED");
+
+        emit WithdrawalFinished(address(this), to, amount);
+    }
+
+    function _burnAmount(uint256 amount) private {
+        (bool success, ) = address(0).call{value: amount}("");
+        require(success, "Failed to burn amount");
     }
 
     // Private View functions

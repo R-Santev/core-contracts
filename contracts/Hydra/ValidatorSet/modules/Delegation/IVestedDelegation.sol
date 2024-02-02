@@ -10,7 +10,6 @@ interface IVestedDelegation {
     );
     event PositionTopUp(address indexed manager, address indexed validator, uint256 amount);
     event PositionCut(address indexed manager, address indexed validator, uint256 amount);
-    event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount);
 
     /// @notice Gets the vesting managers per user address for fast off-chain lookup.
     function getUserVestManagers(address user) external view returns (address[] memory);
@@ -21,5 +20,5 @@ interface IVestedDelegation {
      * Only Vesting manager can use the vesting functionality,
      * so users need to create a manager first to be able to vest.
      */
-    function newManager() external;
+    function newManager(address rewardPool) external;
 }

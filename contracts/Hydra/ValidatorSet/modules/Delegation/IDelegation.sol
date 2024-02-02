@@ -6,13 +6,13 @@ interface IDelegation {
     event Undelegated(address indexed validator, address indexed delegator, uint256 amount);
 
     /**
-     * @notice Delegates sent amount to validator. Claims rewards beforehand.
+     * @notice Delegates sent amount to validator and claims rewards.
      * @param validator Validator to delegate to
      */
-    function delegateToValidator(address validator) external payable;
+    function delegate(address validator) external payable;
 
     /**
-     * @notice Undelegates amount from validator for sender. Claims rewards beforehand.
+     * @notice Undelegates amount from validator for sender and claims rewards.
      * @param validator Validator to undelegate from
      * @param amount The amount to undelegate
      */
@@ -40,13 +40,4 @@ interface IDelegation {
      * @param amount Amount to be undelegated
      */
     function cutDelegatePosition(address validator, uint256 amount) external;
-
-    /**
-     * @notice Claims delegator rewards for sender.
-     * @param validator Validator to claim from
-     * @param epochNumber Epoch where the last claimable reward is distributed.
-     * We need it because not all rewards are matured at the moment of claiming.
-     * @param topUpIndex Whether to redelegate the claimed rewards
-     */
-    function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external;
 }

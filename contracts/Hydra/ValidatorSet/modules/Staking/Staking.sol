@@ -93,7 +93,7 @@ abstract contract Staking is
     /**
      * @inheritdoc IValidatorSet
      */
-    function balanceOfAt(address account) external view returns (uint256) {
+    function balanceOf(address account) public view virtual override(BalanceState, IValidatorSet) returns (uint256) {
         return super.balanceOf(account);
     }
 

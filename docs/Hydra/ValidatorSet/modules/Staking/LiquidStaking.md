@@ -27,10 +27,10 @@ function DOMAIN() external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### balanceOfAt
+### balanceOf
 
 ```solidity
-function balanceOfAt(address account) external view returns (uint256)
+function balanceOf(address account) external view returns (uint256)
 ```
 
 Returns the total balance of a given validator

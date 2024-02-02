@@ -54,10 +54,10 @@ Adds addresses that are allowed to register as validators.
 |---|---|---|
 | whitelistAddreses | address[] | Array of address to whitelist |
 
-### balanceOfAt
+### balanceOf
 
 ```solidity
-function balanceOfAt(address account) external view returns (uint256)
+function balanceOf(address account) external view returns (uint256)
 ```
 
 Returns the total balance of a given validator

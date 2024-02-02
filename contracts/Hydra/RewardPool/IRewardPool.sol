@@ -14,6 +14,8 @@ interface IRewardPool {
     event ValidatorRewardDistributed(address indexed validator, uint256 amount);
     event DelegatorRewardClaimed(address indexed validator, address indexed delegator, uint256 amount);
     event DelegatorRewardDistributed(address indexed validator, uint256 amount);
+    event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount);
+    event WithdrawalFinished(address indexed account, address indexed to, uint256 amount);
 
     /**
      * @notice Distributes rewards for the given epoch
@@ -28,7 +30,7 @@ interface IRewardPool {
         Epoch calldata epoch,
         Uptime[] calldata uptime,
         uint256 epochSize
-    ) external;
+    ) external payable;
 
     /**
      * @notice Update the reward params for the vested position
@@ -58,9 +60,8 @@ interface IRewardPool {
      * @param validator The address of the validator
      * @param delegator The address of the delegator
      * @param amount Amount to delegate
-     * @return reward Calculates delegator's unclaimed rewards with validator
      */
-    function onDelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward);
+    function onDelegate(address validator, address delegator, uint256 amount) external;
 
     /**
      * @notice Undelegates from the delegation pools and claims rewards
@@ -68,9 +69,8 @@ interface IRewardPool {
      * @param validator The address of the validator
      * @param delegator The address of the delegator
      * @param amount Amount to delegate
-     * @return reward Calculates delegator's unclaimed rewards with validator
      */
-    function onUndelegate(address validator, address delegator, uint256 amount) external returns (uint256 reward);
+    function onUndelegate(address validator, address delegator, uint256 amount) external;
 
     /**
      * @notice Creates a pool
@@ -165,25 +165,14 @@ interface IRewardPool {
     function getDelegatorReward(address validator, address delegator) external view returns (uint256);
 
     /**
-     * @notice Claims delegator rewards for sender.
+     * @notice Claims reward for the vest manager (delegator).
      * @param validator Validator to claim from
-     * @param delegator Delegator to claim for
-     * @param epochNumber Epoch where the last claimable reward is distributed.
-     * We need it because not all rewards are matured at the moment of claiming.
+     * @param to Address to transfer the reward to
+     * @param epochNumber Epoch where the last claimable reward is distributed
+     * We need it because not all rewards are matured at the moment of claiming
      * @param topUpIndex Whether to redelegate the claimed rewards
      */
-    // function onClaimPositionReward(
-    //     address validator,
-    //     address delegator,
-    //     uint256 epochNumber,
-    //     uint256 topUpIndex
-    // ) external returns (uint256);
-    function onClaimPositionReward(
-        address validator,
-        address delegator,
-        uint256 epochNumber,
-        uint256 topUpIndex
-    ) external returns (uint256 sumReward, uint256 remainder);
+    function claimPositionReward(address validator, address to, uint256 epochNumber, uint256 topUpIndex) external;
 
     /**
      * @notice returns the supply of the delegation pool of the requested validator

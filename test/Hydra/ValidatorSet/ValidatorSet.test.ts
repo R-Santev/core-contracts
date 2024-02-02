@@ -7,7 +7,7 @@ import * as mcl from "../../../ts/mcl";
 import { Fixtures, Signers } from "../mochaContext";
 import { CHAIN_ID, DOMAIN, MAX_COMMISSION, SYSTEM } from "../constants";
 import { generateFixtures } from "../fixtures";
-import { getMaxEpochReward, initValidators } from "../helper";
+import { initValidators } from "../helper";
 import { RunSystemTests } from "./System.test";
 import { RunStakingTests } from "./Staking.test";
 import { RunDelegationTests } from "./Delegation.test";
@@ -207,8 +207,7 @@ describe("ValidatorSet", function () {
     it("should revert on commit epoch without system call", async function () {
       const { validatorSet } = await loadFixture(this.fixtures.initializedValidatorSetStateFixture);
 
-      const maxReward = await getMaxEpochReward(validatorSet, this.epochId);
-      await expect(validatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize, { value: maxReward }))
+      await expect(validatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize))
         .to.be.revertedWithCustomError(validatorSet, "Unauthorized")
         .withArgs("SYSTEMCALL");
     });
@@ -217,11 +216,9 @@ describe("ValidatorSet", function () {
       const { systemValidatorSet } = await loadFixture(this.fixtures.initializedValidatorSetStateFixture);
       const unexpectedEpochId = hre.ethers.utils.parseEther("1");
 
-      const maxReward = await getMaxEpochReward(systemValidatorSet, this.epochId);
-
-      await expect(
-        systemValidatorSet.commitEpoch(unexpectedEpochId, this.epoch, this.epochSize, { value: maxReward })
-      ).to.be.revertedWith("UNEXPECTED_EPOCH_ID");
+      await expect(systemValidatorSet.commitEpoch(unexpectedEpochId, this.epoch, this.epochSize)).to.be.revertedWith(
+        "UNEXPECTED_EPOCH_ID"
+      );
     });
 
     it("should revert with no blocks committed", async function () {
@@ -229,10 +226,10 @@ describe("ValidatorSet", function () {
 
       this.epoch.startBlock = hre.ethers.BigNumber.from(0);
       this.epoch.endBlock = hre.ethers.BigNumber.from(0);
-      const maxReward = await getMaxEpochReward(systemValidatorSet, this.epochId);
-      await expect(
-        systemValidatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize, { value: maxReward })
-      ).to.be.revertedWith("NO_BLOCKS_COMMITTED");
+
+      await expect(systemValidatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize)).to.be.revertedWith(
+        "NO_BLOCKS_COMMITTED"
+      );
     });
 
     it("should revert that epoch is not divisible by epochSize", async function () {
@@ -242,10 +239,9 @@ describe("ValidatorSet", function () {
       this.epoch.startBlock = hre.ethers.BigNumber.from(1);
       this.epoch.endBlock = hre.ethers.BigNumber.from(63);
 
-      const maxReward = await getMaxEpochReward(systemValidatorSet, this.epochId);
-      await expect(
-        systemValidatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize, { value: maxReward })
-      ).to.be.revertedWith("EPOCH_MUST_BE_DIVISIBLE_BY_EPOCH_SIZE");
+      await expect(systemValidatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize)).to.be.revertedWith(
+        "EPOCH_MUST_BE_DIVISIBLE_BY_EPOCH_SIZE"
+      );
     });
 
     it("should revert with invalid start block", async function () {
@@ -256,10 +252,9 @@ describe("ValidatorSet", function () {
       this.epoch.endBlock = hre.ethers.BigNumber.from(64);
       this.epochSize = hre.ethers.BigNumber.from(62);
 
-      const maxReward = await getMaxEpochReward(systemValidatorSet, this.epochId);
-      await expect(
-        systemValidatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize, { value: maxReward })
-      ).to.be.revertedWith("INVALID_START_BLOCK");
+      await expect(systemValidatorSet.commitEpoch(this.epochId, this.epoch, this.epochSize)).to.be.revertedWith(
+        "INVALID_START_BLOCK"
+      );
     });
 
     it("should commit epoch", async function () {

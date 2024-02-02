@@ -45,10 +45,27 @@ function cutVestedDelegatePosition(address validator, uint256 amount) external p
 | validator | address | undefined |
 | amount | uint256 | undefined |
 
+### delegation
+
+```solidity
+function delegation() external view returns (address)
+```
+
+The staking address
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
 ### initialize
 
 ```solidity
-function initialize(address owner) external nonpayable
+function initialize(address owner, address _rewardPool) external nonpayable
 ```
 
 
@@ -60,6 +77,7 @@ function initialize(address owner) external nonpayable
 | Name | Type | Description |
 |---|---|---|
 | owner | address | undefined |
+| _rewardPool | address | undefined |
 
 ### openVestedDelegatePosition
 
@@ -106,13 +124,13 @@ function renounceOwnership() external nonpayable
 *Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.*
 
 
-### staking
+### rewardPool
 
 ```solidity
-function staking() external view returns (address)
+function rewardPool() external view returns (address)
 ```
 
-The staking address
+The reward pool address
 
 
 

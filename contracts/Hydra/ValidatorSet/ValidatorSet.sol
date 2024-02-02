@@ -83,7 +83,7 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
 
     // _______________ External functions _______________
 
-    function commitEpoch(uint256 id, Epoch calldata epoch, uint256 epochSize) external payable onlySystemCall {
+    function commitEpoch(uint256 id, Epoch calldata epoch, uint256 epochSize) external onlySystemCall {
         uint256 newEpochId = currentEpochId++;
         require(id == newEpochId, "UNEXPECTED_EPOCH_ID");
         require(epoch.endBlock > epoch.startBlock, "NO_BLOCKS_COMMITTED");
@@ -144,6 +144,13 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     function getEpochByBlock(uint256 blockNumber) external view returns (Epoch memory) {
         uint256 epochIndex = epochEndBlocks.findUpperBound(blockNumber);
         return epochs[epochIndex];
+    }
+
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function balanceOf(address account) public view override(Delegation, IValidatorSet, Staking) returns (uint256) {
+        return super.balanceOf(account);
     }
 
     // _______________ Public functions _______________

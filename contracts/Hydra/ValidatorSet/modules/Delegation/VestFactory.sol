@@ -20,10 +20,10 @@ abstract contract VestFactory is Initializable {
 
     event NewClone(address indexed owner, address newClone);
 
-    function _clone(address owner) internal returns (address) {
+    function _clone(address owner, address rewardPool) internal returns (address) {
         address child = Clones.clone(implementation);
 
-        VestManager(child).initialize(owner);
+        VestManager(child).initialize(owner, rewardPool);
 
         emit NewClone(owner, child);
 

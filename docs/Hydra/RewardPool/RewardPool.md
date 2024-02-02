@@ -267,6 +267,25 @@ Claims delegator rewards for sender.
 |---|---|---|
 | _0 | uint256 | Delegator&#39;s rewards |
 
+### claimPositionReward
+
+```solidity
+function claimPositionReward(address validator, address to, uint256 epochNumber, uint256 topUpIndex) external nonpayable
+```
+
+Claims reward for the vest manager (delegator).
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to claim from |
+| to | address | Address to transfer the reward to |
+| epochNumber | uint256 | Epoch where the last claimable reward is distributed We need it because not all rewards are matured at the moment of claiming |
+| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
+
 ### claimValidatorReward
 
 ```solidity
@@ -399,7 +418,7 @@ The vesting positions for every delegator.
 ### distributeRewardsFor
 
 ```solidity
-function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uint256 epochSize) external nonpayable
+function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uint256 epochSize) external payable
 ```
 
 
@@ -904,32 +923,6 @@ The minimum delegation amount to be delegated
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### onClaimPositionReward
-
-```solidity
-function onClaimPositionReward(address validator, address delegator, uint256 epochNumber, uint256 topUpIndex) external nonpayable returns (uint256 sumReward, uint256 remainder)
-```
-
-Claims delegator rewards for sender.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to claim from |
-| delegator | address | Delegator to claim for |
-| epochNumber | uint256 | Epoch where the last claimable reward is distributed. We need it because not all rewards are matured at the moment of claiming. |
-| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| sumReward | uint256 | undefined |
-| remainder | uint256 | undefined |
-
 ### onCreatePool
 
 ```solidity
@@ -975,7 +968,7 @@ Cuts a vesting position from the delegation pool
 ### onDelegate
 
 ```solidity
-function onDelegate(address validator, address delegator, uint256 amount) external nonpayable returns (uint256 reward)
+function onDelegate(address validator, address delegator, uint256 amount) external nonpayable
 ```
 
 Delegates to a validator delegation pool
@@ -989,12 +982,6 @@ Delegates to a validator delegation pool
 | validator | address | The address of the validator |
 | delegator | address | The address of the delegator |
 | amount | uint256 | Amount to delegate |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| reward | uint256 | Calculates delegator&#39;s unclaimed rewards with validator |
 
 ### onNewDelegatePosition
 
@@ -1073,7 +1060,7 @@ Top up to a delegate positions
 ### onUndelegate
 
 ```solidity
-function onUndelegate(address validator, address delegator, uint256 amount) external nonpayable returns (uint256 reward)
+function onUndelegate(address validator, address delegator, uint256 amount) external nonpayable
 ```
 
 Undelegates from the delegation pools and claims rewards
@@ -1087,12 +1074,6 @@ Undelegates from the delegation pools and claims rewards
 | validator | address | The address of the validator |
 | delegator | address | The address of the delegator |
 | amount | uint256 | Amount to delegate |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| reward | uint256 | Calculates delegator&#39;s unclaimed rewards with validator |
 
 ### onUnstake
 
@@ -1386,6 +1367,10 @@ event Initialized(uint8 version)
 
 ```solidity
 event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
+### PositionRewardClaimed
+
+```solidity
+event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount)
 ```
 
 
@@ -1435,6 +1420,9 @@ event RoleRevoked(bytes32 indexed role, address indexed account, address indexed
 | role `indexed` | bytes32 | undefined |
 | account `indexed` | address | undefined |
 | sender `indexed` | address | undefined |
+| manager `indexed` | address | undefined |
+| validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
 
 ### ValidatorRewardClaimed
 
@@ -1468,6 +1456,24 @@ event ValidatorRewardDistributed(address indexed validator, uint256 amount)
 | Name | Type | Description |
 |---|---|---|
 | validator `indexed` | address | undefined |
+| amount  | uint256 | undefined |
+
+### WithdrawalFinished
+
+```solidity
+event WithdrawalFinished(address indexed account, address indexed to, uint256 amount)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account `indexed` | address | undefined |
+| to `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
 

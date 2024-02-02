@@ -50,28 +50,6 @@ function WITHDRAWAL_WAIT_PERIOD() external view returns (uint256)
 function balanceOf(address account) external view returns (uint256)
 ```
 
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| account | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### balanceOfAt
-
-```solidity
-function balanceOfAt(address account) external view returns (uint256)
-```
-
 Returns the total balance of a given validator
 
 
@@ -104,24 +82,6 @@ function bls() external view returns (contract IBLS)
 | Name | Type | Description |
 |---|---|---|
 | _0 | contract IBLS | undefined |
-
-### claimPositionReward
-
-```solidity
-function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external nonpayable
-```
-
-Claims delegator rewards for sender.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to claim from |
-| epochNumber | uint256 | Epoch where the last claimable reward is distributed. We need it because not all rewards are matured at the moment of claiming. |
-| topUpIndex | uint256 | Whether to redelegate the claimed rewards |
 
 ### currentEpochId
 
@@ -157,13 +117,13 @@ Undelegates amount from validator. Apply penalty in case vesting is not finished
 | validator | address | Validator to undelegate from |
 | amount | uint256 | Amount to be undelegated |
 
-### delegateToValidator
+### delegate
 
 ```solidity
-function delegateToValidator(address validator) external payable
+function delegate(address validator) external payable
 ```
 
-Delegates sent amount to validator. Claims rewards beforehand.
+Delegates sent amount to validator and claims rewards.
 
 
 
@@ -303,13 +263,18 @@ Returns the address of the liquidity token.
 ### newManager
 
 ```solidity
-function newManager() external nonpayable
+function newManager(address rewardPool) external nonpayable
 ```
 
 Creates new vesting manager which owner is the caller. Every new instance is proxy leading to base impl, so minimal fees are applied. Only Vesting manager can use the vesting functionality, so users need to create a manager first to be able to vest.
 
 
 
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| rewardPool | address | undefined |
 
 ### onRewardClaimed
 
@@ -462,7 +427,7 @@ Returns the total supply
 function undelegate(address validator, uint256 amount) external nonpayable
 ```
 
-Undelegates amount from validator for sender. Claims rewards beforehand.
+Undelegates amount from validator for sender and claims rewards.
 
 
 
@@ -713,24 +678,6 @@ event PositionOpened(address indexed manager, address indexed validator, uint256
 | manager `indexed` | address | undefined |
 | validator `indexed` | address | undefined |
 | weeksDuration `indexed` | uint256 | undefined |
-| amount  | uint256 | undefined |
-
-### PositionRewardClaimed
-
-```solidity
-event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| manager `indexed` | address | undefined |
-| validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
 ### PositionTopUp

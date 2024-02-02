@@ -94,28 +94,6 @@ Adds addresses that are allowed to register as validators.
 function balanceOf(address account) external view returns (uint256)
 ```
 
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| account | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### balanceOfAt
-
-```solidity
-function balanceOfAt(address account) external view returns (uint256)
-```
-
 Returns the total balance of a given validator
 
 

@@ -41,14 +41,14 @@ export async function commitEpoch(
     validatorsUptime.push({ validator: validator.address, signedBlocks: 64 });
   }
 
-  const maxReward = await getMaxEpochReward(systemValidatorSet, prevEpochId);
-  const commitEpochTx = await systemValidatorSet.commitEpoch(currEpochId, newEpoch, epochSize, {
-    value: maxReward,
-  });
+  const commitEpochTx = await systemValidatorSet.commitEpoch(currEpochId, newEpoch, epochSize);
 
+  const maxReward = await getMaxEpochReward(systemValidatorSet, prevEpochId);
   const distributeRewardsTx = await rewardPool
     .connect(systemValidatorSet.signer)
-    .distributeRewardsFor(currEpochId, newEpoch, validatorsUptime, epochSize);
+    .distributeRewardsFor(currEpochId, newEpoch, validatorsUptime, epochSize, {
+      value: maxReward,
+    });
 
   return { commitEpochTx, distributeRewardsTx };
 }
@@ -167,8 +167,12 @@ export async function claimPositionRewards(
   await vestManager.claimVestedPositionReward(validator, rpsIndex, 0);
 }
 
-export async function createNewVestManager(validatorSet: ValidatorSet, owner: SignerWithAddress) {
-  const tx = await validatorSet.connect(owner).newManager();
+export async function createNewVestManager(
+  validatorSet: ValidatorSet,
+  rewardPool: RewardPool,
+  owner: SignerWithAddress
+) {
+  const tx = await validatorSet.connect(owner).newManager(rewardPool.address);
   const receipt = await tx.wait();
   const event = receipt.events?.find((e) => e.event === "NewClone");
   const address = event?.args?.newClone;

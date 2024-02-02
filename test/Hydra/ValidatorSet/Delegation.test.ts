@@ -14,7 +14,7 @@ export function RunDelegationTests(): void {
     it("should revert when delegating zero amount", async function () {
       const { validatorSet } = await loadFixture(this.fixtures.withdrawableFixture);
 
-      await expect(validatorSet.delegateToValidator(this.signers.validators[0].address, { value: 0 }))
+      await expect(validatorSet.delegate(this.signers.validators[0].address, { value: 0 }))
         .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
         .withArgs("delegate", "DELEGATING_AMOUNT_ZERO");
     });
@@ -22,7 +22,7 @@ export function RunDelegationTests(): void {
     it("should not be able to delegate to missing or inactive validator", async function () {
       const { validatorSet } = await loadFixture(this.fixtures.withdrawableFixture);
 
-      await expect(validatorSet.delegateToValidator(this.signers.validators[3].address, { value: this.minDelegation }))
+      await expect(validatorSet.delegate(this.signers.validators[3].address, { value: this.minDelegation }))
         .to.be.revertedWithCustomError(validatorSet, "Unauthorized")
         .withArgs("INVALID_VALIDATOR");
     });
@@ -31,7 +31,7 @@ export function RunDelegationTests(): void {
       const { validatorSet } = await loadFixture(this.fixtures.withdrawableFixture);
 
       await expect(
-        validatorSet.delegateToValidator(this.signers.validators[0].address, {
+        validatorSet.delegate(this.signers.validators[0].address, {
           value: this.minDelegation.div(2),
         })
       )
@@ -43,11 +43,9 @@ export function RunDelegationTests(): void {
       const { validatorSet, rewardPool } = await loadFixture(this.fixtures.withdrawableFixture);
       const delegateAmount = this.minDelegation.mul(2);
 
-      const tx = await validatorSet
-        .connect(this.signers.delegator)
-        .delegateToValidator(this.signers.validators[0].address, {
-          value: delegateAmount,
-        });
+      const tx = await validatorSet.connect(this.signers.delegator).delegate(this.signers.validators[0].address, {
+        value: delegateAmount,
+      });
 
       await expect(tx)
         .to.emit(validatorSet, "Delegated")
@@ -70,19 +68,17 @@ export function RunDelegationTests(): void {
         this.signers.delegator.address
       );
 
-      const tx = await validatorSet
-        .connect(this.signers.delegator)
-        .delegateToValidator(this.signers.validators[0].address, {
-          value: delegateAmount,
-        });
+      const tx = await validatorSet.connect(this.signers.delegator).delegate(this.signers.validators[0].address, {
+        value: delegateAmount,
+      });
 
       await expect(tx, "DelegatorRewardClaimed")
         .to.emit(rewardPool, "DelegatorRewardClaimed")
         .withArgs(this.signers.validators[0].address, this.signers.delegator.address, delegatorReward);
 
-      await expect(tx, "WithdrawalRegistered")
-        .to.emit(validatorSet, "WithdrawalRegistered")
-        .withArgs(this.signers.delegator.address, delegatorReward);
+      await expect(tx, "WithdrawalFinished")
+        .to.emit(rewardPool, "WithdrawalFinished")
+        .withArgs(rewardPool.address, this.signers.delegator.address, delegatorReward);
 
       await expect(tx, "Delegated")
         .to.emit(validatorSet, "Delegated")
@@ -155,7 +151,11 @@ export function RunDelegationTests(): void {
 
       await expect(tx, "WithdrawalRegistered")
         .to.emit(validatorSet, "WithdrawalRegistered")
-        .withArgs(this.signers.delegator.address, undelegateAmount.add(expectedReward));
+        .withArgs(this.signers.delegator.address, undelegateAmount);
+
+      await expect(tx, "WithdrawalFinished")
+        .to.emit(rewardPool, "WithdrawalFinished")
+        .withArgs(rewardPool.address, this.signers.delegator.address, expectedReward);
 
       await expect(tx, "Undelegated")
         .to.emit(validatorSet, "Undelegated")
@@ -185,7 +185,11 @@ export function RunDelegationTests(): void {
 
       await expect(tx, "WithdrawalRegistered")
         .to.emit(validatorSet, "WithdrawalRegistered")
-        .withArgs(this.signers.delegator.address, delegatedAmount.add(expectedReward));
+        .withArgs(this.signers.delegator.address, delegatedAmount);
+
+      await expect(tx, "WithdrawalFinished")
+        .to.emit(rewardPool, "WithdrawalFinished")
+        .withArgs(rewardPool.address, this.signers.delegator.address, expectedReward);
 
       await expect(tx, "Undelegated")
         .to.emit(validatorSet, "Undelegated")
@@ -216,20 +220,22 @@ export function RunDelegationTests(): void {
 
     describe("newManager()", async function () {
       it("should revert when zero address", async function () {
-        const { validatorSet } = await loadFixture(this.fixtures.vestManagerFixture);
+        const { validatorSet, rewardPool } = await loadFixture(this.fixtures.vestManagerFixture);
 
         const zeroAddress = hre.ethers.constants.AddressZero;
         await impersonateAccount(zeroAddress);
         const zeroAddrSigner = await hre.ethers.getSigner(zeroAddress);
-        await expect(validatorSet.connect(zeroAddrSigner).newManager()).to.be.revertedWith("INVALID_OWNER");
+        await expect(validatorSet.connect(zeroAddrSigner).newManager(rewardPool.address)).to.be.revertedWith(
+          "INVALID_OWNER"
+        );
       });
 
       it("should successfully create new manager", async function () {
-        const { validatorSet } = await loadFixture(this.fixtures.vestManagerFixture);
+        const { validatorSet, rewardPool } = await loadFixture(this.fixtures.vestManagerFixture);
 
-        const tx = await validatorSet.connect(this.signers.accounts[5]).newManager();
+        const tx = await validatorSet.connect(this.signers.accounts[5]).newManager(rewardPool.address);
         const receipt = await tx.wait();
-        const event = receipt.events?.find((e) => e.event === "NewClone");
+        const event = receipt.events?.find((e: any) => e.event === "NewClone");
         const address = event?.args?.newClone;
 
         expect(address).to.not.equal(hre.ethers.constants.AddressZero);
@@ -239,7 +245,7 @@ export function RunDelegationTests(): void {
         const { validatorSet, vestManager } = await loadFixture(this.fixtures.vestManagerFixture);
 
         expect(await vestManager.owner(), "owner").to.equal(this.vestManagerOwners[0].address);
-        expect(await vestManager.staking(), "staking").to.equal(validatorSet.address);
+        expect(await vestManager.delegation(), "delegation").to.equal(validatorSet.address);
       });
 
       it("should set manager in mappings", async function () {
@@ -400,7 +406,7 @@ export function RunDelegationTests(): void {
 
         // send one more token so liquid tokens balance is enough
         const user2 = this.signers.accounts[7];
-        await validatorSet.connect(user2).newManager();
+        await validatorSet.connect(user2).newManager(rewardPool.address);
         const VestManagerFactory = new VestManager__factory(this.vestManagerOwners[0]);
         const manager2 = await getUserManager(validatorSet, user2, VestManagerFactory);
 

@@ -27,10 +27,10 @@ abstract contract VestedDelegation is IVestedDelegation, VestFactory {
     /**
      * @inheritdoc IVestedDelegation
      */
-    function newManager() external {
+    function newManager(address rewardPool) external {
         require(msg.sender != address(0), "INVALID_OWNER");
 
-        address managerAddr = _clone(msg.sender);
+        address managerAddr = _clone(msg.sender, rewardPool);
         vestManagers[managerAddr] = msg.sender;
         userVestManagers[msg.sender].push(managerAddr);
     }

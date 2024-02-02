@@ -45,7 +45,7 @@ interface IValidatorSet {
      * @param account The address of the validator
      * @return Validator's balance
      */
-    function balanceOfAt(address account) external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
 
     /**
      * @notice Returns the total supply

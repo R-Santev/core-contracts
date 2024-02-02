@@ -97,18 +97,17 @@ async function commitEpochTxFixtureFunction(this: Mocha.Context) {
     endBlock: hre.ethers.BigNumber.from(64),
     epochRoot: this.epoch.epochRoot,
   };
-  const maxReward = await getMaxEpochReward(systemValidatorSet, epochId.sub(1));
-  const commitEpochTx = await systemValidatorSet.commitEpoch(epochId, epoch, this.epochSize, {
-    value: maxReward,
-  });
-
+  const commitEpochTx = await systemValidatorSet.commitEpoch(epochId, epoch, this.epochSize);
   const uptime = [
     {
       validator: this.signers.validators[0].address,
       signedBlocks: hre.ethers.BigNumber.from(10),
     },
   ];
-  await rewardPool.connect(this.signers.system).distributeRewardsFor(epochId, epoch, uptime, this.epochSize);
+  const maxReward = await getMaxEpochReward(systemValidatorSet, epochId.sub(1));
+  await rewardPool.connect(this.signers.system).distributeRewardsFor(epochId, epoch, uptime, this.epochSize, {
+    value: maxReward,
+  });
 
   return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, commitEpochTx };
 }
@@ -262,7 +261,7 @@ async function delegatedFixtureFunction(this: Mocha.Context) {
 
   const delegateAmount = this.minDelegation.mul(2);
 
-  await validatorSet.connect(this.signers.delegator).delegateToValidator(this.signers.validators[0].address, {
+  await validatorSet.connect(this.signers.delegator).delegate(this.signers.validators[0].address, {
     value: delegateAmount,
   });
 
@@ -282,7 +281,11 @@ async function vestManagerFixtureFunction(this: Mocha.Context) {
     this.fixtures.delegatedFixture
   );
 
-  const { newManagerFactory, newManager } = await createNewVestManager(validatorSet, this.signers.accounts[4]);
+  const { newManagerFactory, newManager } = await createNewVestManager(
+    validatorSet,
+    rewardPool,
+    this.signers.accounts[4]
+  );
 
   return {
     validatorSet,
@@ -321,7 +324,11 @@ async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
   const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager } =
     await loadFixture(this.fixtures.vestedDelegationFixture);
 
-  const { newManagerFactory, newManager } = await createNewVestManager(validatorSet, this.signers.accounts[5]);
+  const { newManagerFactory, newManager } = await createNewVestManager(
+    validatorSet,
+    rewardPool,
+    this.signers.accounts[5]
+  );
 
   const vestingDuration = 52; // in weeks
   await newManager.openVestedDelegatePosition(this.signers.validators[1].address, vestingDuration, {

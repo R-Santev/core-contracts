@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-// import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20VotesUpgradeable.sol";
 import "./IDelegation.sol";
 import "./VestedDelegation.sol";
 import "./../Staking/StateSyncer.sol";
@@ -34,7 +33,7 @@ abstract contract Delegation is
     /**
      * @inheritdoc IDelegation
      */
-    function delegateToValidator(address validator) public payable {
+    function delegate(address validator) public payable {
         if (msg.value == 0) revert DelegateRequirement({src: "delegate", msg: "DELEGATING_AMOUNT_ZERO"});
 
         _processDelegate(validator, msg.sender, msg.value);
@@ -71,36 +70,23 @@ abstract contract Delegation is
      * @inheritdoc IDelegation
      */
     function cutDelegatePosition(address validator, uint256 amount) external onlyManager {
-        (uint256 penalty, uint256 fullReward) = rewardPool.onCutPosition(validator, msg.sender, amount, 0);
+        (uint256 penalty, ) = rewardPool.onCutPosition(validator, msg.sender, amount, 0);
 
         uint256 amountAfterPenalty = amount - penalty;
 
-        _burnAmount(penalty + fullReward);
+        _burnAmount(penalty);
         _registerWithdrawal(msg.sender, amountAfterPenalty);
         _postUndelegateAction(msg.sender, validator, amount);
 
         emit PositionCut(msg.sender, validator, amountAfterPenalty);
     }
 
+    // External functions that are view
     /**
-     * @inheritdoc IDelegation
+     * @inheritdoc IValidatorSet
      */
-    function claimPositionReward(address validator, uint256 epochNumber, uint256 topUpIndex) external onlyManager {
-        (uint256 amount, uint256 remainder) = rewardPool.onClaimPositionReward(
-            validator,
-            msg.sender,
-            epochNumber,
-            topUpIndex
-        );
-        if (amount == 0) return;
-
-        if (remainder > 0) {
-            _burnAmount(remainder);
-        }
-
-        _registerWithdrawal(msg.sender, amount);
-
-        emit PositionRewardClaimed(msg.sender, validator, amount);
+    function balanceOf(address account) public view virtual override(BalanceState, IValidatorSet) returns (uint256) {
+        return super.balanceOf(account);
     }
 
     // _______________ Public functions _______________
@@ -110,17 +96,13 @@ abstract contract Delegation is
     function _processDelegate(address validator, address delegator, uint256 amount) internal {
         _delegateToVal(validator, delegator, amount);
 
-        uint256 reward = rewardPool.onDelegate(validator, delegator, amount);
-        if (reward != 0) {
-            _registerWithdrawal(delegator, reward);
-        }
+        rewardPool.onDelegate(validator, delegator, amount);
     }
 
     function _processUndelegate(address validator, address delegator, uint256 amount) internal {
-        uint256 reward = rewardPool.onUndelegate(validator, delegator, amount);
-        uint256 amountInclReward = amount + reward;
+        rewardPool.onUndelegate(validator, delegator, amount);
 
-        _registerWithdrawal(delegator, amountInclReward);
+        _registerWithdrawal(delegator, amount);
         _postUndelegateAction(validator, delegator, amount);
     }
 
