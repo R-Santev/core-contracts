@@ -4,6 +4,8 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "../interfaces/Errors.sol";
 
+error InsufficientCooldown();
+
 contract Faucet is AccessControl {
     bytes32 public constant MANAGER_ROLE = keccak256("manager_role");
 
@@ -22,7 +24,7 @@ contract Faucet is AccessControl {
     function requestHYDRA(address account) public onlyRole(MANAGER_ROLE) {
         if (account == address(0)) revert ZeroAddress();
 
-        if (block.timestamp <= nextAccessTime[account]) revert InsufficientCooldown();
+        if (block.timestamp < nextAccessTime[account]) revert InsufficientCooldown();
 
         nextAccessTime[account] = block.timestamp + lockTime;
 
