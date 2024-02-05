@@ -1,4 +1,4 @@
-# Faucet
+# AccessControl
 
 
 
@@ -6,7 +6,7 @@
 
 
 
-
+*Contract module that allows children to implement role-based access control mechanisms. This is a lightweight version that doesn&#39;t allow enumerating role members except through off-chain means by accessing the contract event logs. Some applications may benefit from on-chain enumerability, for those cases see {AccessControlEnumerable}. Roles are referred to by their `bytes32` identifier. These should be exposed in the external API and be unique. The best way to achieve this is by using `public constant` hash digests: ``` bytes32 public constant MY_ROLE = keccak256(&quot;MY_ROLE&quot;); ``` Roles can be used to represent a set of permissions. To restrict access to a function call, use {hasRole}: ``` function foo() public {     require(hasRole(MY_ROLE, msg.sender));     ... } ``` Roles can be granted and revoked dynamically via the {grantRole} and {revokeRole} functions. Each role has an associated admin role, and only accounts that have a role&#39;s admin role can call {grantRole} and {revokeRole}. By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means that only accounts with this role will be able to grant or revoke other roles. More complex role relationships can be created by using {_setRoleAdmin}. WARNING: The `DEFAULT_ADMIN_ROLE` is also its own admin: it has permission to grant and revoke this role. Extra precautions should be taken to secure accounts that have been granted it.*
 
 ## Methods
 
@@ -26,34 +26,6 @@ function DEFAULT_ADMIN_ROLE() external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
-
-### MANAGER_ROLE
-
-```solidity
-function MANAGER_ROLE() external view returns (bytes32)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bytes32 | undefined |
-
-### claimHYDRA
-
-```solidity
-function claimHYDRA() external nonpayable
-```
-
-Claim the whole HYDRA balance.
-
-
-
 
 ### getRoleAdmin
 
@@ -117,45 +89,6 @@ function hasRole(bytes32 role, address account) external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
-### lockTime
-
-```solidity
-function lockTime() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### nextAccessTime
-
-```solidity
-function nextAccessTime(address) external view returns (uint256)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### renounceRole
 
 ```solidity
@@ -171,22 +104,6 @@ function renounceRole(bytes32 role, address account) external nonpayable
 | Name | Type | Description |
 |---|---|---|
 | role | bytes32 | undefined |
-| account | address | undefined |
-
-### requestHYDRA
-
-```solidity
-function requestHYDRA(address account) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
 | account | address | undefined |
 
 ### revokeRole
@@ -205,38 +122,6 @@ function revokeRole(bytes32 role, address account) external nonpayable
 |---|---|---|
 | role | bytes32 | undefined |
 | account | address | undefined |
-
-### setLockTime
-
-```solidity
-function setLockTime(uint8 time) external nonpayable
-```
-
-Setting the cooling time.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| time | uint8 | undefined |
-
-### setWithdrawalAmount
-
-```solidity
-function setWithdrawalAmount(uint256 amount) external nonpayable
-```
-
-Setting Withdrawal Amount.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| amount | uint256 | amount of HYDRA to withdraw. |
 
 ### supportsInterface
 
@@ -260,60 +145,9 @@ function supportsInterface(bytes4 interfaceId) external view returns (bool)
 |---|---|---|
 | _0 | bool | undefined |
 
-### withdrawalAmount
-
-```solidity
-function withdrawalAmount() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 
 
 ## Events
-
-### Distribution
-
-```solidity
-event Distribution(address indexed to, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| to `indexed` | address | undefined |
-| amount  | uint256 | undefined |
-
-### Received
-
-```solidity
-event Received(address indexed from, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from `indexed` | address | undefined |
-| amount  | uint256 | undefined |
 
 ### RoleAdminChanged
 
@@ -368,42 +202,6 @@ event RoleRevoked(bytes32 indexed role, address indexed account, address indexed
 | role `indexed` | bytes32 | undefined |
 | account `indexed` | address | undefined |
 | sender `indexed` | address | undefined |
-
-
-
-## Errors
-
-### InsufficientCooldown
-
-```solidity
-error InsufficientCooldown()
-```
-
-
-
-
-
-
-### SendFailed
-
-```solidity
-error SendFailed()
-```
-
-
-
-
-
-
-### ZeroAddress
-
-```solidity
-error ZeroAddress()
-```
-
-
-
-
 
 
 
