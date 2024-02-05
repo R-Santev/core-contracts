@@ -738,7 +738,7 @@ export function RunDelegationTests(): void {
       });
     });
 
-    describe.skip("Reward Pool - Vested delegate claim", async function () {
+    describe("Reward Pool - Vested delegate claim", async function () {
       RunVestedDelegateClaimTests();
     });
   });

@@ -244,7 +244,7 @@ export async function calculateExpectedReward(
     .div(EPOCHS_YEAR);
 }
 
-export async function applyMaxReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
+export async function applyMaxReward(rewardPool: RewardPool, reward: BigNumber) {
   const base = await rewardPool.base();
   const rsi = await rewardPool.rsi();
   const vestBonus = await rewardPool.getVestingBonus(52);
@@ -255,7 +255,7 @@ export async function applyMaxReward(rewardPool: RewardPool, reward: BigNumber, 
     .mul(rsi)
     .mul(reward)
     .div(10000 * 10000)
-    .div(epochsInYear);
+    .div(EPOCHS_YEAR);
 }
 
 export async function applyCustomReward(
@@ -266,10 +266,11 @@ export async function applyCustomReward(
   rsi: boolean
 ) {
   const position = await rewardPool.delegationPositions(validator, delegator);
-  const bonus = position.base.add(position.vestBonus);
+
+  let bonus = position.base.add(position.vestBonus);
   let divider = 10000;
   if (rsi) {
-    bonus.add(bonus.mul(position.rsiBonus));
+    bonus = bonus.mul(position.rsiBonus);
     divider *= 10000;
   }
 
