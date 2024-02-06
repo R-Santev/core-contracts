@@ -17,7 +17,7 @@ contract FeeHandler is Initializable, OwnableUpgradeable {
      * @param _contractAddress The address of the contract that will be called
      * @param _encodedFunction The encoded function with its signature and parameters, if any
      */
-    function transferFees(address _contractAddress, bytes memory _encodedFunction) public onlyOwner {
+    function relocateFees(address _contractAddress, bytes memory _encodedFunction) public onlyOwner {
         (bool success, bytes memory data) = _contractAddress.call{value: address(this).balance}(_encodedFunction);
 
         emit Response(success, data);
