@@ -1,14 +1,48 @@
-# ERC20Upgradeable
+# LiquidityToken
 
 
 
+> LiquidityToken
 
 
 
-
-*Implementation of the {IERC20} interface. This implementation is agnostic to the way tokens are created. This means that a supply mechanism has to be added in a derived contract using {_mint}. For a generic mechanism see {ERC20PresetMinterPauser}. TIP: For a detailed writeup see our guide https://forum.openzeppelin.com/t/how-to-implement-erc20-supply-mechanisms/226[How to implement supply mechanisms]. The default value of {decimals} is 18. To change this, you should override this function so it returns a different value. We have followed general OpenZeppelin Contracts guidelines: functions revert instead returning `false` on failure. This behavior is nonetheless conventional and does not conflict with the expectations of ERC20 applications. Additionally, an {Approval} event is emitted on calls to {transferFrom}. This allows applications to reconstruct the allowance for all accounts just by listening to said events. Other implementations of the EIP may not emit these events, as it isn&#39;t required by the specification. Finally, the non-standard {decreaseAllowance} and {increaseAllowance} functions have been added to mitigate the well-known issues around setting allowances. See {IERC20-approve}.*
+*This contract represents the liquid token for the Hydra staking mechanism.*
 
 ## Methods
+
+### DEFAULT_ADMIN_ROLE
+
+```solidity
+function DEFAULT_ADMIN_ROLE() external view returns (bytes32)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
+
+### SUPPLY_CONTROLLER_ROLE
+
+```solidity
+function SUPPLY_CONTROLLER_ROLE() external view returns (bytes32)
+```
+
+The role identifier for address(es) that have permission to mint and burn the token.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
 
 ### allowance
 
@@ -78,6 +112,23 @@ function balanceOf(address account) external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### burn
+
+```solidity
+function burn(address account, uint256 amount) external nonpayable
+```
+
+Burns the specified `amount` of tokens from the given account.
+
+*Can only be called by an address with the `SUPPLY_CONTROLLER_ROLE`.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| account | address | The address from which tokens will be burned. |
+| amount | uint256 | The amount of tokens to burn. |
+
 ### decimals
 
 ```solidity
@@ -118,6 +169,68 @@ function decreaseAllowance(address spender, uint256 subtractedValue) external no
 |---|---|---|
 | _0 | bool | undefined |
 
+### getRoleAdmin
+
+```solidity
+function getRoleAdmin(bytes32 role) external view returns (bytes32)
+```
+
+
+
+*Returns the admin role that controls `role`. See {grantRole} and {revokeRole}. To change a role&#39;s admin, use {_setRoleAdmin}.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bytes32 | undefined |
+
+### grantRole
+
+```solidity
+function grantRole(bytes32 role, address account) external nonpayable
+```
+
+
+
+*Grants `role` to `account`. If `account` had not been already granted `role`, emits a {RoleGranted} event. Requirements: - the caller must have ``role``&#39;s admin role. May emit a {RoleGranted} event.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+### hasRole
+
+```solidity
+function hasRole(bytes32 role, address account) external view returns (bool)
+```
+
+
+
+*Returns `true` if `account` has been granted `role`.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
+
 ### increaseAllowance
 
 ```solidity
@@ -141,6 +254,42 @@ function increaseAllowance(address spender, uint256 addedValue) external nonpaya
 |---|---|---|
 | _0 | bool | undefined |
 
+### initialize
+
+```solidity
+function initialize(string name_, string symbol_, address governer, address supplyController) external nonpayable
+```
+
+
+
+*Initializes the token contract with the provided name, symbol, governed role, and supply controller.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| name_ | string | The name of the token. |
+| symbol_ | string | The symbol of the token. |
+| governer | address | The address that has rights to change the SUPPLY_CONTROLLERs. |
+| supplyController | address | The address assigned for controlling the supply (mint/burn) of the token. |
+
+### mint
+
+```solidity
+function mint(address to, uint256 amount) external nonpayable
+```
+
+Mints the specified `amount` of tokens to the given address.
+
+*Can only be called by an address with the `SUPPLY_CONTROLLER_ROLE`.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| to | address | The address to receive the minted tokens. |
+| amount | uint256 | The amount of tokens to mint. |
+
 ### name
 
 ```solidity
@@ -157,6 +306,62 @@ function name() external view returns (string)
 | Name | Type | Description |
 |---|---|---|
 | _0 | string | undefined |
+
+### renounceRole
+
+```solidity
+function renounceRole(bytes32 role, address account) external nonpayable
+```
+
+
+
+*Revokes `role` from the calling account. Roles are often managed via {grantRole} and {revokeRole}: this function&#39;s purpose is to provide a mechanism for accounts to lose their privileges if they are compromised (such as when a trusted device is misplaced). If the calling account had been revoked `role`, emits a {RoleRevoked} event. Requirements: - the caller must be `account`. May emit a {RoleRevoked} event.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+### revokeRole
+
+```solidity
+function revokeRole(bytes32 role, address account) external nonpayable
+```
+
+
+
+*Revokes `role` from `account`. If `account` had been granted `role`, emits a {RoleRevoked} event. Requirements: - the caller must have ``role``&#39;s admin role. May emit a {RoleRevoked} event.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role | bytes32 | undefined |
+| account | address | undefined |
+
+### supportsInterface
+
+```solidity
+function supportsInterface(bytes4 interfaceId) external view returns (bool)
+```
+
+
+
+*See {IERC165-supportsInterface}.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| interfaceId | bytes4 | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | bool | undefined |
 
 ### symbol
 
@@ -276,6 +481,60 @@ event Initialized(uint8 version)
 | Name | Type | Description |
 |---|---|---|
 | version  | uint8 | undefined |
+
+### RoleAdminChanged
+
+```solidity
+event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| previousAdminRole `indexed` | bytes32 | undefined |
+| newAdminRole `indexed` | bytes32 | undefined |
+
+### RoleGranted
+
+```solidity
+event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| account `indexed` | address | undefined |
+| sender `indexed` | address | undefined |
+
+### RoleRevoked
+
+```solidity
+event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| role `indexed` | bytes32 | undefined |
+| account `indexed` | address | undefined |
+| sender `indexed` | address | undefined |
 
 ### Transfer
 
