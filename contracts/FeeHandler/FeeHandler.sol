@@ -8,6 +8,10 @@ contract FeeHandler is Initializable, OwnableUpgradeable {
     event FeeReceived(address indexed from, uint256 amount);
     event Response(bool success, bytes data);
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address owner) public initializer {
         _transferOwnership(owner);
     }
