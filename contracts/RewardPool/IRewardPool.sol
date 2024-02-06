@@ -136,9 +136,8 @@ interface IRewardPool {
     /**
      * @notice Claims delegator rewards for sender.
      * @param validator Validator to claim from
-     * @return Delegator's rewards
      */
-    function claimDelegatorReward(address delegator, address validator) external returns (uint256);
+    function claimDelegatorReward(address validator) external;
 
     /**
      * @notice Returns the generated rewards for a validator

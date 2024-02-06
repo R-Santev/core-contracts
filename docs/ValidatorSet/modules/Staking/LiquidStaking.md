@@ -149,23 +149,6 @@ Returns the address of the liquidity token.
 |---|---|---|
 | _0 | address | undefined |
 
-### onRewardClaimed
-
-```solidity
-function onRewardClaimed(address validator, uint256 amount) external nonpayable
-```
-
-Registers a withdrawal of rewards
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | The address of the validator |
-| amount | uint256 | Amount to delegate |
-
 ### rewardPool
 
 ```solidity

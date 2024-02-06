@@ -13,7 +13,7 @@
 ### claimDelegatorReward
 
 ```solidity
-function claimDelegatorReward(address delegator, address validator) external nonpayable returns (uint256)
+function claimDelegatorReward(address validator) external nonpayable
 ```
 
 Claims delegator rewards for sender.
@@ -24,14 +24,7 @@ Claims delegator rewards for sender.
 
 | Name | Type | Description |
 |---|---|---|
-| delegator | address | undefined |
 | validator | address | Validator to claim from |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | Delegator&#39;s rewards |
 
 ### claimPositionReward
 

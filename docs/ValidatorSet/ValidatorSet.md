@@ -27,23 +27,6 @@ function DOMAIN() external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### DOUBLE_SIGNING_SLASHING_PERCENT
-
-```solidity
-function DOUBLE_SIGNING_SLASHING_PERCENT() external view returns (uint256)
-```
-
-Constant used to keep the slashing percent
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### MAX_COMMISSION
 
 ```solidity
@@ -314,37 +297,13 @@ Delegates sent amount to validator and claims rewards.
 |---|---|---|
 | validator | address | Validator to delegate to |
 
-### doubleSignerSlashes
-
-```solidity
-function doubleSignerSlashes(uint256, uint256, address) external view returns (bool)
-```
-
-Keeps the flag for the slashing per epoch and pbft round
-
-*epochNumber -&gt; roundNumber -&gt; validator address -&gt; bool*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-| _1 | uint256 | undefined |
-| _2 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bool | undefined |
-
 ### epochEndBlocks
 
 ```solidity
 function epochEndBlocks(uint256) external view returns (uint256)
 ```
 
-Array with epoch end blocks
+Array with epoch ending blocks
 
 
 
@@ -599,23 +558,6 @@ Creates new vesting manager which owner is the caller. Every new instance is pro
 | Name | Type | Description |
 |---|---|---|
 | rewardPool | address | undefined |
-
-### onRewardClaimed
-
-```solidity
-function onRewardClaimed(address validator, uint256 amount) external nonpayable
-```
-
-Registers a withdrawal of rewards
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | The address of the validator |
-| amount | uint256 | Amount to delegate |
 
 ### openVestedDelegatePosition
 

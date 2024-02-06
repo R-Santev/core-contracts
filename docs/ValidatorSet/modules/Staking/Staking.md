@@ -244,23 +244,6 @@ A state variable to keep the minimum amount for stake
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### onRewardClaimed
-
-```solidity
-function onRewardClaimed(address validator, uint256 amount) external nonpayable
-```
-
-Registers a withdrawal of rewards
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | The address of the validator |
-| amount | uint256 | Amount to delegate |
-
 ### openVestedPosition
 
 ```solidity

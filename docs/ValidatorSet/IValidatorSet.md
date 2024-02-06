@@ -81,23 +81,6 @@ Gets validator by address.
 | withdrawableRewards | uint256 | withdrawable rewards |
 | active | bool | activity status |
 
-### onRewardClaimed
-
-```solidity
-function onRewardClaimed(address validator, uint256 amount) external nonpayable
-```
-
-Registers a withdrawal of rewards
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | The address of the validator |
-| amount | uint256 | Amount to delegate |
-
 ### totalBlocks
 
 ```solidity

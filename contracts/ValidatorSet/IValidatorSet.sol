@@ -54,13 +54,6 @@ interface IValidatorSet {
     function totalSupplyAt() external view returns (uint256);
 
     /**
-     * @notice Registers a withdrawal of rewards
-     * @param validator The address of the validator
-     * @param amount Amount to delegate
-     */
-    function onRewardClaimed(address validator, uint256 amount) external;
-
-    /**
      * @notice Gets validator by address.
      * @param validator Address of the validator
      * @return blsKey BLS public key

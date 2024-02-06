@@ -89,10 +89,6 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
     }
 
-    function onRewardClaimed(address validator, uint256 amount) external onlyRewardPool {
-        _registerWithdrawal(validator, amount);
-    }
-
     // External View functions
     /// @notice Get the validator by its address
     /// @param validatorAddress address

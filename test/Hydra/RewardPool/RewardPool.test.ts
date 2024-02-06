@@ -114,7 +114,7 @@ export function RunStakingClaimTests(): void {
 export function RunDelegateClaimTests(): void {
   describe("Claim rewards", function () {
     it("should claim validator reward", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool } = await loadFixture(this.fixtures.delegatedFixture);
+      const { systemValidatorSet, rewardPool } = await loadFixture(this.fixtures.delegatedFixture);
 
       await commitEpoch(
         systemValidatorSet,
@@ -131,9 +131,9 @@ export function RunDelegateClaimTests(): void {
       expect(event?.args?.validator, "event.arg.validator").to.equal(this.signers.validators[0].address);
       expect(event?.args?.amount, "event.arg.amount").to.equal(reward);
 
-      await expect(tx, "WithdrawalRegistered")
-        .to.emit(validatorSet, "WithdrawalRegistered")
-        .withArgs(this.signers.validators[0].address, reward);
+      await expect(tx, "WithdrawalFinished")
+        .to.emit(rewardPool, "WithdrawalFinished")
+        .withArgs(rewardPool.address, this.signers.validators[0].address, reward);
     });
 
     it("should claim delegator reward", async function () {
@@ -152,10 +152,9 @@ export function RunDelegateClaimTests(): void {
         this.signers.delegator.address
       );
 
-      const tx = await rewardPool.claimDelegatorReward(
-        this.signers.validators[0].address,
-        this.signers.delegator.address
-      );
+      const tx = await rewardPool
+        .connect(this.signers.delegator)
+        .claimDelegatorReward(this.signers.validators[0].address);
       const receipt = await tx.wait();
       const event = receipt.events?.find((log: any) => log.event === "DelegatorRewardClaimed");
       expect(event?.args?.validator, "event.arg.validator").to.equal(this.signers.validators[0].address);

@@ -15,10 +15,6 @@ contract LiquidityToken is ILiquidityToken, ERC20Upgradeable, Governed {
     /// @notice The role identifier for address(es) that have permission to mint and burn the token.
     bytes32 public constant SUPPLY_CONTROLLER_ROLE = keccak256("SUPPLY_CONTROLLER_ROLE");
 
-    constructor() {
-        _disableInitializers();
-    }
-
     /**
      * @dev Initializes the token contract with the provided name, symbol, governed role, and supply controller.
      * @param name_ The name of the token.

@@ -6,10 +6,10 @@ import * as hre from "hardhat";
 import { BigNumber, ContractTransaction } from "ethers";
 
 import * as mcl from "../../ts/mcl";
-import { ValidatorSet } from "../../typechain-types/contracts/Hydra/ValidatorSet";
-import { RewardPool } from "../../typechain-types/contracts/Hydra/RewardPool";
-import { VestManager } from "../../typechain-types/contracts/Hydra/ValidatorSet/modules/Delegation";
-import { VestManager__factory } from "../../typechain-types/factories/contracts/Hydra/ValidatorSet/modules/Delegation";
+import { ValidatorSet } from "../../typechain-types/contracts/ValidatorSet";
+import { RewardPool } from "../../typechain-types/contracts/RewardPool";
+import { VestManager } from "../../typechain-types/contracts/ValidatorSet/modules/Delegation";
+import { VestManager__factory } from "../../typechain-types/factories/contracts/ValidatorSet/modules/Delegation";
 import { CHAIN_ID, DOMAIN, EPOCHS_YEAR } from "./constants";
 
 interface RewardParams {

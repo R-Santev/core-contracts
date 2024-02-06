@@ -229,6 +229,7 @@ contract RewardPool is IRewardPool, System, Vesting {
         delete valRewards[staker];
     }
 
+    // @audit this can be invoked by anyone, but it must be invoked by the ValidatorSet only
     function onDelegate(address validator, address delegator, uint256 amount) external {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
 
@@ -236,10 +237,9 @@ contract RewardPool is IRewardPool, System, Vesting {
         if (delegatedAmount + amount < minDelegation)
             revert DelegateRequirement({src: "delegate", msg: "DELEGATION_TOO_LOW"});
 
-        uint256 reward = this.claimDelegatorReward(validator, delegator);
-        delegation.deposit(delegator, amount);
+        _claimDelegatorReward(validator, delegator);
 
-        _withdraw(delegator, reward);
+        delegation.deposit(delegator, amount);
     }
 
     /**
@@ -255,11 +255,9 @@ contract RewardPool is IRewardPool, System, Vesting {
         if (amounAfterUndelegate < minDelegation && amounAfterUndelegate != 0)
             revert DelegateRequirement({src: "undelegate", msg: "DELEGATION_TOO_LOW"});
 
-        delegation.withdraw(delegator, amount);
-        uint256 reward = delegation.claimRewards(delegator);
-        reward = _applyCustomReward(reward);
+        _claimDelegatorReward(validator, delegator);
 
-        _withdraw(delegator, reward);
+        delegation.withdraw(delegator, amount);
     }
 
     /**
@@ -398,7 +396,7 @@ contract RewardPool is IRewardPool, System, Vesting {
         }
 
         _claimValidatorReward(msg.sender, reward);
-        validatorSet.onRewardClaimed(msg.sender, reward);
+        _withdraw(msg.sender, reward);
 
         emit ValidatorRewardClaimed(msg.sender, reward);
     }
@@ -406,15 +404,19 @@ contract RewardPool is IRewardPool, System, Vesting {
     /**
      * @inheritdoc IRewardPool
      */
-    function claimDelegatorReward(address validator, address delegator) external returns (uint256) {
+    function claimDelegatorReward(address validator) public {
+        _claimDelegatorReward(validator, msg.sender);
+    }
+
+    function _claimDelegatorReward(address validator, address delegator) private {
         DelegationPool storage delegation = getDelegationPoolOf(validator);
         uint256 reward = delegation.claimRewards(delegator);
         reward = _applyCustomReward(reward);
-        if (reward == 0) return 0;
+        if (reward == 0) return;
 
         emit DelegatorRewardClaimed(validator, delegator, reward);
 
-        return reward;
+        _withdraw(delegator, reward);
     }
 
     // External View functions
@@ -586,7 +588,7 @@ contract RewardPool is IRewardPool, System, Vesting {
         if (reward == 0) return;
 
         _claimValidatorReward(msg.sender, reward);
-        validatorSet.onRewardClaimed(msg.sender, reward);
+        _withdraw(msg.sender, reward);
 
         emit ValidatorRewardClaimed(msg.sender, reward);
     }
