@@ -87,28 +87,6 @@ function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uin
 | uptime | Uptime[] | undefined |
 | epochSize | uint256 | undefined |
 
-### getDelegationPoolSupplyOf
-
-```solidity
-function getDelegationPoolSupplyOf(address validator) external view returns (uint256)
-```
-
-returns the supply of the delegation pool of the requested validator
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | the address of the validator whose pool is being queried |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | supply of the delegation pool |
-
 ### getDelegatorPositionReward
 
 ```solidity
@@ -489,24 +467,6 @@ event ValidatorRewardDistributed(address indexed validator, uint256 amount)
 | Name | Type | Description |
 |---|---|---|
 | validator `indexed` | address | undefined |
-| amount  | uint256 | undefined |
-
-### WithdrawalFinished
-
-```solidity
-event WithdrawalFinished(address indexed account, address indexed to, uint256 amount)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| account `indexed` | address | undefined |
-| to `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
 

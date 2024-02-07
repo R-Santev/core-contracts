@@ -33,7 +33,7 @@ function DOMAIN() external view returns (bytes32)
 function MAX_COMMISSION() external view returns (uint256)
 ```
 
-A constant for the maximum comission
+A constant for the maximum comission a validator can receive from the delegator&#39;s rewards
 
 
 
@@ -199,7 +199,7 @@ Gets validator by address.
 function getValidators() external view returns (address[])
 ```
 
-Gets all active validators.
+Gets all validators. Returns already unactive validators as well.
 
 
 
@@ -208,7 +208,7 @@ Gets all active validators.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | address[] | Returns array of addresses of all active validators |
+| _0 | address[] | Returns array of addresses |
 
 ### liquidToken
 
@@ -233,7 +233,7 @@ Returns the address of the liquidity token.
 function minStake() external view returns (uint256)
 ```
 
-A state variable to keep the minimum amount for stake
+A state variable to keep the minimum amount of stake
 
 
 
@@ -243,22 +243,6 @@ A state variable to keep the minimum amount for stake
 | Name | Type | Description |
 |---|---|---|
 | _0 | uint256 | undefined |
-
-### openVestedPosition
-
-```solidity
-function openVestedPosition(uint256 durationWeeks) external payable
-```
-
-Opens vested staking position
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| durationWeeks | uint256 | Duration of position in weeks. Must be between 1 and 52. |
 
 ### owner
 
@@ -314,7 +298,7 @@ Calculates how much is yet to become withdrawable for account.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
+| _0 | uint256 | Amount not yet withdrawable (in wei) |
 
 ### register
 
@@ -404,6 +388,61 @@ Stakes sent amount.
 
 
 
+### stakeBalances
+
+```solidity
+function stakeBalances(address) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### stakeWithVesting
+
+```solidity
+function stakeWithVesting(uint256 durationWeeks) external payable
+```
+
+Stakes sent amount with vesting period.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| durationWeeks | uint256 | Duration of the vesting in weeks. Must be between 1 and 52. |
+
+### totalBalance
+
+```solidity
+function totalBalance() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### totalBlocks
 
 ```solidity
@@ -430,23 +469,6 @@ Total amount of blocks in a given epoch
 
 ```solidity
 function totalSupply() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### totalSupplyAt
-
-```solidity
-function totalSupplyAt() external view returns (uint256)
 ```
 
 Returns the total supply
@@ -576,7 +598,7 @@ Calculates how much can be withdrawn for account in this epoch.
 
 | Name | Type | Description |
 |---|---|---|
-| amount | uint256 | Amount withdrawable (in MATIC wei) |
+| amount | uint256 | Amount withdrawable (in wei) |
 
 
 

@@ -39,7 +39,7 @@ contract VestManager is Initializable, OwnableUpgradeable {
     // _______________ External functions _______________
 
     function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable onlyOwner {
-        IDelegation(delegation).openVestedDelegatePosition{value: msg.value}(validator, durationWeeks);
+        IDelegation(delegation).delegateWithVesting{value: msg.value}(validator, durationWeeks);
 
         _sendLiquidTokens(msg.sender, msg.value);
     }
@@ -53,7 +53,7 @@ contract VestManager is Initializable, OwnableUpgradeable {
     function cutVestedDelegatePosition(address validator, uint256 amount) external payable onlyOwner {
         _fulfillLiquidTokens(msg.sender, amount);
 
-        IDelegation(delegation).cutDelegatePosition(validator, amount);
+        IDelegation(delegation).undelegateWithVesting(validator, amount);
     }
 
     function claimVestedPositionReward(

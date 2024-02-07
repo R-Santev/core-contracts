@@ -27,7 +27,7 @@ struct Validator {
     uint256 commission;
     bool active;
     bool whitelisted;
-    bool registered;
+    bool registered; // TODO: use a single property for status instead active, whitelisted and registered
 }
 
 interface IValidatorSet {
@@ -51,7 +51,7 @@ interface IValidatorSet {
      * @notice Returns the total supply
      * @return Total supply
      */
-    function totalSupplyAt() external view returns (uint256);
+    function totalSupply() external view returns (uint256);
 
     /**
      * @notice Gets validator by address.
@@ -83,4 +83,10 @@ interface IValidatorSet {
      * @return Epoch Returns epoch if found, or else, the last epoch
      */
     function getEpochByBlock(uint256 blockNumber) external view returns (Epoch memory);
+
+    /**
+     * @notice Gets all validators. Returns already unactive validators as well.
+     * @return Returns array of addresses
+     */
+    function getValidators() external view returns (address[] memory);
 }

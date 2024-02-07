@@ -116,7 +116,7 @@ describe("ValidatorSet", function () {
       this.validatorSetSize = Math.floor(Math.random() * (5 - 1) + 5); // Randomly pick 5-9
       this.validatorStake = hre.ethers.utils.parseEther(String(Math.floor(Math.random() * (10000 - 1000) + 1000)));
 
-      expect(await systemValidatorSet.totalSupplyAt()).to.equal(0);
+      expect(await systemValidatorSet.totalSupply()).to.equal(0);
 
       await expect(
         systemValidatorSet.initialize(
@@ -141,7 +141,7 @@ describe("ValidatorSet", function () {
     it("should have zero total supply", async function () {
       const { systemValidatorSet } = await loadFixture(this.fixtures.presetValidatorSetStateFixture);
 
-      expect(await systemValidatorSet.totalSupplyAt(), "totalSupply").to.equal(0);
+      expect(await systemValidatorSet.totalSupply(), "totalSupply").to.equal(0);
     });
 
     it("should initialize successfully", async function () {

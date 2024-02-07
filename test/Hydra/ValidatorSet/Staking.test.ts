@@ -134,7 +134,7 @@ export function RunStakingTests(): void {
 
         await registerValidator(validatorSet, this.signers.governance, this.staker);
         const stakerValidatorSet = validatorSet.connect(this.staker);
-        const tx = await stakerValidatorSet.openVestedPosition(VESTING_DURATION_WEEKS, {
+        const tx = await stakerValidatorSet.stakeWithVesting(VESTING_DURATION_WEEKS, {
           value: this.minStake,
         });
 
@@ -168,7 +168,7 @@ export function RunStakingTests(): void {
       it("should not be in vesting cycle", async function () {
         const { stakerValidatorSet } = await loadFixture(this.fixtures.newVestingValidatorFixture);
 
-        await expect(stakerValidatorSet.openVestedPosition(vestingDuration))
+        await expect(stakerValidatorSet.stakeWithVesting(vestingDuration))
           .to.be.revertedWithCustomError(stakerValidatorSet, "StakeRequirement")
           .withArgs("vesting", "ALREADY_IN_VESTING");
       });

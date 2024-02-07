@@ -17,7 +17,7 @@ interface RewardParams {
 }
 
 export async function getMaxEpochReward(validatorSet: ValidatorSet, epochId: BigNumber) {
-  const totalStake = await validatorSet.totalSupplyAt();
+  const totalStake = await validatorSet.totalSupply();
   return totalStake;
 }
 

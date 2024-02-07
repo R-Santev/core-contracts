@@ -10,39 +10,6 @@
 
 ## Methods
 
-### getValidators
-
-```solidity
-function getValidators() external view returns (address[])
-```
-
-Gets all active validators.
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address[] | Returns array of addresses of all active validators |
-
-### openVestedPosition
-
-```solidity
-function openVestedPosition(uint256 durationWeeks) external payable
-```
-
-Opens vested staking position
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| durationWeeks | uint256 | Duration of position in weeks. Must be between 1 and 52. |
-
 ### register
 
 ```solidity
@@ -86,6 +53,22 @@ Stakes sent amount.
 
 
 
+
+### stakeWithVesting
+
+```solidity
+function stakeWithVesting(uint256 durationWeeks) external payable
+```
+
+Stakes sent amount with vesting period.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| durationWeeks | uint256 | Duration of the vesting in weeks. Must be between 1 and 52. |
 
 ### unstake
 

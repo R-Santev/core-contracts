@@ -27,20 +27,14 @@ interface IStaking {
     function stake() external payable;
 
     /**
+     * @notice Stakes sent amount with vesting period.
+     * @param durationWeeks Duration of the vesting in weeks. Must be between 1 and 52.
+     */
+    function stakeWithVesting(uint256 durationWeeks) external payable;
+
+    /**
      * @notice Unstakes amount for sender. Claims rewards beforehand.
      * @param amount Amount to unstake
      */
     function unstake(uint256 amount) external;
-
-    /**
-     * @notice Opens vested staking position
-     * @param durationWeeks Duration of position in weeks. Must be between 1 and 52.
-     */
-    function openVestedPosition(uint256 durationWeeks) external payable;
-
-    /**
-     * @notice Gets all active validators.
-     * @return Returns array of addresses of all active validators
-     */
-    function getValidators() external view returns (address[] memory);
 }

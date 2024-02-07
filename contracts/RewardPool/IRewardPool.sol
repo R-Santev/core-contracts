@@ -4,6 +4,16 @@ pragma solidity 0.8.17;
 import "./../ValidatorSet/IValidatorSet.sol";
 import "./../common/CommonStructs.sol";
 
+struct DelegationPool {
+    uint256 supply;
+    uint256 virtualSupply;
+    uint256 magnifiedRewardPerShare;
+    address validator;
+    mapping(address => int256) magnifiedRewardCorrections;
+    mapping(address => uint256) claimedRewards;
+    mapping(address => uint256) balances;
+}
+
 struct Uptime {
     address validator;
     uint256 signedBlocks;
@@ -15,7 +25,6 @@ interface IRewardPool {
     event DelegatorRewardClaimed(address indexed validator, address indexed delegator, uint256 amount);
     event DelegatorRewardDistributed(address indexed validator, uint256 amount);
     event PositionRewardClaimed(address indexed manager, address indexed validator, uint256 amount);
-    event WithdrawalFinished(address indexed account, address indexed to, uint256 amount);
 
     /**
      * @notice Distributes rewards for the given epoch
@@ -188,13 +197,6 @@ interface IRewardPool {
      * @param topUpIndex Whether to redelegate the claimed rewards
      */
     function claimPositionReward(address validator, address to, uint256 epochNumber, uint256 topUpIndex) external;
-
-    /**
-     * @notice returns the supply of the delegation pool of the requested validator
-     * @param validator the address of the validator whose pool is being queried
-     * @return supply of the delegation pool
-     */
-    function getDelegationPoolSupplyOf(address validator) external view returns (uint256);
 
     /**
      * @notice Gets amount delegated by delegator to validator.

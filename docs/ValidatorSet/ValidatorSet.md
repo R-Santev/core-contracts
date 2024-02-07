@@ -33,7 +33,7 @@ function DOMAIN() external view returns (bytes32)
 function MAX_COMMISSION() external view returns (uint256)
 ```
 
-A constant for the maximum comission
+A constant for the maximum comission a validator can receive from the delegator&#39;s rewards
 
 
 
@@ -264,23 +264,6 @@ function currentEpochId() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### cutDelegatePosition
-
-```solidity
-function cutDelegatePosition(address validator, uint256 amount) external nonpayable
-```
-
-Undelegates amount from validator. Apply penalty in case vesting is not finished. Can be called by vesting positions&#39; managers only.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to undelegate from |
-| amount | uint256 | Amount to be undelegated |
-
 ### delegate
 
 ```solidity
@@ -296,6 +279,23 @@ Delegates sent amount to validator and claims rewards.
 | Name | Type | Description |
 |---|---|---|
 | validator | address | Validator to delegate to |
+
+### delegateWithVesting
+
+```solidity
+function delegateWithVesting(address validator, uint256 durationWeeks) external payable
+```
+
+Delegates sent amount to validator. Set vesting position data. Delete old top-ups data if exists. Can be called by vesting positions&#39; managers only. Can be used by vesting positions&#39; managers only.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to delegate to |
+| durationWeeks | uint256 | Duration of the vesting in weeks |
 
 ### epochEndBlocks
 
@@ -438,7 +438,7 @@ Get the validator by its address
 function getValidators() external view returns (address[])
 ```
 
-Gets all active validators.
+Gets all validators. Returns already unactive validators as well.
 
 
 
@@ -447,7 +447,7 @@ Gets all active validators.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | address[] | Returns array of addresses of all active validators |
+| _0 | address[] | Returns array of addresses |
 
 ### implementation
 
@@ -532,7 +532,7 @@ Returns the address of the liquidity token.
 function minStake() external view returns (uint256)
 ```
 
-A state variable to keep the minimum amount for stake
+A state variable to keep the minimum amount of stake
 
 
 
@@ -558,39 +558,6 @@ Creates new vesting manager which owner is the caller. Every new instance is pro
 | Name | Type | Description |
 |---|---|---|
 | rewardPool | address | undefined |
-
-### openVestedDelegatePosition
-
-```solidity
-function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable
-```
-
-Delegates sent amount to validator. Set vesting position data. Delete old top-ups data if exists. Can be called by vesting positions&#39; managers only.
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to delegate to |
-| durationWeeks | uint256 | Duration of the vesting in weeks |
-
-### openVestedPosition
-
-```solidity
-function openVestedPosition(uint256 durationWeeks) external payable
-```
-
-Opens vested staking position
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| durationWeeks | uint256 | Duration of position in weeks. Must be between 1 and 52. |
 
 ### owner
 
@@ -646,7 +613,7 @@ Calculates how much is yet to become withdrawable for account.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
+| _0 | uint256 | Amount not yet withdrawable (in wei) |
 
 ### powerExponent
 
@@ -754,13 +721,13 @@ Stakes sent amount.
 
 
 
-### topUpDelegatePosition
+### stakeBalances
 
 ```solidity
-function topUpDelegatePosition(address validator) external payable
+function stakeBalances(address) external view returns (uint256)
 ```
 
-Delegates sent amount to validator. Add top-up data. Modify vesting position data. Can be called by vesting positions&#39; managers only.
+
 
 
 
@@ -768,7 +735,62 @@ Delegates sent amount to validator. Add top-up data. Modify vesting position dat
 
 | Name | Type | Description |
 |---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### stakeWithVesting
+
+```solidity
+function stakeWithVesting(uint256 durationWeeks) external payable
+```
+
+Stakes sent amount with vesting period.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| durationWeeks | uint256 | Duration of the vesting in weeks. Must be between 1 and 52. |
+
+### topUpDelegatePosition
+
+```solidity
+function topUpDelegatePosition(address validator) external payable
+```
+
+Delegates sent amount to validator increasing an already created with `delegateWithVesting` vesting position. This modifies the vesting conditions. Can be called by vesting positions&#39; managers only.
+
+*Add top-up data.*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
 | validator | address | Validator to delegate to |
+
+### totalBalance
+
+```solidity
+function totalBalance() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
 
 ### totalBlocks
 
@@ -796,23 +818,6 @@ Total amount of blocks in a given epoch
 
 ```solidity
 function totalSupply() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### totalSupplyAt
-
-```solidity
-function totalSupplyAt() external view returns (uint256)
 ```
 
 Returns the total supply
@@ -858,6 +863,23 @@ Undelegates amount from validator for sender and claims rewards.
 |---|---|---|
 | validator | address | Validator to undelegate from |
 | amount | uint256 | The amount to undelegate |
+
+### undelegateWithVesting
+
+```solidity
+function undelegateWithVesting(address validator, uint256 amount) external nonpayable
+```
+
+Undelegates amount from validator for vesting position. Apply penalty in case vesting is not finished. Can be called by vesting positions&#39; managers only.
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Validator to undelegate from |
+| amount | uint256 | Amount to be undelegated |
 
 ### unstake
 
@@ -1020,7 +1042,7 @@ Calculates how much can be withdrawn for account in this epoch.
 
 | Name | Type | Description |
 |---|---|---|
-| amount | uint256 | Amount withdrawable (in MATIC wei) |
+| amount | uint256 | Amount withdrawable (in wei) |
 
 
 

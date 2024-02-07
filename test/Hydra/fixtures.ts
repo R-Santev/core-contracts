@@ -196,7 +196,7 @@ async function newVestingValidatorFixtureFunction(this: Mocha.Context) {
   await registerValidator(validatorSet, this.signers.governance, staker);
 
   const stakerValidatorSet = validatorSet.connect(staker);
-  await stakerValidatorSet.openVestedPosition(VESTING_DURATION_WEEKS, {
+  await stakerValidatorSet.stakeWithVesting(VESTING_DURATION_WEEKS, {
     value: this.minStake,
   });
 

@@ -1,10 +1,10 @@
-# RewardPool
+# StakingRewards
 
 
 
-> Reward Pool
 
-The Reward Pool contract is responsible for distributing rewards to validators and delegators based on the uptime and the amount of stake and delegation.
+
+
 
 
 
@@ -26,23 +26,6 @@ function DEFAULT_ADMIN_ROLE() external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
-
-### DELEGATORS_COMMISSION
-
-```solidity
-function DELEGATORS_COMMISSION() external view returns (uint256)
-```
-
-A constant that is used to keep the commission of the delegators
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
 
 ### DENOMINATOR
 
@@ -94,108 +77,6 @@ function MANAGER_ROLE() external view returns (bytes32)
 | Name | Type | Description |
 |---|---|---|
 | _0 | bytes32 | undefined |
-
-### NATIVE_TOKEN_CONTRACT
-
-```solidity
-function NATIVE_TOKEN_CONTRACT() external view returns (address)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-### NATIVE_TRANSFER_PRECOMPILE
-
-```solidity
-function NATIVE_TRANSFER_PRECOMPILE() external view returns (address)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-### NATIVE_TRANSFER_PRECOMPILE_GAS
-
-```solidity
-function NATIVE_TRANSFER_PRECOMPILE_GAS() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### SYSTEM
-
-```solidity
-function SYSTEM() external view returns (address)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-### VALIDATOR_PKCHECK_PRECOMPILE
-
-```solidity
-function VALIDATOR_PKCHECK_PRECOMPILE() external view returns (address)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-### VALIDATOR_PKCHECK_PRECOMPILE_GAS
-
-```solidity
-function VALIDATOR_PKCHECK_PRECOMPILE_GAS() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
 
 ### applyMaxReward
 
@@ -371,31 +252,6 @@ Historical Validator Delegation Pool&#39;s Params per delegator
 | balance | uint256 | undefined |
 | correction | int256 | undefined |
 | epochNum | uint256 | undefined |
-
-### delegationPools
-
-```solidity
-function delegationPools(address) external view returns (uint256 supply, uint256 virtualSupply, uint256 magnifiedRewardPerShare, address validator)
-```
-
-Keeps the delegation pools
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| supply | uint256 | undefined |
-| virtualSupply | uint256 | undefined |
-| magnifiedRewardPerShare | uint256 | undefined |
-| validator | address | undefined |
 
 ### delegationPositions
 
@@ -764,25 +620,6 @@ Keeps the history of the RPS for the validators
 | value | uint192 | undefined |
 | timestamp | uint64 | undefined |
 
-### initialize
-
-```solidity
-function initialize(contract IValidatorSet newValidatorSet, address newRewardWallet, uint256 newMinDelegation, address aprManager) external nonpayable
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| newValidatorSet | contract IValidatorSet | undefined |
-| newRewardWallet | address | undefined |
-| newMinDelegation | uint256 | undefined |
-| aprManager | address | undefined |
-
 ### isActiveDelegatePosition
 
 ```solidity
@@ -821,53 +658,6 @@ function isActivePosition(address staker) external view returns (bool)
 | Name | Type | Description |
 |---|---|---|
 | staker | address | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bool | undefined |
-
-### isBalanceChangeMade
-
-```solidity
-function isBalanceChangeMade(address validator, address delegator, uint256 currentEpochNum) external view returns (bool)
-```
-
-Checks if balance change was already made in the current epoch
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to delegate to |
-| delegator | address | undefined |
-| currentEpochNum | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bool | undefined |
-
-### isBalanceChangeMade
-
-```solidity
-function isBalanceChangeMade(address validator, uint256 currentEpochNum) external view returns (bool)
-```
-
-Checks if balance change was already made in the current epoch
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to delegate to |
-| currentEpochNum | uint256 | undefined |
 
 #### Returns
 
@@ -949,23 +739,6 @@ function macroFactor() external view returns (uint256)
 ```
 
 
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### minDelegation
-
-```solidity
-function minDelegation() external view returns (uint256)
-```
-
-The minimum delegation amount to be delegated
 
 
 
@@ -1152,28 +925,6 @@ Unstakes and updates the reward params for the vested position
 |---|---|---|
 | amountToWithdraw | uint256 | The calcualted amount to withdraw |
 
-### paidRewardPerEpoch
-
-```solidity
-function paidRewardPerEpoch(uint256) external view returns (uint256)
-```
-
-Mapping used to keep the paid rewards per epoch
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### positions
 
 ```solidity
@@ -1234,23 +985,6 @@ function revokeRole(bytes32 role, address account) external nonpayable
 |---|---|---|
 | role | bytes32 | undefined |
 | account | address | undefined |
-
-### rewardWallet
-
-```solidity
-function rewardWallet() external view returns (address)
-```
-
-Reward Wallet
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | address | undefined |
 
 ### rsi
 
@@ -1408,23 +1142,6 @@ The validator rewards mapped to a validator&#39;s address
 |---|---|---|
 | taken | uint256 | undefined |
 | total | uint256 | undefined |
-
-### validatorSet
-
-```solidity
-function validatorSet() external view returns (contract IValidatorSet)
-```
-
-The address of the ValidatorSet contract
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | contract IValidatorSet | undefined |
 
 ### vestingBonus
 
@@ -1630,39 +1347,6 @@ event ValidatorRewardDistributed(address indexed validator, uint256 amount)
 
 ## Errors
 
-### DelegateRequirement
-
-```solidity
-error DelegateRequirement(string src, string msg)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| src | string | undefined |
-| msg | string | undefined |
-
-### NoTokensDelegated
-
-```solidity
-error NoTokensDelegated(address validator)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | undefined |
-
 ### StakeRequirement
 
 ```solidity
@@ -1679,21 +1363,5 @@ error StakeRequirement(string src, string msg)
 |---|---|---|
 | src | string | undefined |
 | msg | string | undefined |
-
-### Unauthorized
-
-```solidity
-error Unauthorized(string only)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| only | string | undefined |
 
 

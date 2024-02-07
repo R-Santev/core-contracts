@@ -8,7 +8,7 @@ import "./BalanceState.sol";
 import "./../Withdrawal/Withdrawal.sol";
 import "./../AccessControl/AccessControl.sol";
 
-// TODO: An optimization I can do is keeping only once the general apr params for a block so I don' need to keep them for every single user
+// TODO: An optimization we can do is keeping only once the general apr params for a block so we don' have to keep them for every single user
 
 abstract contract Staking is
     IStaking,
@@ -19,10 +19,9 @@ abstract contract Staking is
     StateSyncer,
     AccessControl
 {
-    /// @notice A constant for the maximum comission
+    /// @notice A constant for the maximum comission a validator can receive from the delegator's rewards
     uint256 public constant MAX_COMMISSION = 100;
-
-    /// @notice A state variable to keep the minimum amount for stake
+    /// @notice A state variable to keep the minimum amount of stake
     uint256 public minStake;
 
     // _______________ Modifiers _______________
@@ -40,6 +39,7 @@ abstract contract Staking is
     }
 
     function __Staking_init_unchained(uint256 newMinStake) internal onlyInitializing {
+        // TODO: all requre statements should be replaced with Error
         require(newMinStake >= 1 ether, "INVALID_MIN_STAKE");
         minStake = newMinStake;
     }
@@ -74,7 +74,6 @@ abstract contract Staking is
     function stake() external payable onlyValidator {
         uint256 currentBalance = balanceOf(msg.sender);
         _ensureStakeIsInRange(msg.value, currentBalance);
-
         _processStake(msg.sender, msg.value);
         rewardPool.onStake(msg.sender, msg.value, currentBalance);
     }
@@ -82,26 +81,16 @@ abstract contract Staking is
     /**
      * @inheritdoc IStaking
      */
-    function openVestedPosition(uint256 durationWeeks) external payable onlyValidator {
+    function stakeWithVesting(uint256 durationWeeks) external payable onlyValidator {
         _ensureStakeIsInRange(msg.value, balanceOf(msg.sender));
-
         _processStake(msg.sender, msg.value);
         rewardPool.onNewStakePosition(msg.sender, durationWeeks);
     }
 
     /**
-     * @inheritdoc IValidatorSet
-     */
-    function totalSupplyAt() external view returns (uint256) {
-        return super.totalSupply();
-    }
-
-    // _______________ Public functions _______________
-
-    /**
      * @inheritdoc IStaking
      */
-    function unstake(uint256 amount) public {
+    function unstake(uint256 amount) external {
         uint256 balanceAfterUnstake = _unstake(amount);
         StateSyncer._syncUnstake(msg.sender, amount);
         LiquidStaking._collectTokens(msg.sender, amount);
@@ -109,14 +98,6 @@ abstract contract Staking is
         _registerWithdrawal(msg.sender, amountToWithdraw);
 
         emit Unstaked(msg.sender, amount);
-    }
-
-    // Public functions that are view
-    /**
-     * @inheritdoc IStaking
-     */
-    function getValidators() public view returns (address[] memory) {
-        return validatorsAddresses;
     }
 
     // _______________ Internal functions _______________
@@ -139,6 +120,7 @@ abstract contract Staking is
 
     function _stake(address account, uint256 amount) private {
         _mint(account, amount);
+
         emit Staked(account, amount);
     }
 
@@ -168,7 +150,6 @@ abstract contract Staking is
         }
     }
 
-    // Private functions that are view
     function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
         if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
     }

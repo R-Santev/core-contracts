@@ -2,9 +2,9 @@
 
 
 
+> BalanceState
 
-
-
+Contracts that keeps the state of the staker&#39;s balance. It works like a very simple and minimalistic ERC20 token. It is a temporary solution until a more complex governance mechanism is implemented.
 
 
 
@@ -81,6 +81,62 @@ Gets validator by address.
 | withdrawableRewards | uint256 | withdrawable rewards |
 | active | bool | activity status |
 
+### getValidators
+
+```solidity
+function getValidators() external view returns (address[])
+```
+
+Gets all validators. Returns already unactive validators as well.
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address[] | Returns array of addresses |
+
+### stakeBalances
+
+```solidity
+function stakeBalances(address) external view returns (uint256)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | address | undefined |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### totalBalance
+
+```solidity
+function totalBalance() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### totalBlocks
 
 ```solidity
@@ -107,23 +163,6 @@ Total amount of blocks in a given epoch
 
 ```solidity
 function totalSupply() external view returns (uint256)
-```
-
-
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
-### totalSupplyAt
-
-```solidity
-function totalSupplyAt() external view returns (uint256)
 ```
 
 Returns the total supply

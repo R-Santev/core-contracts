@@ -5,6 +5,10 @@ import "./ILiquidStaking.sol";
 import "./../../ValidatorSetBase.sol";
 import "./../../../LiquidityToken/ILiquidityToken.sol";
 
+/**
+ * @title LiquidStaking
+ * @notice An extension of the Staking contract that enables the distribution of liquid tokens to stakers and delegators
+ */
 abstract contract LiquidStaking is ILiquidStaking, ValidatorSetBase {
     /// Liquid Staking token given to stakers and delegators
     address internal _liquidToken;

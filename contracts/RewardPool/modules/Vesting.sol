@@ -20,11 +20,6 @@ struct RPS {
     uint64 timestamp;
 }
 
-struct ValReward {
-    uint256 taken;
-    uint256 total;
-}
-
 struct ValRewardHistory {
     uint256 totalReward;
     uint256 epoch;

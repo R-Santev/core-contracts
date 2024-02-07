@@ -83,13 +83,11 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         _commitBlockNumbers[newEpochId] = block.number;
         epochEndBlocks.push(epoch.endBlock);
 
-        // Apply new exponent in case it was changed in the latest epoch
-        _applyPendingExp();
+        _applyPendingExp(); // Apply new exponent in case it was changed in the latest epoch
 
         emit NewEpoch(id, epoch.startBlock, epoch.endBlock, epoch.epochRoot);
     }
 
-    // External View functions
     /// @notice Get the validator by its address
     /// @param validatorAddress address
     function getValidator(
@@ -109,10 +107,17 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         Validator memory v = validators[validatorAddress];
         blsKey = v.blsKey;
         stake = balanceOf(validatorAddress);
-        totalStake = stake + rewardPool.getDelegationPoolSupplyOf(validatorAddress);
+        totalStake = stake + rewardPool.totalDelegationOf(validatorAddress);
         commission = v.commission;
         withdrawableRewards = rewardPool.getValidatorReward(validatorAddress);
         active = v.active;
+    }
+
+    /**
+     * @inheritdoc IValidatorSet
+     */
+    function getValidators() public view returns (address[] memory) {
+        return validatorsAddresses;
     }
 
     /**
@@ -130,12 +135,6 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         uint256 epochIndex = epochEndBlocks.findUpperBound(blockNumber);
         return epochs[epochIndex];
     }
-
-    // _______________ Public functions _______________
-
-    // _______________ Internal functions _______________
-
-    // _______________ Private functions _______________
 
     // slither-disable-next-line unused-state,naming-convention
     uint256[50] private __gap;

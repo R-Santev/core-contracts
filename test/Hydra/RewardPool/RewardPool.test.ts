@@ -131,9 +131,9 @@ export function RunDelegateClaimTests(): void {
       expect(event?.args?.validator, "event.arg.validator").to.equal(this.signers.validators[0].address);
       expect(event?.args?.amount, "event.arg.amount").to.equal(reward);
 
-      await expect(tx, "WithdrawalFinished")
-        .to.emit(rewardPool, "WithdrawalFinished")
-        .withArgs(rewardPool.address, this.signers.validators[0].address, reward);
+      await expect(tx, "RewardsWithdrawn")
+        .to.emit(rewardPool, "RewardsWithdrawn")
+        .withArgs(this.signers.validators[0].address, reward);
     });
 
     it("should claim delegator reward", async function () {

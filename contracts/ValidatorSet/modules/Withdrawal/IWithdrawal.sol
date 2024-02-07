@@ -14,14 +14,14 @@ interface IWithdrawal {
     /**
      * @notice Calculates how much can be withdrawn for account in this epoch.
      * @param account The account to calculate amount for
-     * @return Amount withdrawable (in MATIC wei)
+     * @return Amount withdrawable (in wei)
      */
     function withdrawable(address account) external view returns (uint256);
 
     /**
      * @notice Calculates how much is yet to become withdrawable for account.
      * @param account The account to calculate amount for
-     * @return Amount not yet withdrawable (in MATIC wei)
+     * @return Amount not yet withdrawable (in wei)
      */
     function pendingWithdrawals(address account) external view returns (uint256);
 }

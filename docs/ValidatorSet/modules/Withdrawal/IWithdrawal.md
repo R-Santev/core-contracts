@@ -30,7 +30,7 @@ Calculates how much is yet to become withdrawable for account.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | Amount not yet withdrawable (in MATIC wei) |
+| _0 | uint256 | Amount not yet withdrawable (in wei) |
 
 ### withdraw
 
@@ -68,7 +68,7 @@ Calculates how much can be withdrawn for account in this epoch.
 
 | Name | Type | Description |
 |---|---|---|
-| _0 | uint256 | Amount withdrawable (in MATIC wei) |
+| _0 | uint256 | Amount withdrawable (in wei) |
 
 
 

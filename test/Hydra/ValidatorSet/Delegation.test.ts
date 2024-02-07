@@ -76,9 +76,9 @@ export function RunDelegationTests(): void {
         .to.emit(rewardPool, "DelegatorRewardClaimed")
         .withArgs(this.signers.validators[0].address, this.signers.delegator.address, delegatorReward);
 
-      await expect(tx, "WithdrawalFinished")
-        .to.emit(rewardPool, "WithdrawalFinished")
-        .withArgs(rewardPool.address, this.signers.delegator.address, delegatorReward);
+      await expect(tx, "RewardsWithdrawn")
+        .to.emit(rewardPool, "RewardsWithdrawn")
+        .withArgs(this.signers.delegator.address, delegatorReward);
 
       await expect(tx, "Delegated")
         .to.emit(validatorSet, "Delegated")
@@ -153,9 +153,9 @@ export function RunDelegationTests(): void {
         .to.emit(validatorSet, "WithdrawalRegistered")
         .withArgs(this.signers.delegator.address, undelegateAmount);
 
-      await expect(tx, "WithdrawalFinished")
-        .to.emit(rewardPool, "WithdrawalFinished")
-        .withArgs(rewardPool.address, this.signers.delegator.address, expectedReward);
+      await expect(tx, "RewardsWithdrawn")
+        .to.emit(rewardPool, "RewardsWithdrawn")
+        .withArgs(this.signers.delegator.address, expectedReward);
 
       await expect(tx, "Undelegated")
         .to.emit(validatorSet, "Undelegated")
@@ -187,9 +187,9 @@ export function RunDelegationTests(): void {
         .to.emit(validatorSet, "WithdrawalRegistered")
         .withArgs(this.signers.delegator.address, delegatedAmount);
 
-      await expect(tx, "WithdrawalFinished")
-        .to.emit(rewardPool, "WithdrawalFinished")
-        .withArgs(rewardPool.address, this.signers.delegator.address, expectedReward);
+      await expect(tx, "RewardsWithdrawn")
+        .to.emit(rewardPool, "RewardsWithdrawn")
+        .withArgs(this.signers.delegator.address, expectedReward);
 
       await expect(tx, "Undelegated")
         .to.emit(validatorSet, "Undelegated")
@@ -269,7 +269,7 @@ export function RunDelegationTests(): void {
         const { validatorSet } = await loadFixture(this.fixtures.vestManagerFixture);
 
         await expect(
-          validatorSet.connect(this.signers.accounts[3]).openVestedDelegatePosition(this.signers.accounts[3].address, 1)
+          validatorSet.connect(this.signers.accounts[3]).delegateWithVesting(this.signers.accounts[3].address, 1)
         ).to.be.revertedWithCustomError(validatorSet, "NotVestingManager");
       });
 

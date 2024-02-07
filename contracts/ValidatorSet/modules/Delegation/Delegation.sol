@@ -32,7 +32,6 @@ abstract contract Delegation is
      */
     function delegate(address validator) public payable {
         if (msg.value == 0) revert DelegateRequirement({src: "delegate", msg: "DELEGATING_AMOUNT_ZERO"});
-
         _processDelegate(validator, msg.sender, msg.value);
     }
 
@@ -46,7 +45,7 @@ abstract contract Delegation is
     /**
      * @inheritdoc IDelegation
      */
-    function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable onlyManager {
+    function delegateWithVesting(address validator, uint256 durationWeeks) external payable onlyManager {
         _delegateToVal(validator, msg.sender, msg.value);
         rewardPool.onNewDelegatePosition(validator, msg.sender, durationWeeks, currentEpochId, msg.value);
 
@@ -66,7 +65,7 @@ abstract contract Delegation is
     /**
      * @inheritdoc IDelegation
      */
-    function cutDelegatePosition(address validator, uint256 amount) external onlyManager {
+    function undelegateWithVesting(address validator, uint256 amount) external onlyManager {
         (uint256 penalty, ) = rewardPool.onCutPosition(validator, msg.sender, amount, 0);
 
         uint256 amountAfterPenalty = amount - penalty;
@@ -80,13 +79,11 @@ abstract contract Delegation is
 
     function _processDelegate(address validator, address delegator, uint256 amount) internal {
         _delegateToVal(validator, delegator, amount);
-
         rewardPool.onDelegate(validator, delegator, amount);
     }
 
     function _processUndelegate(address validator, address delegator, uint256 amount) internal {
         rewardPool.onUndelegate(validator, delegator, amount);
-
         _registerWithdrawal(delegator, amount);
         _postUndelegateAction(validator, delegator, amount);
     }
@@ -96,11 +93,11 @@ abstract contract Delegation is
     function _delegateToVal(address validator, address delegator, uint256 amount) private {
         if (!validators[validator].active) revert Unauthorized("INVALID_VALIDATOR");
 
-        _increaseValidatorBalance(validator, amount);
+        _increaseValidatorPower(validator, amount);
         _postDelegateAction(validator, delegator, amount);
     }
 
-    function _increaseValidatorBalance(address validator, uint256 amount) private {
+    function _increaseValidatorPower(address validator, uint256 amount) private {
         _mint(validator, amount);
     }
 

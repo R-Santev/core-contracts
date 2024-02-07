@@ -13,7 +13,7 @@ abstract contract Withdrawal is IWithdrawal, ReentrancyGuardUpgradeable, Validat
 
     // TODO: This should be a parameter of the contract. Add NetworkParams based on the Polygon implementation
     uint256 public constant WITHDRAWAL_WAIT_PERIOD = 1;
-    mapping(address => WithdrawalQueue) internal _withdrawals;
+    mapping(address => WithdrawalQueue) private _withdrawals;
 
     /**
      * @inheritdoc IWithdrawal
@@ -23,7 +23,9 @@ abstract contract Withdrawal is IWithdrawal, ReentrancyGuardUpgradeable, Validat
         WithdrawalQueue storage queue = _withdrawals[msg.sender];
         (uint256 amount, uint256 newHead) = queue.withdrawable(currentEpochId);
         queue.head = newHead;
+
         emit WithdrawalFinished(msg.sender, to, amount);
+
         // slither-disable-next-line low-level-calls
         (bool success, ) = to.call{value: amount}(""); // solhint-disable-line avoid-low-level-calls
         require(success, "WITHDRAWAL_FAILED");
