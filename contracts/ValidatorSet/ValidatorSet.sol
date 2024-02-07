@@ -131,13 +131,6 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         return epochs[epochIndex];
     }
 
-    /**
-     * @inheritdoc IValidatorSet
-     */
-    function balanceOf(address account) public view override(Delegation, IValidatorSet, Staking) returns (uint256) {
-        return super.balanceOf(account);
-    }
-
     // _______________ Public functions _______________
 
     // _______________ Internal functions _______________

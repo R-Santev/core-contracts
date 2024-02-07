@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "./../../ValidatorSetBase.sol";
+import "./../../IValidatorSet.sol";
 
-contract BalanceState {
+abstract contract BalanceState is IValidatorSet {
     uint256 totalBalance;
 
     mapping(address => uint256) stakeBalances;

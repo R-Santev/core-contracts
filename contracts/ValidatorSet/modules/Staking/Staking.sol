@@ -89,14 +89,6 @@ abstract contract Staking is
         rewardPool.onNewStakePosition(msg.sender, durationWeeks);
     }
 
-    // External functions that are view
-    /**
-     * @inheritdoc IValidatorSet
-     */
-    function balanceOf(address account) public view virtual override(BalanceState, IValidatorSet) returns (uint256) {
-        return super.balanceOf(account);
-    }
-
     /**
      * @inheritdoc IValidatorSet
      */

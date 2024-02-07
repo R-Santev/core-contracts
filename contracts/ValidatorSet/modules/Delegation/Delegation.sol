@@ -78,18 +78,6 @@ abstract contract Delegation is
         emit PositionCut(msg.sender, validator, amountAfterPenalty);
     }
 
-    // External functions that are view
-    /**
-     * @inheritdoc IValidatorSet
-     */
-    function balanceOf(address account) public view virtual override(BalanceState, IValidatorSet) returns (uint256) {
-        return super.balanceOf(account);
-    }
-
-    // _______________ Public functions _______________
-
-    // _______________ Internal functions _______________
-
     function _processDelegate(address validator, address delegator, uint256 amount) internal {
         _delegateToVal(validator, delegator, amount);
 
