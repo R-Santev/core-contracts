@@ -11,8 +11,6 @@ import "./../Withdrawal/IWithdrawal.sol";
 import "./../Staking/ILiquidStaking.sol";
 import "./../../../RewardPool/IRewardPool.sol";
 
-import "hardhat/console.sol";
-
 contract VestManager is Initializable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 

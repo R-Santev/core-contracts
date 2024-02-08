@@ -10,8 +10,6 @@ import "./../Withdrawal/Withdrawal.sol";
 import "./../../ValidatorSetBase.sol";
 import "./../../../common/CommonStructs.sol";
 
-import "hardhat/console.sol";
-
 abstract contract Delegation is
     IDelegation,
     ValidatorSetBase,
