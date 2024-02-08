@@ -86,7 +86,7 @@ interface IRewardPool {
      * @dev Sets the validator of the pool
      * @param validator The address of the validator
      */
-    function onCreatePool(address validator) external;
+    function onNewValidator(address validator) external;
 
     /**
      * @notice Sets the reward params for the new vested position

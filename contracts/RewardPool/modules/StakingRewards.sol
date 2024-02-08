@@ -106,7 +106,6 @@ abstract contract StakingRewards is IRewardPool, Vesting, RewardsWithdrawal {
         delete valRewards[staker];
     }
 
-    // External View functions
     function getValidatorReward(address validator) external view returns (uint256) {
         return valRewards[validator].total - valRewards[validator].taken;
     }

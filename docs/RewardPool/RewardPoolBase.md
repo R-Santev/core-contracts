@@ -1,10 +1,10 @@
-# IRewardPool
+# RewardPoolBase
 
 
 
+> RewarPoolBase
 
-
-
+the base state variables and functionality needed in different modules that the ValidatorSet uses.
 
 
 
@@ -378,6 +378,23 @@ Gets the total amount delegated to a validator.
 |---|---|---|
 | _0 | uint256 | Amount delegated (in MATIC wei) |
 
+### validatorSet
+
+```solidity
+function validatorSet() external view returns (contract IValidatorSet)
+```
+
+The address of the ValidatorSet contract
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IValidatorSet | undefined |
+
 
 
 ## Events
@@ -416,6 +433,22 @@ event DelegatorRewardDistributed(address indexed validator, uint256 amount)
 |---|---|---|
 | validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
+
+### Initialized
+
+```solidity
+event Initialized(uint8 version)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| version  | uint8 | undefined |
 
 ### PositionRewardClaimed
 

@@ -11,12 +11,13 @@ import "./../Withdrawal/IWithdrawal.sol";
 import "./../Staking/ILiquidStaking.sol";
 import "./../../../RewardPool/IRewardPool.sol";
 
+import "hardhat/console.sol";
+
 contract VestManager is Initializable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice The staking address
     address public delegation;
-
     /// @notice The reward pool address
     address public rewardPool;
 
@@ -40,19 +41,16 @@ contract VestManager is Initializable, OwnableUpgradeable {
 
     function openVestedDelegatePosition(address validator, uint256 durationWeeks) external payable onlyOwner {
         IDelegation(delegation).delegateWithVesting{value: msg.value}(validator, durationWeeks);
-
         _sendLiquidTokens(msg.sender, msg.value);
     }
 
     function topUpVestedDelegatePosition(address validator) external payable onlyOwner {
         IDelegation(delegation).topUpDelegatePosition{value: msg.value}(validator);
-
         _sendLiquidTokens(msg.sender, msg.value);
     }
 
     function cutVestedDelegatePosition(address validator, uint256 amount) external payable onlyOwner {
         _fulfillLiquidTokens(msg.sender, amount);
-
         IDelegation(delegation).undelegateWithVesting(validator, amount);
     }
 

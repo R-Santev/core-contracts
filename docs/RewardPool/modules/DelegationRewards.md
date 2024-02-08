@@ -704,29 +704,6 @@ Checks if balance change was already made in the current epoch
 |---|---|---|
 | _0 | bool | undefined |
 
-### isBalanceChangeMade
-
-```solidity
-function isBalanceChangeMade(address validator, uint256 currentEpochNum) external view returns (bool)
-```
-
-Checks if balance change was already made in the current epoch
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | Validator to delegate to |
-| currentEpochNum | uint256 | undefined |
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | bool | undefined |
-
 ### isMaturingDelegatePosition
 
 ```solidity
@@ -828,22 +805,6 @@ The minimum delegation amount to be delegated
 |---|---|---|
 | _0 | uint256 | undefined |
 
-### onCreatePool
-
-```solidity
-function onCreatePool(address validator) external nonpayable
-```
-
-Creates a pool
-
-*Sets the validator of the pool*
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| validator | address | The address of the validator |
-
 ### onCutPosition
 
 ```solidity
@@ -924,6 +885,22 @@ Sets the reward params for the new vested position
 |---|---|---|
 | staker | address | Address of the staker |
 | durationWeeks | uint256 | Vesting duration in weeks |
+
+### onNewValidator
+
+```solidity
+function onNewValidator(address validator) external nonpayable
+```
+
+Creates a pool
+
+*Sets the validator of the pool*
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | The address of the validator |
 
 ### onStake
 
@@ -1199,6 +1176,23 @@ Keeps the rewards history of the validators
 | epoch | uint256 | undefined |
 | timestamp | uint256 | undefined |
 
+### validatorSet
+
+```solidity
+function validatorSet() external view returns (contract IValidatorSet)
+```
+
+The address of the ValidatorSet contract
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | contract IValidatorSet | undefined |
+
 ### vestingBonus
 
 ```solidity
@@ -1436,5 +1430,21 @@ error StakeRequirement(string src, string msg)
 |---|---|---|
 | src | string | undefined |
 | msg | string | undefined |
+
+### Unauthorized
+
+```solidity
+error Unauthorized(string only)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| only | string | undefined |
 
 

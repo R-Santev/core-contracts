@@ -40,11 +40,7 @@ abstract contract LiquidStaking is ILiquidStaking, ValidatorSetBase {
         _burnTokens(staker, unstakedAmount);
     }
 
-    function _onDelegate(address delegator, uint256 stakedAmount) internal {
-        _mintTokens(delegator, stakedAmount);
-    }
-
-    function _onUndelegate(address delegator, uint256 unstakedAmount) internal {
+    function _collectDelegatorTokens(address delegator, uint256 unstakedAmount) internal {
         _burnTokens(delegator, unstakedAmount);
     }
 

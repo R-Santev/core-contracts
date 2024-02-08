@@ -10,6 +10,8 @@ import "./../Withdrawal/Withdrawal.sol";
 import "./../../ValidatorSetBase.sol";
 import "./../../../common/CommonStructs.sol";
 
+import "hardhat/console.sol";
+
 abstract contract Delegation is
     IDelegation,
     ValidatorSetBase,
@@ -32,21 +34,24 @@ abstract contract Delegation is
      */
     function delegate(address validator) public payable {
         if (msg.value == 0) revert DelegateRequirement({src: "delegate", msg: "DELEGATING_AMOUNT_ZERO"});
-        _processDelegate(validator, msg.sender, msg.value);
+        _delegate(validator, msg.sender, msg.value);
+        rewardPool.onDelegate(validator, msg.sender, msg.value);
     }
 
     /**
      * @inheritdoc IDelegation
      */
     function undelegate(address validator, uint256 amount) external {
-        _processUndelegate(validator, msg.sender, amount);
+        rewardPool.onUndelegate(validator, msg.sender, amount);
+        _undelegate(validator, msg.sender, amount);
+        _registerWithdrawal(msg.sender, amount);
     }
 
     /**
      * @inheritdoc IDelegation
      */
     function delegateWithVesting(address validator, uint256 durationWeeks) external payable onlyManager {
-        _delegateToVal(validator, msg.sender, msg.value);
+        _delegate(validator, msg.sender, msg.value);
         rewardPool.onNewDelegatePosition(validator, msg.sender, durationWeeks, currentEpochId, msg.value);
 
         emit PositionOpened(msg.sender, validator, durationWeeks, msg.value);
@@ -56,7 +61,7 @@ abstract contract Delegation is
      * @inheritdoc IDelegation
      */
     function topUpDelegatePosition(address validator) external payable onlyManager {
-        _delegateToVal(validator, msg.sender, msg.value);
+        _delegate(validator, msg.sender, msg.value);
         rewardPool.onTopUpDelegatePosition(validator, msg.sender, currentEpochId, msg.value);
 
         emit PositionTopUp(msg.sender, validator, msg.value);
@@ -66,51 +71,31 @@ abstract contract Delegation is
      * @inheritdoc IDelegation
      */
     function undelegateWithVesting(address validator, uint256 amount) external onlyManager {
-        (uint256 penalty, ) = rewardPool.onCutPosition(validator, msg.sender, amount, 0);
-
+        (uint256 penalty, ) = rewardPool.onCutPosition(validator, msg.sender, amount, currentEpochId);
+        _undelegate(validator, msg.sender, amount);
         uint256 amountAfterPenalty = amount - penalty;
-
         _burnAmount(penalty);
         _registerWithdrawal(msg.sender, amountAfterPenalty);
-        _postUndelegateAction(msg.sender, validator, amount);
 
         emit PositionCut(msg.sender, validator, amountAfterPenalty);
     }
 
-    function _processDelegate(address validator, address delegator, uint256 amount) internal {
-        _delegateToVal(validator, delegator, amount);
-        rewardPool.onDelegate(validator, delegator, amount);
-    }
-
-    function _processUndelegate(address validator, address delegator, uint256 amount) internal {
-        rewardPool.onUndelegate(validator, delegator, amount);
-        _registerWithdrawal(delegator, amount);
-        _postUndelegateAction(validator, delegator, amount);
-    }
-
     // _______________ Private functions _______________
 
-    function _delegateToVal(address validator, address delegator, uint256 amount) private {
+    function _delegate(address validator, address delegator, uint256 amount) private {
         if (!validators[validator].active) revert Unauthorized("INVALID_VALIDATOR");
 
-        _increaseValidatorPower(validator, amount);
-        _postDelegateAction(validator, delegator, amount);
-    }
-
-    function _increaseValidatorPower(address validator, uint256 amount) private {
-        _mint(validator, amount);
-    }
-
-    function _postDelegateAction(address validator, address delegator, uint256 amount) private {
+        _mint(validator, amount); // increase validator power
         StateSyncer._syncStake(validator, amount);
-        LiquidStaking._onDelegate(delegator, amount);
+        LiquidStaking._distributeTokens(delegator, amount);
 
         emit Delegated(validator, delegator, amount);
     }
 
-    function _postUndelegateAction(address validator, address delegator, uint256 amount) private {
+    function _undelegate(address validator, address delegator, uint256 amount) private {
+        _burn(validator, amount); // decrease validator power
         StateSyncer._syncUnstake(validator, amount);
-        LiquidStaking._onUndelegate(delegator, amount);
+        LiquidStaking._collectDelegatorTokens(delegator, amount);
 
         emit Undelegated(validator, delegator, amount);
     }

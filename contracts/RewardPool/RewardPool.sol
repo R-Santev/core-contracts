@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import "./IRewardPool.sol";
+import "./RewardPoolBase.sol";
 import "./../common/System/System.sol";
 import "./modules/StakingRewards.sol";
 import "./modules/DelegationRewards.sol";
@@ -14,14 +14,12 @@ import "./libs/VestingPositionLib.sol";
  * @notice The Reward Pool contract is responsible for distributing rewards to validators and delegators
  * based on the uptime and the amount of stake and delegation.
  */
-contract RewardPool is IRewardPool, System, StakingRewards, DelegationRewards {
+contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards {
     using VestingPositionLib for VestingPosition;
     using DelegationPoolLib for DelegationPool;
 
     /// @notice Reward Wallet
     address public rewardWallet;
-    /// @notice The address of the ValidatorSet contract
-    IValidatorSet public validatorSet;
     /// @notice Mapping used to keep the paid rewards per epoch
     mapping(uint256 => uint256) public paidRewardPerEpoch;
 
@@ -33,6 +31,7 @@ contract RewardPool is IRewardPool, System, StakingRewards, DelegationRewards {
         uint256 newMinDelegation,
         address aprManager
     ) external initializer onlySystemCall {
+        __RewardPoolBase_init(newValidatorSet);
         __DelegationRewards_init(newMinDelegation);
         __APR_init(aprManager);
         _initialize(newRewardWallet, newValidatorSet);
@@ -40,7 +39,6 @@ contract RewardPool is IRewardPool, System, StakingRewards, DelegationRewards {
 
     function _initialize(address newRewardWallet, IValidatorSet newValidatorSet) private {
         require(newRewardWallet != address(0) && address(newValidatorSet) != address(0), "ZERO_ADDRESS");
-        validatorSet = newValidatorSet;
         rewardWallet = newRewardWallet;
     }
 
@@ -61,11 +59,11 @@ contract RewardPool is IRewardPool, System, StakingRewards, DelegationRewards {
         require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
 
         uint256 totalSupply = validatorSet.totalSupply();
-        uint256 reward = _calcRewardIndex(epoch, totalSupply, epochSize);
+        uint256 rewardIndex = _calcRewardIndex(epoch, totalSupply, epochSize);
         uint256 length = uptime.length;
         uint256 totalReward = 0;
         for (uint256 i = 0; i < length; ++i) {
-            totalReward += _distributeReward(epochId, uptime[i], reward, totalSupply, totalBlocks);
+            totalReward += _distributeReward(epochId, uptime[i], rewardIndex, totalSupply, totalBlocks);
         }
 
         paidRewardPerEpoch[epochId] = totalReward;
@@ -85,7 +83,6 @@ contract RewardPool is IRewardPool, System, StakingRewards, DelegationRewards {
         uint256 balance = validatorSet.balanceOf(uptime.validator);
         DelegationPool storage delegationPool = delegationPools[uptime.validator];
         uint256 delegation = delegationPool.supply;
-
         // slither-disable-next-line divide-before-multiply
         uint256 validatorReward = (fullReward * (balance + delegation) * uptime.signedBlocks) /
             (totalSupply * totalBlocks);

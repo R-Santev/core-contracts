@@ -84,7 +84,6 @@ abstract contract Vesting is APR {
 
     // _______________ Public functions _______________
 
-    // Public functions that are view
     function isActivePosition(address staker) public view returns (bool) {
         VestingPosition memory position = positions[staker];
         return position.isActive();

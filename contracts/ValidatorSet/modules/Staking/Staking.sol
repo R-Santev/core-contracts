@@ -108,7 +108,7 @@ abstract contract Staking is
         validators[validator].active = true;
         validators[validator].registered = true;
         validatorsAddresses.push(validator);
-        rewardPool.onCreatePool(validator);
+        rewardPool.onNewValidator(validator);
     }
 
     function _processStake(address account, uint256 amount) internal {

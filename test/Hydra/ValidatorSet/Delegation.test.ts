@@ -409,7 +409,6 @@ export function RunDelegationTests(): void {
         await validatorSet.connect(user2).newManager(rewardPool.address);
         const VestManagerFactory = new VestManager__factory(this.vestManagerOwners[0]);
         const manager2 = await getUserManager(validatorSet, user2, VestManagerFactory);
-
         await manager2.openVestedDelegatePosition(this.delegatedValidators[0], 1, {
           value: this.minDelegation.mul(2),
         });
@@ -417,6 +416,7 @@ export function RunDelegationTests(): void {
         await liquidToken.connect(user2).transfer(this.vestManagerOwners[0].address, 1);
         const balanceToCut = balance.add(1);
         await liquidToken.connect(this.vestManagerOwners[0]).approve(vestManager.address, balanceToCut);
+
         await expect(vestManager.cutVestedDelegatePosition(this.delegatedValidators[0], balanceToCut))
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
           .withArgs("vesting", "INSUFFICIENT_BALANCE");
@@ -452,6 +452,7 @@ export function RunDelegationTests(): void {
           this.delegatedValidators[1],
           vestManagers[1].address
         );
+
         const cutAmount = delegatedBalanceBefore.div(2);
         const position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
 
