@@ -363,24 +363,33 @@ export function RunVestedDelegateClaimTests(): void {
       );
     });
 
-    it.skip("should properly claim reward when top-ups and not full reward matured", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-        this.fixtures.multipleVestedDelegationsFixture
+    it.only("should properly claim reward when top-ups and not full reward matured", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+        this.fixtures.vestManagerFixture
       );
 
-      // top-up
-      await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
+      const duration = 1; // 1 week
+      vestManager.openVestedDelegatePosition(this.delegatedValidators[1], duration, { value: this.minDelegation });
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
+      );
+
+      console.log("TESTS topup second: ");
 
       // calculate rewards
-      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address);
+      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
       const base = await rewardPool.base();
       const vestBonus = await rewardPool.getVestingBonus(1);
       const rsi = await rewardPool.rsi();
       const expectedBaseReward = await calculateExpectedReward(base, vestBonus, rsi, baseReward);
 
       // top-up
-      await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
-
+      await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[1], {
+        value: this.minDelegation,
+      });
       // more rewards to be distributed but with the top-up data
       await commitEpoch(
         systemValidatorSet,
@@ -389,17 +398,23 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
+      console.log("TESTS 1 ");
+
       const topUpRewardsTimestamp = await time.latest();
-      const position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
+      const position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
       const toBeMatured = hre.ethers.BigNumber.from(topUpRewardsTimestamp).sub(position.start);
 
+      console.log("TESTS 2 ");
+
       const topUpReward = (
-        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address)
+        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address)
       ).sub(baseReward);
+      console.log("TESTS 3 ");
       // no rsi because top-up is used
       const defaultRSI = await rewardPool.getDefaultRSI();
       const expectedTopUpReward = await calculateExpectedReward(base, vestBonus, defaultRSI, topUpReward);
       const expectedReward = expectedBaseReward.add(expectedTopUpReward);
+      console.log("TESTS 4 ");
 
       // calculate max reward
       const maxVestBonus = await rewardPool.getVestingBonus(52);
@@ -408,9 +423,11 @@ export function RunVestedDelegateClaimTests(): void {
       const maxTopUpReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, topUpReward);
       const maxReward = maxBaseReward.add(maxTopUpReward);
 
+      console.log("TESTS 5 ");
+
       // enter the maturing state
-      // 52 weeks is the duration + the needed time for the top-up to be matured
-      await time.increase(WEEK * 52 * 2 + toBeMatured.toNumber() + 1);
+      // two week is the duration + the needed time for the top-up to be matured
+      await time.increase(2 * WEEK + toBeMatured.toNumber() + 1);
 
       // commit epoch, so more reward is added that must not be claimed now
       await commitEpoch(
@@ -420,12 +437,14 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
+      console.log("TESTS 6 ");
+
       // prepare params for call
       let { epochNum, topUpIndex } = await retrieveRPSData(
         validatorSet,
         rewardPool,
         this.delegatedValidators[1],
-        vestManagers[1].address
+        vestManager.address
       );
 
       // 1 because we have only one top-up
@@ -435,13 +454,17 @@ export function RunVestedDelegateClaimTests(): void {
       const areRewardsMatured = position.end.add(toBeMatured).lt(await time.latest());
       expect(areRewardsMatured, "areRewardsMatured").to.be.true;
 
+      console.log("TESTS 7 ");
+
       await expect(
-        await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
+        await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
         "claimVestedPositionReward"
       ).to.changeEtherBalances(
         [hre.ethers.constants.AddressZero, this.vestManagerOwners[1].address, rewardPool.address],
         [maxReward.sub(expectedReward), expectedReward, maxReward.mul(-1)]
       );
+
+      console.log("TESTS 8 ");
     });
 
     it.skip("should properly claim reward when top-ups and full reward matured", async function () {

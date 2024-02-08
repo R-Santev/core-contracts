@@ -9,6 +9,8 @@ import "./RewardsWithdrawal.sol";
 import "./../libs/DelegationPoolLib.sol";
 import "./../libs/VestingPositionLib.sol";
 
+import "hardhat/console.sol";
+
 abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawal {
     using DelegationPoolLib for DelegationPool;
     using VestingPositionLib for VestingPosition;
@@ -229,7 +231,10 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         }
 
         delegation.deposit(delegator, amount);
+        console.log("Contract C 1");
+
         _topUpDelegatePosition(validator, delegator, delegation, currentEpochId, amount);
+        console.log("Contract C End");
     }
 
     /**
@@ -321,6 +326,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         reward = _applyCustomReward(position, reward, rsi);
         sumReward += reward;
         sumMaxReward += maxReward;
+
         // If the full maturing period is finished, withdraw also the reward made after the vesting period
         if (block.timestamp > position.end + position.duration) {
             uint256 additionalReward = delegationPool.claimRewards(msg.sender);
@@ -409,6 +415,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         if (rpsData.timestamp == 0) {
             revert DelegateRequirement({src: "vesting", msg: "INVALID_EPOCH"});
         }
+
         // If the given RPS is for future time - it is wrong, so revert
         if (rpsData.timestamp > alreadyMatured) {
             revert DelegateRequirement({src: "vesting", msg: "WRONG_RPS"});
@@ -438,6 +445,8 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         // keep the change in the account pool params
         uint256 balance = delegation.balanceOf(delegator);
         int256 correction = delegation.correctionOf(delegator);
+        console.log("Contract C 2");
+
         _onAccountParamsChange(validator, delegator, balance, correction, currentEpochId);
         // Modify end period of position, decrease RSI bonus
         // balance / old balance = increase coefficient
@@ -474,7 +483,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     ) private {
         if (isBalanceChangeMade(validator, delegator, params.epochNum)) {
             // Top up can be made only once per epoch
-            revert StakeRequirement({src: "vesting", msg: "TOPUP_ALREADY_MADE"});
+            revert StakeRequirement({src: "_addNewDelegationPoolParam", msg: "BALANCE_CHANGE_ALREADY_MADE"});
         }
 
         delegationPoolParamsHistory[validator][delegator].push(params);
@@ -502,10 +511,14 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         int256 correction,
         uint256 currentEpochId
     ) private {
+        console.log("Contract C 3");
+
         if (isBalanceChangeMade(validator, delegator, currentEpochId)) {
             // Top up can be made only once on epoch
-            revert DelegateRequirement({src: "vesting", msg: "TOPUP_ALREADY_MADE"});
+            revert DelegateRequirement({src: "_onAccountParamsChange", msg: "BALANCE_CHANGE_ALREADY_MADE"});
         }
+
+        console.log("Contract C 4");
 
         delegationPoolParamsHistory[validator][delegator].push(
             DelegationPoolParams({balance: balance, correction: correction, epochNum: currentEpochId})
@@ -522,7 +535,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
             revert DelegateRequirement({src: "vesting", msg: "INVALID_TOP_UP_INDEX"});
         }
 
-        DelegationPoolParams memory params = delegationPoolParamsHistory[validator][manager][paramsIndex]; // poolParamsChanges[validator][manager][paramsIndex];
+        DelegationPoolParams memory params = delegationPoolParamsHistory[validator][manager][paramsIndex];
         if (params.epochNum > epochNumber) {
             revert DelegateRequirement({src: "vesting", msg: "LATER_TOP_UP"});
         } else if (params.epochNum == epochNumber) {

@@ -124,6 +124,7 @@ export interface Fixtures {
       liquidToken: LiquidityToken;
       VestManagerFactory: VestManager__factory;
       vestManager: VestManager;
+      vestManagerOwner: SignerWithAddress;
     }>;
   };
   vestedDelegationFixture: {

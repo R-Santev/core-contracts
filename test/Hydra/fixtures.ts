@@ -302,6 +302,7 @@ async function vestManagerFixtureFunction(this: Mocha.Context) {
     liquidToken,
     VestManagerFactory: newManagerFactory,
     vestManager: newManager,
+    vestManagerOwner: this.signers.accounts[4],
   };
 }
 
