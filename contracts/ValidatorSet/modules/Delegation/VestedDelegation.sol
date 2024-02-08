@@ -35,7 +35,6 @@ abstract contract VestedDelegation is IVestedDelegation, VestFactory {
         userVestManagers[msg.sender].push(managerAddr);
     }
 
-    // External functions that are view
     /**
      * @inheritdoc IVestedDelegation
      */
@@ -45,7 +44,6 @@ abstract contract VestedDelegation is IVestedDelegation, VestFactory {
 
     // _______________ Public functions _______________
 
-    // Public functions that are view
     /**
      * @notice Claims that a delegator is a vest manager or not.
      * @param delegator Delegator's address
@@ -53,8 +51,4 @@ abstract contract VestedDelegation is IVestedDelegation, VestFactory {
     function isVestingManager(address delegator) public view returns (bool) {
         return vestManagers[delegator] != address(0);
     }
-
-    // _______________ Internal functions _______________
-
-    // _______________ Private functions _______________
 }

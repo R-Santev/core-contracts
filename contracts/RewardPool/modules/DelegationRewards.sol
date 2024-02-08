@@ -427,7 +427,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         uint256 currentEpochId,
         uint256 amount
     ) private {
-        if (!isActiveDelegatePosition(validator, delegator)) {
+        if (!delegationPositions[validator][delegator].isActive()) {
             revert DelegateRequirement({src: "vesting", msg: "POSITION_NOT_ACTIVE"});
         }
 

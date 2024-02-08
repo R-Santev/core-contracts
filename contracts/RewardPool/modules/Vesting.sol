@@ -39,22 +39,17 @@ abstract contract Vesting is APR {
 
     /// @notice The vesting positions for every validator
     mapping(address => VestingPosition) public positions;
-
     /// @notice The vesting positions for every delegator.
     /// @dev Validator => Delegator => VestingPosition
     mapping(address => mapping(address => VestingPosition)) public delegationPositions;
-
     /// @notice Keeps the history of the RPS for the validators
     /// @dev This is used to keep the history RPS in order to calculate properly the rewards
     mapping(address => mapping(uint256 => RPS)) public historyRPS;
-
     /// @notice Keeps the rewards history of the validators
     mapping(address => ValRewardHistory[]) public valRewardHistory;
-
     /// @notice Historical Validator Delegation Pool's Params per delegator
     /// @dev Validator => Delegator => Top-up data
     mapping(address => mapping(address => DelegationPoolParams[])) public delegationPoolParamsHistory;
-
     /// @dev Keep the account parameters before the top-up, so we can separately calculate the rewards made before a top-up is made
     /// @dev This is because we need to apply the RSI bonus to the rewards made before the top-up
     /// @dev and not apply the RSI bonus to the rewards made after the top-up
@@ -62,10 +57,25 @@ abstract contract Vesting is APR {
 
     // _______________ External functions _______________
 
-    // External functions that are view
-    // function getValRewardsValues(address validator) external view returns (ValReward[] memory) {
-    //     return valRewards[validator];
-    // }
+    function isActivePosition(address staker) external view returns (bool) {
+        return positions[staker].isActive();
+    }
+
+    function isActiveDelegatePosition(address validator, address delegator) external view returns (bool) {
+        return delegationPositions[validator][delegator].isActive();
+    }
+
+    function isMaturingPosition(address staker) external view returns (bool) {
+        return positions[staker].isMaturing();
+    }
+
+    function isMaturingDelegatePosition(address validator, address delegator) external view returns (bool) {
+        return delegationPositions[validator][delegator].isMaturing();
+    }
+
+    function isStakerInVestingCycle(address staker) external view returns (bool) {
+        return positions[staker].isStakerInVestingCycle();
+    }
 
     function getValRewardsHistoryValues(address validator) external view returns (ValRewardHistory[] memory) {
         return valRewardHistory[validator];
@@ -82,32 +92,6 @@ abstract contract Vesting is APR {
         return values;
     }
 
-    // _______________ Public functions _______________
-
-    function isActivePosition(address staker) public view returns (bool) {
-        VestingPosition memory position = positions[staker];
-        return position.isActive();
-    }
-
-    function isActiveDelegatePosition(address validator, address delegator) public view returns (bool) {
-        VestingPosition memory position = delegationPositions[validator][delegator];
-        return position.isActive();
-    }
-
-    function isMaturingPosition(address staker) public view returns (bool) {
-        VestingPosition memory position = positions[staker];
-        return position.isMaturing();
-    }
-
-    function isMaturingDelegatePosition(address validator, address delegator) public view returns (bool) {
-        VestingPosition memory position = delegationPositions[validator][delegator];
-        return position.isMaturing();
-    }
-
-    function isStakerInVestingCycle(address staker) public view returns (bool) {
-        return positions[staker].isStakerInVestingCycle();
-    }
-
     // _______________ Internal functions _______________
 
     /**
@@ -121,7 +105,6 @@ abstract contract Vesting is APR {
         positions[staker].rsiBonus = 0;
     }
 
-    // Internal functions that are view
     /** @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
@@ -134,7 +117,15 @@ abstract contract Vesting is APR {
         return slash;
     }
 
-    // Internal functions that are pure
+    function _saveEpochRPS(address validator, uint256 rewardPerShare, uint256 epochNumber) internal {
+        require(rewardPerShare > 0, "rewardPerShare must be greater than 0");
+
+        RPS memory validatorRPSes = historyRPS[validator][epochNumber];
+        require(validatorRPSes.value == 0, "RPS already saved");
+
+        historyRPS[validator][epochNumber] = RPS({value: uint192(rewardPerShare), timestamp: uint64(block.timestamp)});
+    }
+
     function _applyCustomReward(
         VestingPosition memory position,
         uint256 reward,
@@ -152,7 +143,6 @@ abstract contract Vesting is APR {
 
     // _______________ Private functions _______________
 
-    // Private functions that are view
     function _calculateDurationIncrease(
         uint256 amount,
         uint256 oldBalance,
@@ -164,14 +154,5 @@ abstract contract Vesting is APR {
         } else {
             return (amount * duration) / oldBalance;
         }
-    }
-
-    function _saveEpochRPS(address validator, uint256 rewardPerShare, uint256 epochNumber) internal {
-        require(rewardPerShare > 0, "rewardPerShare must be greater than 0");
-
-        RPS memory validatorRPSes = historyRPS[validator][epochNumber];
-        require(validatorRPSes.value == 0, "RPS already saved");
-
-        historyRPS[validator][epochNumber] = RPS({value: uint192(rewardPerShare), timestamp: uint64(block.timestamp)});
     }
 }

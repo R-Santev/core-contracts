@@ -25,13 +25,13 @@ abstract contract StakingRewards is IRewardPool, Vesting, RewardsWithdrawal {
      * @inheritdoc IRewardPool
      */
     function onStake(address staker, uint256 amount, uint256 oldBalance) external {
-        if (isActivePosition(staker)) {
+        if (positions[staker].isActive()) {
             _handleStake(staker, amount, oldBalance);
         }
     }
 
     function claimValidatorReward() external {
-        if (isStakerInVestingCycle(msg.sender)) {
+        if (positions[msg.sender].isStakerInVestingCycle()) {
             return;
         }
 
@@ -47,7 +47,7 @@ abstract contract StakingRewards is IRewardPool, Vesting, RewardsWithdrawal {
     }
 
     function claimValidatorReward(uint256 rewardHistoryIndex) public {
-        if (!isMaturingPosition(msg.sender)) {
+        if (!positions[msg.sender].isMaturing()) {
             revert StakeRequirement({src: "vesting", msg: "NOT_MATURING"});
         }
 
@@ -89,7 +89,7 @@ abstract contract StakingRewards is IRewardPool, Vesting, RewardsWithdrawal {
      * @inheritdoc IRewardPool
      */
     function onNewStakePosition(address staker, uint256 durationWeeks) external {
-        if (isStakerInVestingCycle(staker)) {
+        if (positions[staker].isStakerInVestingCycle()) {
             revert StakeRequirement({src: "vesting", msg: "ALREADY_IN_VESTING"});
         }
 
