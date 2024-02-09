@@ -5,8 +5,6 @@ import { expect } from "chai";
 
 import { EPOCHS_YEAR, WEEK } from "../constants";
 import {
-  calculateExpectedBaseReward,
-  calculateExpectedMaxBaseReward,
   calculateExpectedReward,
   commitEpoch,
   commitEpochs,
@@ -268,21 +266,33 @@ export function RunVestedDelegateClaimTests(): void {
     });
 
     it("should properly claim reward when no top-ups and not full reward matured", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-        this.fixtures.multipleVestedDelegationsFixture
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+        this.fixtures.vestManagerFixture
+      );
+
+      const duration = 1; // 1 week
+      vestManager.openVestedDelegatePosition(this.delegatedValidators[1], duration, { value: this.minDelegation });
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
       );
 
       // calculate base rewards
-      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address);
+      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
       const base = await rewardPool.base();
+      const vestBonus = await rewardPool.getVestingBonus(1);
+      const rsi = await rewardPool.rsi();
+      const expectedReward = await calculateExpectedReward(base, vestBonus, rsi, baseReward);
 
       // calculate max reward
       const maxVestBonus = await rewardPool.getVestingBonus(52);
-      const maxRSI = await rewardPool.rsi();
+      const maxRSI = await rewardPool.getMaxRSI();
       const maxReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
 
       // enter the maturing state
-      await time.increase(WEEK * 52 + 1);
+      await time.increase(WEEK * 1 + 1);
 
       // commit epoch, so more reward is added that must not be claimed now
       await commitEpoch(
@@ -297,73 +307,19 @@ export function RunVestedDelegateClaimTests(): void {
         validatorSet,
         rewardPool,
         this.delegatedValidators[1],
-        vestManagers[1].address
+        vestManager.address
       );
 
       await expect(
-        await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
+        await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
         "claimVestedPositionReward"
-      ).to.changeEtherBalances([this.vestManagerOwners[1].address, rewardPool.address], [maxReward, maxReward.mul(-1)]);
+      ).to.changeEtherBalances(
+        [hre.ethers.constants.AddressZero, this.vestManagerOwners[0].address, rewardPool.address],
+        [maxReward.sub(expectedReward), expectedReward, maxReward.mul(-1)]
+      );
     });
 
     it("should properly claim reward when no top-ups and full reward matured", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-        this.fixtures.multipleVestedDelegationsFixture
-      );
-
-      // calculate base rewards
-      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address);
-      const base = await rewardPool.base();
-
-      // calculate max reward
-      const maxVestBonus = await rewardPool.getVestingBonus(52);
-      const maxRSI = await rewardPool.rsi();
-      const maxReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
-
-      // ensure maturing has finished
-      await time.increase(WEEK * 52 * 2 + 1);
-
-      // more rewards to be distributed but with the top-up data
-      await commitEpoch(
-        systemValidatorSet,
-        rewardPool,
-        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
-        this.epochSize
-      );
-
-      const additionalReward = (
-        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address)
-      ).sub(baseReward);
-
-      const expectedAdditionalReward = base.mul(additionalReward).div(10000).div(EPOCHS_YEAR);
-      const maxAdditionalReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, additionalReward);
-
-      // prepare params for call
-      const { position, epochNum, topUpIndex } = await retrieveRPSData(
-        validatorSet,
-        rewardPool,
-        this.delegatedValidators[1],
-        vestManagers[1].address
-      );
-
-      // ensure rewards are matured
-      const areRewardsMatured = position.end.add(position.duration).lt(await time.latest());
-      expect(areRewardsMatured, "areRewardsMatured").to.be.true;
-
-      const expectedFinalReward = maxReward.add(expectedAdditionalReward);
-
-      const maxFinalReward = maxReward.add(maxAdditionalReward);
-
-      await expect(
-        await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
-        "claimVestedPositionReward"
-      ).to.changeEtherBalances(
-        [hre.ethers.constants.AddressZero, this.vestManagerOwners[1].address, rewardPool.address],
-        [maxFinalReward.sub(expectedFinalReward), expectedFinalReward, maxFinalReward.mul(-1)]
-      );
-    });
-
-    it.only("should properly claim reward when top-ups and not full reward matured", async function () {
       const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
         this.fixtures.vestManagerFixture
       );
@@ -377,9 +333,75 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
-      console.log("TESTS topup second: ");
+      // calculate base rewards
+      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
+      const base = await rewardPool.base();
+      const vestBonus = await rewardPool.getVestingBonus(1);
+      const rsi = await rewardPool.rsi();
+      const expectedReward = await calculateExpectedReward(base, vestBonus, rsi, baseReward);
 
-      // calculate rewards
+      // calculate max reward
+      const maxVestBonus = await rewardPool.getVestingBonus(52);
+      const maxRSI = await rewardPool.getMaxRSI();
+      const maxReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
+
+      // ensure maturing has finished
+      await time.increase(WEEK * 2 + 1);
+
+      // more rewards to be distributed but with the top-up data
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
+      );
+
+      const additionalReward = (
+        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address)
+      ).sub(baseReward);
+
+      const expectedAdditionalReward = base.mul(additionalReward).div(10000).div(EPOCHS_YEAR);
+      const maxAdditionalReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, additionalReward);
+
+      // prepare params for call
+      const { position, epochNum, topUpIndex } = await retrieveRPSData(
+        validatorSet,
+        rewardPool,
+        this.delegatedValidators[1],
+        vestManager.address
+      );
+
+      // ensure rewards are matured
+      const areRewardsMatured = position.end.add(position.duration).lt(await time.latest());
+      expect(areRewardsMatured, "areRewardsMatured").to.be.true;
+
+      const expectedFinalReward = expectedReward.add(expectedAdditionalReward);
+      const maxFinalReward = maxReward.add(maxAdditionalReward);
+
+      await expect(
+        await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
+        "claimVestedPositionReward"
+      ).to.changeEtherBalances(
+        [hre.ethers.constants.AddressZero, this.vestManagerOwners[0].address, rewardPool.address],
+        [maxFinalReward.sub(expectedFinalReward), expectedFinalReward, maxFinalReward.mul(-1)]
+      );
+    });
+
+    it("should properly claim reward when top-ups and not full reward matured", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+        this.fixtures.vestManagerFixture
+      );
+
+      const duration = 1; // 1 week
+      vestManager.openVestedDelegatePosition(this.delegatedValidators[1], duration, { value: this.minDelegation });
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
+      );
+
+      // calculate bae rewards
       const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
       const base = await rewardPool.base();
       const vestBonus = await rewardPool.getVestingBonus(1);
@@ -398,23 +420,18 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
-      console.log("TESTS 1 ");
-
       const topUpRewardsTimestamp = await time.latest();
       const position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
       const toBeMatured = hre.ethers.BigNumber.from(topUpRewardsTimestamp).sub(position.start);
 
-      console.log("TESTS 2 ");
-
+      // calculate top-up reward
       const topUpReward = (
         await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address)
       ).sub(baseReward);
-      console.log("TESTS 3 ");
       // no rsi because top-up is used
       const defaultRSI = await rewardPool.getDefaultRSI();
       const expectedTopUpReward = await calculateExpectedReward(base, vestBonus, defaultRSI, topUpReward);
       const expectedReward = expectedBaseReward.add(expectedTopUpReward);
-      console.log("TESTS 4 ");
 
       // calculate max reward
       const maxVestBonus = await rewardPool.getVestingBonus(52);
@@ -422,8 +439,6 @@ export function RunVestedDelegateClaimTests(): void {
       const maxBaseReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
       const maxTopUpReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, topUpReward);
       const maxReward = maxBaseReward.add(maxTopUpReward);
-
-      console.log("TESTS 5 ");
 
       // enter the maturing state
       // two week is the duration + the needed time for the top-up to be matured
@@ -437,8 +452,6 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
-      console.log("TESTS 6 ");
-
       // prepare params for call
       let { epochNum, topUpIndex } = await retrieveRPSData(
         validatorSet,
@@ -450,36 +463,42 @@ export function RunVestedDelegateClaimTests(): void {
       // 1 because we have only one top-up
       topUpIndex = 1;
 
-      // ensure rewards are maturing
       const areRewardsMatured = position.end.add(toBeMatured).lt(await time.latest());
       expect(areRewardsMatured, "areRewardsMatured").to.be.true;
-
-      console.log("TESTS 7 ");
 
       await expect(
         await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
         "claimVestedPositionReward"
       ).to.changeEtherBalances(
-        [hre.ethers.constants.AddressZero, this.vestManagerOwners[1].address, rewardPool.address],
+        [hre.ethers.constants.AddressZero, this.vestManagerOwners[0].address, rewardPool.address],
         [maxReward.sub(expectedReward), expectedReward, maxReward.mul(-1)]
       );
-
-      console.log("TESTS 8 ");
     });
 
-    it.skip("should properly claim reward when top-ups and full reward matured", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-        this.fixtures.multipleVestedDelegationsFixture
+    it("should properly claim reward when top-ups and full reward matured", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+        this.fixtures.vestManagerFixture
       );
 
-      // calculate rewards
-      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address);
+      const duration = 1; // 1 week
+      vestManager.openVestedDelegatePosition(this.delegatedValidators[1], duration, { value: this.minDelegation });
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
+      );
+
+      // calculate base rewards
+      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
       const base = await rewardPool.base();
       const vestBonus = await rewardPool.getVestingBonus(1);
+      const rsi = await rewardPool.rsi();
       const defaultRSI = await rewardPool.getDefaultRSI();
+      const expectedBaseReward = await calculateExpectedReward(base, vestBonus, rsi, baseReward);
 
       // top-up
-      await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
+      await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
 
       // more rewards to be distributed but with the top-up data
       await commitEpoch(
@@ -489,23 +508,20 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
+      // calculate top-up reward
       const topUpReward = (
-        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address)
+        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address)
       ).sub(baseReward);
-
-      const expectedBaseReward = await calculateExpectedBaseReward(rewardPool, baseReward, this.epochsInYear);
-
-      const expectedTopUpReward = base
-        .add(vestBonus)
-        .mul(defaultRSI)
-        .mul(topUpReward)
-        .div(10000 * 10000)
-        .div(this.epochsInYear);
+      const expectedTopUpReward = await calculateExpectedReward(base, vestBonus, defaultRSI, topUpReward);
 
       const expectedReward = expectedBaseReward.add(expectedTopUpReward);
+
       // calculate max reward
-      const maxBaseReward = await calculateExpectedMaxBaseReward(rewardPool, baseReward, this.epochsInYear);
-      const maxTopUpReward = await calculateExpectedMaxBaseReward(rewardPool, topUpReward, this.epochsInYear);
+      const maxRSI = await rewardPool.getMaxRSI();
+      const maxVestBonus = await rewardPool.getVestingBonus(52);
+      const maxBaseReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
+      const maxTopUpReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, topUpReward);
+
       const maxReward = maxBaseReward.add(maxTopUpReward);
 
       // enter the maturing state
@@ -521,18 +537,18 @@ export function RunVestedDelegateClaimTests(): void {
       );
 
       const additionalReward = (
-        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address)
+        await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address)
       ).sub(baseReward.add(topUpReward));
 
-      const expectedAdditionalReward = base.mul(additionalReward).div(10000).div(this.epochsInYear);
-      const maxAdditionalReward = await calculateExpectedMaxBaseReward(rewardPool, additionalReward, this.epochsInYear);
+      const expectedAdditionalReward = base.mul(additionalReward).div(10000).div(EPOCHS_YEAR);
+      const maxAdditionalReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, additionalReward);
 
       // prepare params for call
       let { position, epochNum, topUpIndex } = await retrieveRPSData(
         validatorSet,
         rewardPool,
         this.delegatedValidators[1],
-        vestManagers[1].address
+        vestManager.address
       );
 
       // 1 because we have only one top-up, but the first is for the openDelegatorPosition
@@ -546,10 +562,10 @@ export function RunVestedDelegateClaimTests(): void {
       const maxFinalReward = maxReward.add(maxAdditionalReward);
 
       await expect(
-        await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
+        await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
         "claimVestedPositionReward"
       ).to.changeEtherBalances(
-        [hre.ethers.constants.AddressZero, this.vestManagerOwners[1].address, rewardPool.address],
+        [hre.ethers.constants.AddressZero, this.vestManagerOwners[0].address, rewardPool.address],
         [maxFinalReward.sub(expectedFinalReward), expectedFinalReward, maxFinalReward.mul(-1)]
       );
     });
@@ -710,23 +726,38 @@ export function RunVestedDelegateClaimTests(): void {
         .withArgs("vesting", "EARLIER_TOP_UP");
     });
 
-    it.skip("should claim only reward made before top-up", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-        this.fixtures.multipleVestedDelegationsFixture
+    it("should claim only reward made before top-up", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+        this.fixtures.vestManagerFixture
       );
 
-      // calculate rewards
-      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address);
-      const maxBaseReward = await calculateExpectedMaxBaseReward(rewardPool, baseReward, this.epochsInYear);
-      const reward = await calculateExpectedBaseReward(rewardPool, baseReward, this.epochsInYear);
+      const duration = 1; // 1 week
+      vestManager.openVestedDelegatePosition(this.delegatedValidators[1], duration, { value: this.minDelegation });
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
+      );
+
+      // calculate base rewards
+      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
+      const base = await rewardPool.base();
+      const vestBonus = await rewardPool.getVestingBonus(1);
+      const rsi = await rewardPool.rsi();
+      const expectedBaseReward = await calculateExpectedReward(base, vestBonus, rsi, baseReward);
+
+      const maxRSI = await rewardPool.getMaxRSI();
+      const maxVestBonus = await rewardPool.getVestingBonus(52);
+      const maxBaseReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
 
       const rewardDistributionTime = await time.latest();
-      let position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
+      let position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
       const toBeMatured = hre.ethers.BigNumber.from(rewardDistributionTime).sub(position.start);
       time.increase(50);
 
       // top-up
-      await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
+      await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
 
       // more rewards to be distributed but with the top-up data
       await commitEpoch(
@@ -744,7 +775,7 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
-      position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
+      position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
       // enter the maturing state
       await time.increaseTo(position.end.toNumber() + toBeMatured.toNumber() + 1);
 
@@ -759,31 +790,46 @@ export function RunVestedDelegateClaimTests(): void {
       expect(areRewardsMaturing).to.be.true;
 
       await expect(
-        await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
+        await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
         "claimVestedPositionReward"
       ).to.changeEtherBalances(
-        [this.vestManagerOwners[1].address, rewardPool.address],
-        [reward, maxBaseReward.mul(-1)]
+        [hre.ethers.constants.AddressZero, this.vestManagerOwners[0].address, rewardPool.address],
+        [maxBaseReward.sub(expectedBaseReward), expectedBaseReward, maxBaseReward.mul(-1)]
       );
     });
 
-    it.skip("should claim rewards multiple times", async function () {
-      const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-        this.fixtures.multipleVestedDelegationsFixture
+    it("should claim rewards multiple times", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+        this.fixtures.vestManagerFixture
+      );
+
+      const duration = 1; // 1 week
+      vestManager.openVestedDelegatePosition(this.delegatedValidators[1], duration, { value: this.minDelegation });
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+        this.epochSize
       );
 
       // calculate rewards
-      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManagers[1].address);
-      const maxBaseReward = await calculateExpectedMaxBaseReward(rewardPool, baseReward, this.epochsInYear);
-      const reward = await calculateExpectedBaseReward(rewardPool, baseReward, this.epochsInYear);
+      const baseReward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[1], vestManager.address);
+      const base = await rewardPool.base();
+      const vestBonus = await rewardPool.getVestingBonus(1);
+      const rsi = await rewardPool.rsi();
+      const reward = await calculateExpectedReward(base, vestBonus, rsi, baseReward);
+
+      const maxRSI = await rewardPool.getMaxRSI();
+      const maxVestBonus = await rewardPool.getVestingBonus(52);
+      const maxBaseReward = await calculateExpectedReward(base, maxVestBonus, maxRSI, baseReward);
 
       const rewardDistributionTime = await time.latest();
-      let position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
+      let position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
       const toBeMatured = hre.ethers.BigNumber.from(rewardDistributionTime).sub(position.start);
       time.increase(50);
 
       // top-up
-      await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
+      await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
 
       // more rewards to be distributed but with the top-up data
       await commitEpoch(
@@ -800,8 +846,8 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
-      // prepare params for call
-      position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
+      position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
+
       // enter the maturing state
       await time.increaseTo(position.end.toNumber() + toBeMatured.toNumber() + 1);
 
@@ -816,14 +862,14 @@ export function RunVestedDelegateClaimTests(): void {
       expect(areRewardsMaturing).to.be.true;
 
       await expect(
-        await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
+        await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum, topUpIndex),
         "claimVestedPositionReward"
       ).to.changeEtherBalances(
-        [this.vestManagerOwners[1].address, rewardPool.address],
+        [this.vestManagerOwners[0].address, rewardPool.address],
         [reward, maxBaseReward.mul(-1)]
       );
 
-      time.increase(WEEK * 52);
+      time.increase(WEEK * 2);
 
       await commitEpoch(
         systemValidatorSet,
@@ -831,8 +877,8 @@ export function RunVestedDelegateClaimTests(): void {
         [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
         this.epochSize
       );
-      expect(await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum + 1, topUpIndex + 1))
-        .to.not.be.reverted;
+      expect(await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum + 1, topUpIndex + 1)).to
+        .not.be.reverted;
 
       time.increase(WEEK * 52);
       await commitEpoch(
@@ -842,8 +888,8 @@ export function RunVestedDelegateClaimTests(): void {
         this.epochSize
       );
 
-      expect(await vestManagers[1].claimVestedPositionReward(this.delegatedValidators[1], epochNum + 1, topUpIndex + 1))
-        .to.not.be.reverted;
+      expect(await vestManager.claimVestedPositionReward(this.delegatedValidators[1], epochNum + 1, topUpIndex + 1)).to
+        .not.be.reverted;
     });
   });
 }

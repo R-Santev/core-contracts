@@ -199,36 +199,6 @@ export async function retrieveRPSData(
   return { position, epochNum, topUpIndex };
 }
 
-export async function calculateExpectedBaseReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
-  // calculate base reward
-  const base = await rewardPool.base();
-  const vestBonus = await rewardPool.getVestingBonus(1);
-  const rsi = await rewardPool.rsi();
-  const expectedReward = base
-    .add(vestBonus)
-    .mul(rsi)
-    .mul(reward)
-    .div(10000 * 10000)
-    .div(epochsInYear);
-
-  return expectedReward;
-}
-
-export async function calculateExpectedMaxBaseReward(rewardPool: RewardPool, reward: BigNumber, epochsInYear: number) {
-  // calculate max reward
-  const base = await rewardPool.base();
-  const maxVestBonus = await rewardPool.getVestingBonus(52);
-  const maxRSI = await rewardPool.getMaxRSI();
-  const maxReward = base
-    .add(maxVestBonus)
-    .mul(maxRSI)
-    .mul(reward)
-    .div(10000 * 10000)
-    .div(epochsInYear);
-
-  return maxReward;
-}
-
 export async function calculateExpectedReward(
   base: BigNumber,
   vestBonus: BigNumber,

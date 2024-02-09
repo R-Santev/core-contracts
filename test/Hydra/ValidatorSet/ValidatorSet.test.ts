@@ -158,7 +158,7 @@ describe("ValidatorSet", function () {
       const validator = await systemValidatorSet.getValidator(adminAddress);
 
       expect(
-        validator.blsKey.map((x) => x.toHexString()),
+        validator.blsKey.map((x: any) => x.toHexString()),
         "blsKey"
       ).to.deep.equal(this.validatorInit.pubkey);
       expect(await systemValidatorSet.balanceOf(adminAddress), "balanceOf").to.equal(this.minStake.mul(2));
@@ -410,7 +410,7 @@ describe("ValidatorSet", function () {
         expect(validator.totalStake, "total stake").to.equal(0);
         expect(validator.commission).to.equal(0);
         expect(validator.active).to.equal(true);
-        expect(validator.blsKey.map((x) => x.toHexString())).to.deep.equal(mcl.g2ToHex(keyPair.pubkey));
+        expect(validator.blsKey.map((x: any) => x.toHexString())).to.deep.equal(mcl.g2ToHex(keyPair.pubkey));
       });
 
       it("should revert when attempt to register twice", async function () {

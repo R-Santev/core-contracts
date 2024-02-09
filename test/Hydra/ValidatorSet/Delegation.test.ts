@@ -696,7 +696,7 @@ export function RunDelegationTests(): void {
           vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
         )
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
-          .withArgs("vesting", "TOPUP_ALREADY_MADE");
+          .withArgs("_onAccountParamsChange", "BALANCE_CHANGE_ALREADY_MADE");
       });
 
       it("should increase duration no more than 100%", async function () {

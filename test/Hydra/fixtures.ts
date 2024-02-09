@@ -363,6 +363,13 @@ async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
   };
 }
 
+// const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
+//   this.fixtures.multipleVestedDelegationsFixture
+// );
+
+// // top-up
+// await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
+
 async function blsFixtureFunction(this: Mocha.Context) {
   const BLSFactory = new BLS__factory(this.signers.admin);
   const BLS = await BLSFactory.deploy();

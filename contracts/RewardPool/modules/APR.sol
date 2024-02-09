@@ -60,9 +60,10 @@ contract APR is Initializable, AccessControl {
     function applyMaxReward(uint256 reward) public view returns (uint256) {
         // TODO: Consider setting max base
         // max vesting bonus is 52 weeks
+        uint256 _rsi = getMaxRSI();
         uint256 vestBonus = getVestingBonus(52);
 
-        uint256 bonus = (base + vestBonus) * rsi;
+        uint256 bonus = (base + vestBonus) * _rsi;
 
         return ((reward * bonus) / (10000 * 10000)) / EPOCHS_YEAR;
     }

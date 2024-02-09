@@ -10,8 +10,6 @@ import "./../Withdrawal/Withdrawal.sol";
 import "./../../ValidatorSetBase.sol";
 import "./../../../common/CommonStructs.sol";
 
-import "hardhat/console.sol";
-
 abstract contract Delegation is
     IDelegation,
     ValidatorSetBase,
@@ -63,9 +61,7 @@ abstract contract Delegation is
     function topUpDelegatePosition(address validator) external payable onlyManager {
         _delegate(validator, msg.sender, msg.value);
 
-        console.log("Contract B 1");
         rewardPool.onTopUpDelegatePosition(validator, msg.sender, currentEpochId, msg.value);
-        console.log("Contract B 2");
 
         emit PositionTopUp(msg.sender, validator, msg.value);
     }

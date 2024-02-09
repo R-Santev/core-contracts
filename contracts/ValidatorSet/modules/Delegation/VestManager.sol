@@ -11,8 +11,6 @@ import "./../Withdrawal/IWithdrawal.sol";
 import "./../Staking/ILiquidStaking.sol";
 import "./../../../RewardPool/IRewardPool.sol";
 
-import "hardhat/console.sol";
-
 contract VestManager is Initializable, OwnableUpgradeable {
     using SafeERC20 for IERC20;
 
@@ -45,13 +43,9 @@ contract VestManager is Initializable, OwnableUpgradeable {
     }
 
     function topUpVestedDelegatePosition(address validator) external payable onlyOwner {
-        console.log("Contract A 1");
-
         IDelegation(delegation).topUpDelegatePosition{value: msg.value}(validator);
-        console.log("Contract A 2");
 
         _sendLiquidTokens(msg.sender, msg.value);
-        console.log("Contract A 3");
     }
 
     function cutVestedDelegatePosition(address validator, uint256 amount) external payable onlyOwner {

@@ -9,8 +9,6 @@ import "./RewardsWithdrawal.sol";
 import "./../libs/DelegationPoolLib.sol";
 import "./../libs/VestingPositionLib.sol";
 
-import "hardhat/console.sol";
-
 abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawal {
     using DelegationPoolLib for DelegationPool;
     using VestingPositionLib for VestingPosition;
@@ -231,10 +229,8 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         }
 
         delegation.deposit(delegator, amount);
-        console.log("Contract C 1");
 
         _topUpDelegatePosition(validator, delegator, delegation, currentEpochId, amount);
-        console.log("Contract C End");
     }
 
     /**
@@ -445,7 +441,6 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         // keep the change in the account pool params
         uint256 balance = delegation.balanceOf(delegator);
         int256 correction = delegation.correctionOf(delegator);
-        console.log("Contract C 2");
 
         _onAccountParamsChange(validator, delegator, balance, correction, currentEpochId);
         // Modify end period of position, decrease RSI bonus
@@ -511,14 +506,10 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         int256 correction,
         uint256 currentEpochId
     ) private {
-        console.log("Contract C 3");
-
         if (isBalanceChangeMade(validator, delegator, currentEpochId)) {
             // Top up can be made only once on epoch
             revert DelegateRequirement({src: "_onAccountParamsChange", msg: "BALANCE_CHANGE_ALREADY_MADE"});
         }
-
-        console.log("Contract C 4");
 
         delegationPoolParamsHistory[validator][delegator].push(
             DelegationPoolParams({balance: balance, correction: correction, epochNum: currentEpochId})
