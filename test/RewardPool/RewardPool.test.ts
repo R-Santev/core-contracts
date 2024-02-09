@@ -725,7 +725,7 @@ export function RunVestedDelegateClaimTests(): void {
 
       // prepare params for call
       const currentEpochId = await validatorSet.currentEpochId();
-      const rpsValues = await rewardPool.getRPSValues(delegatedValidator.address, currentEpochId);
+      const rpsValues = await rewardPool.getRPSValues(delegatedValidator.address, 0, currentEpochId);
       const epochNum = findProperRPSIndex(rpsValues, position.start.add(toBeMatured));
       const topUpIndex = 0;
 
@@ -787,7 +787,7 @@ export function RunVestedDelegateClaimTests(): void {
 
       // prepare params for call
       const currentEpochId = await validatorSet.currentEpochId();
-      const rpsValues = await rewardPool.getRPSValues(delegatedValidator.address, currentEpochId);
+      const rpsValues = await rewardPool.getRPSValues(delegatedValidator.address, 0, currentEpochId);
       const epochNum = findProperRPSIndex(rpsValues, position.start.add(toBeMatured));
       const topUpIndex = 0;
 

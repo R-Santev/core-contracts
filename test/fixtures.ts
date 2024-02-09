@@ -4,14 +4,14 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import * as hre from "hardhat";
 
-import * as mcl from "../../ts/mcl";
+import * as mcl from "../ts/mcl";
 import {
   System__factory,
   BLS__factory,
   LiquidityToken__factory,
   RewardPool__factory,
   ValidatorSet__factory,
-} from "../../typechain-types";
+} from "../typechain-types";
 import { CHAIN_ID, DOMAIN, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
 import { getMaxEpochReward, commitEpochs, registerValidator, createNewVestManager } from "./helper";
 

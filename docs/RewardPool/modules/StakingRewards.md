@@ -425,7 +425,7 @@ function getMaxRSI() external pure returns (uint256 nominator)
 ### getRPSValues
 
 ```solidity
-function getRPSValues(address validator, uint256 currentEpochId) external view returns (struct RPS[])
+function getRPSValues(address validator, uint256 startEpoch, uint256 endEpoch) external view returns (struct RPS[])
 ```
 
 
@@ -437,7 +437,8 @@ function getRPSValues(address validator, uint256 currentEpochId) external view r
 | Name | Type | Description |
 |---|---|---|
 | validator | address | undefined |
-| currentEpochId | uint256 | undefined |
+| startEpoch | uint256 | undefined |
+| endEpoch | uint256 | undefined |
 
 #### Returns
 

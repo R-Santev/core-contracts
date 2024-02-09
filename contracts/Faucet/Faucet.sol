@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "../interfaces/Errors.sol";
+import "./../common/Errors.sol";
 
 error InsufficientCooldown();
 

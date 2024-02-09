@@ -4,7 +4,7 @@ import { expect } from "chai";
 import * as hre from "hardhat";
 
 // eslint-disable-next-line camelcase
-import { VestManager__factory } from "../../../typechain-types";
+import { VestManager__factory } from "../../typechain-types";
 import { WEEK } from "../constants";
 import { calculatePenalty, claimPositionRewards, commitEpoch, commitEpochs, getUserManager } from "../helper";
 import { RunDelegateClaimTests, RunVestedDelegateClaimTests } from "../RewardPool/RewardPool.test";

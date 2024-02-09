@@ -3,7 +3,7 @@ import { loadFixture, setBalance } from "@nomicfoundation/hardhat-network-helper
 import { expect } from "chai";
 import * as hre from "hardhat";
 
-import * as mcl from "../../../ts/mcl";
+import * as mcl from "../../ts/mcl";
 import { Fixtures, Signers } from "../mochaContext";
 import { CHAIN_ID, DOMAIN, MAX_COMMISSION, SYSTEM } from "../constants";
 import { generateFixtures } from "../fixtures";

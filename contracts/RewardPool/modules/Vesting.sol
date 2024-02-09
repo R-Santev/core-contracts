@@ -77,16 +77,16 @@ abstract contract Vesting is APR {
         return positions[staker].isStakerInVestingCycle();
     }
 
+    function getValRewardsHistoryValues(address validator) external view returns (ValRewardHistory[] memory) {
+        return valRewardHistory[validator];
+    }
+
     function getRPSValues(
         address validator,
         uint256 startEpoch,
         uint256 endEpoch
     ) external view returns (RPS[] memory) {
         require(startEpoch <= endEpoch, "Invalid args");
-
-        if (endEpoch == 0) {
-            endEpoch = currentEpochId;
-        }
 
         RPS[] memory values = new RPS[](endEpoch - startEpoch + 1);
         uint256 itemIndex = 0;

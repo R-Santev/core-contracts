@@ -10,7 +10,7 @@ import {
   ValidatorSet,
   VestManager,
   VestManager__factory,
-} from "../../typechain-types";
+} from "../typechain-types";
 
 export interface Signers {
   accounts: SignerWithAddress[];

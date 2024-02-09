@@ -5,11 +5,11 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-wit
 import * as hre from "hardhat";
 import { BigNumber, ContractTransaction } from "ethers";
 
-import * as mcl from "../../ts/mcl";
-import { ValidatorSet } from "../../typechain-types/contracts/ValidatorSet";
-import { RewardPool } from "../../typechain-types/contracts/RewardPool";
-import { VestManager } from "../../typechain-types/contracts/ValidatorSet/modules/Delegation";
-import { VestManager__factory } from "../../typechain-types/factories/contracts/ValidatorSet/modules/Delegation";
+import * as mcl from "../ts/mcl";
+import { ValidatorSet } from "../typechain-types/contracts/ValidatorSet";
+import { RewardPool } from "../typechain-types/contracts/RewardPool";
+import { VestManager } from "../typechain-types/contracts/ValidatorSet/modules/Delegation";
+import { VestManager__factory } from "../typechain-types/factories/contracts/ValidatorSet/modules/Delegation";
 import { CHAIN_ID, DOMAIN, EPOCHS_YEAR } from "./constants";
 
 interface RewardParams {
@@ -162,7 +162,7 @@ export async function claimPositionRewards(
 ) {
   const position = await rewardPool.delegationPositions(validator, vestManager.address);
   const currentEpochId = await validatorSet.currentEpochId();
-  const rpsValues = await rewardPool.getRPSValues(validator, currentEpochId);
+  const rpsValues = await rewardPool.getRPSValues(validator, 0, currentEpochId);
   const rpsIndex = findProperRPSIndex(rpsValues, position.end);
   await vestManager.claimVestedPositionReward(validator, rpsIndex, 0);
 }
@@ -192,7 +192,7 @@ export async function retrieveRPSData(
   const position = await rewardPool.delegationPositions(validator, manager);
   const end = position.end;
   const currentEpochId = await validatorSet.currentEpochId();
-  const rpsValues = await rewardPool.getRPSValues(validator, currentEpochId);
+  const rpsValues = await rewardPool.getRPSValues(validator, 0, currentEpochId);
   const epochNum = findProperRPSIndex(rpsValues, end);
   const topUpIndex = 0;
 
