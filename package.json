@@ -22,7 +22,6 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "TS_NODE_TRANSPILE_ONLY=1 npx hardhat test --parallel",
-    "test:h": "npx hardhat test ./test/child/childValidatorSet/*.test.ts ./test/child/LiquidityToken.test.ts",
     "test:gas": "TS_NODE_TRANSPILE_ONLY=1 REPORT_GAS=true npx hardhat test",
     "test:types": "npx hardhat test --parallel",
     "test:all": "REPORT_GAS=true npx hardhat test",

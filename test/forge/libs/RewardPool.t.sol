@@ -3,10 +3,10 @@ pragma solidity 0.8.17;
 
 import "@utils/Test.sol";
 
-import {NoTokensDelegated, RewardPool, RewardPoolLib} from "contracts/libs/RewardPool.sol";
+import {NoTokensDelegated, RewardPool, RewardPoolLib} from "./../../../contracts/RewardPool/libs/";
 import {SafeMathInt, SafeMathUint} from "contracts/libs/SafeMathInt.sol";
 
-contract RewardPoolTest is Test {
+contract DelegationPoolTest is Test {
     using SafeMathUint for uint256;
     using SafeMathInt for int256;
 
