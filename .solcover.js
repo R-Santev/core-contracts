@@ -1,5 +1,5 @@
 module.exports = {
   configureYulOptimizer: true,
-  skipFiles: ["mocks", "root", "common"],
-  testFiles: "test/child/*.ts",
+  skipFiles: ["mocks"],
+  testFiles: "test/*.ts",
 };
