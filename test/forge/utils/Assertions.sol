@@ -8,10 +8,8 @@ pragma solidity 0.8.17;
 import {StdAssertions} from "forge-std/StdAssertions.sol";
 
 // 📦 BOILERPLATE
-import {StateReceiver} from "contracts/child/StateReceiver.sol";
-import {QueuedValidator} from "contracts/libs/ValidatorQueue.sol";
-import {Withdrawal} from "contracts/libs/WithdrawalQueue.sol";
-import {RewardPool, Validator, Node, ValidatorTree} from "contracts/interfaces/IValidator.sol";
+import {Validator} from "contracts/ValidatorSet/IValidatorSet.sol";
+import {WithdrawalData} from "contracts/ValidatorSet/libs/IWithdrawalQueue.sol";
 
 // ⭐️ ASSERTIONS
 abstract contract Assertions is StdAssertions {
@@ -35,27 +33,8 @@ abstract contract Assertions is StdAssertions {
         }
     }
 
-    function assertEq(Node memory a, Node memory b) internal virtual {
-        _compareHash(keccak256(abi.encode(a)), keccak256(abi.encode(b)), "Node");
-    }
-
-    function assertEq(QueuedValidator memory a, QueuedValidator memory b) internal virtual {
-        _compareHash(keccak256(abi.encode(a)), keccak256(abi.encode(b)), "QueuedValidator");
-    }
-
-    function assertEq(QueuedValidator[] memory a, QueuedValidator[] memory b) internal virtual {
-        _compareHash(keccak256(abi.encode(a)), keccak256(abi.encode(b)), "QueuedValidator[]");
-    }
-
-    function assertEq(Withdrawal memory a, Withdrawal memory b) internal virtual {
-        _compareHash(keccak256(abi.encode(a)), keccak256(abi.encode(b)), "Withdrawal");
-    }
-
-    function assertEq(
-        StateReceiver.StateSyncCommitment memory a,
-        StateReceiver.StateSyncCommitment memory b
-    ) internal virtual {
-        _compareHash(keccak256(abi.encode(a)), keccak256(abi.encode(b)), "StateSyncCommitment");
+    function assertEq(WithdrawalData memory a, WithdrawalData memory b) internal virtual {
+        _compareHash(keccak256(abi.encode(a)), keccak256(abi.encode(b)), "WithdrawalData");
     }
 
     function _compareHash(bytes32 a, bytes32 b, string memory typeName) private {

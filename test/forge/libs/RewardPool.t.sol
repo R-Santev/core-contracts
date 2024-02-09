@@ -3,10 +3,10 @@ pragma solidity 0.8.17;
 
 import "@utils/Test.sol";
 
-import {NoTokensDelegated, RewardPool, RewardPoolLib} from "contracts/libs/RewardPool.sol";
-import {SafeMathInt, SafeMathUint} from "contracts/libs/SafeMathInt.sol";
+import {NoTokensDelegated, DelegationPool, DelegationPoolLib} from "contracts/RewardPool/libs/DelegationPoolLib.sol";
+import {SafeMathInt, SafeMathUint} from "contracts/common/libs/SafeMathInt.sol";
 
-contract RewardPoolTest is Test {
+contract DelegationPoolTest is Test {
     using SafeMathUint for uint256;
     using SafeMathInt for int256;
 
@@ -210,41 +210,41 @@ contract RewardPoolTest is Test {
 //////////////////////////////////////////////////////////////////////////*/
 
 contract RewardPoolLibUser {
-    RewardPool pool;
+    DelegationPool pool;
 
     constructor() {
         pool.validator = address(this);
     }
 
     function distributeReward(uint256 amount) external {
-        RewardPoolLib.distributeReward(pool, amount);
+        DelegationPoolLib.distributeReward(pool, amount);
     }
 
     function deposit(address account, uint256 amount) external {
-        RewardPoolLib.deposit(pool, account, amount);
+        DelegationPoolLib.deposit(pool, account, amount);
     }
 
     function withdraw(address account, uint256 amount) external {
-        RewardPoolLib.withdraw(pool, account, amount);
+        DelegationPoolLib.withdraw(pool, account, amount);
     }
 
     function claimRewards(address account) external returns (uint256) {
-        uint256 r = RewardPoolLib.claimRewards(pool, account);
+        uint256 r = DelegationPoolLib.claimRewards(pool, account);
         return r;
     }
 
     function balanceOf(address account) external view returns (uint256) {
-        uint256 r = RewardPoolLib.balanceOf(pool, account);
+        uint256 r = DelegationPoolLib.balanceOf(pool, account);
         return r;
     }
 
     function totalRewardsEarned(address account) external view returns (uint256) {
-        uint256 r = RewardPoolLib.totalRewardsEarned(pool, account);
+        uint256 r = DelegationPoolLib.totalRewardsEarned(pool, account);
         return r;
     }
 
     function claimableRewards(address account) external view returns (uint256) {
-        uint256 r = RewardPoolLib.claimableRewards(pool, account);
+        uint256 r = DelegationPoolLib.claimableRewards(pool, account);
         return r;
     }
 
