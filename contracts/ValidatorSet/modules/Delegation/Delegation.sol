@@ -85,7 +85,7 @@ abstract contract Delegation is
         if (!validators[validator].active) revert Unauthorized("INVALID_VALIDATOR");
 
         _mint(validator, amount); // increase validator power
-        StateSyncer._syncStake(validator, amount);
+        StateSyncer._syncStake(validator, balanceOf(validator));
         LiquidStaking._distributeTokens(delegator, amount);
 
         emit Delegated(validator, delegator, amount);
@@ -93,7 +93,7 @@ abstract contract Delegation is
 
     function _undelegate(address validator, address delegator, uint256 amount) private {
         _burn(validator, amount); // decrease validator power
-        StateSyncer._syncUnstake(validator, amount);
+        StateSyncer._syncStake(validator, balanceOf(validator));
         LiquidStaking._collectDelegatorTokens(delegator, amount);
 
         emit Undelegated(validator, delegator, amount);

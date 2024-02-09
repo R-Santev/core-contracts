@@ -73,8 +73,7 @@ abstract contract Staking is
      */
     function stake() external payable onlyValidator {
         uint256 currentBalance = balanceOf(msg.sender);
-        _ensureStakeIsInRange(msg.value, currentBalance);
-        _processStake(msg.sender, msg.value);
+        _stake(msg.sender, msg.value);
         rewardPool.onStake(msg.sender, msg.value, currentBalance);
     }
 
@@ -82,8 +81,7 @@ abstract contract Staking is
      * @inheritdoc IStaking
      */
     function stakeWithVesting(uint256 durationWeeks) external payable onlyValidator {
-        _ensureStakeIsInRange(msg.value, balanceOf(msg.sender));
-        _processStake(msg.sender, msg.value);
+        _stake(msg.sender, msg.value);
         rewardPool.onNewStakePosition(msg.sender, durationWeeks);
     }
 
@@ -92,7 +90,7 @@ abstract contract Staking is
      */
     function unstake(uint256 amount) external {
         uint256 balanceAfterUnstake = _unstake(amount);
-        StateSyncer._syncUnstake(msg.sender, amount);
+        StateSyncer._syncStake(msg.sender, balanceAfterUnstake);
         LiquidStaking._collectTokens(msg.sender, amount);
         uint256 amountToWithdraw = rewardPool.onUnstake(msg.sender, amount, balanceAfterUnstake);
         _registerWithdrawal(msg.sender, amountToWithdraw);
@@ -111,23 +109,18 @@ abstract contract Staking is
         rewardPool.onNewValidator(validator);
     }
 
-    function _processStake(address account, uint256 amount) internal {
-        _stake(account, amount);
-        _postStakeAction(account, amount);
-    }
+    function _stake(address account, uint256 amount) internal {
+        uint256 currentBalance = balanceOf(account);
+        if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
 
-    // _______________ Private functions _______________
-
-    function _stake(address account, uint256 amount) private {
         _mint(account, amount);
+        StateSyncer._syncStake(account, currentBalance + amount);
+        LiquidStaking._distributeTokens(account, amount);
 
         emit Staked(account, amount);
     }
 
-    function _postStakeAction(address account, uint256 amount) private {
-        StateSyncer._syncStake(account, amount);
-        LiquidStaking._distributeTokens(account, amount);
-    }
+    // _______________ Private functions _______________
 
     function _unstake(uint256 amount) private returns (uint256) {
         uint256 currentBalance = balanceOf(msg.sender);

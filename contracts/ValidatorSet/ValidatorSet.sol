@@ -66,7 +66,7 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         // set initial validators
         for (uint256 i = 0; i < newValidators.length; i++) {
             _register(newValidators[i].addr, newValidators[i].signature, newValidators[i].pubkey);
-            _processStake(newValidators[i].addr, newValidators[i].stake);
+            _stake(newValidators[i].addr, newValidators[i].stake);
         }
     }
 
@@ -106,8 +106,8 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
     {
         Validator memory v = validators[validatorAddress];
         blsKey = v.blsKey;
-        stake = balanceOf(validatorAddress);
-        totalStake = stake + rewardPool.totalDelegationOf(validatorAddress);
+        totalStake = balanceOf(validatorAddress);
+        stake = totalStake - rewardPool.totalDelegationOf(validatorAddress);
         commission = v.commission;
         withdrawableRewards = rewardPool.getValidatorReward(validatorAddress);
         active = v.active;

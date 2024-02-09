@@ -740,6 +740,23 @@ event RemovedFromWhitelist(address indexed validator)
 |---|---|---|
 | validator `indexed` | address | undefined |
 
+### StakeChanged
+
+```solidity
+event StakeChanged(address indexed validator, uint256 newStake)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator `indexed` | address | undefined |
+| newStake  | uint256 | undefined |
+
 ### Staked
 
 ```solidity
@@ -756,24 +773,6 @@ event Staked(address indexed validator, uint256 amount)
 |---|---|---|
 | validator `indexed` | address | undefined |
 | amount  | uint256 | undefined |
-
-### TransferStake
-
-```solidity
-event TransferStake(address indexed from, address indexed to, uint256 value)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| from `indexed` | address | undefined |
-| to `indexed` | address | undefined |
-| value  | uint256 | undefined |
 
 ### Unstaked
 

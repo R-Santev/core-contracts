@@ -11,10 +11,10 @@ This contract is used to emit a specific event on stake, unstake, delegate and u
 
 ## Events
 
-### TransferStake
+### StakeChanged
 
 ```solidity
-event TransferStake(address indexed from, address indexed to, uint256 value)
+event StakeChanged(address indexed validator, uint256 newStake)
 ```
 
 
@@ -25,9 +25,8 @@ event TransferStake(address indexed from, address indexed to, uint256 value)
 
 | Name | Type | Description |
 |---|---|---|
-| from `indexed` | address | undefined |
-| to `indexed` | address | undefined |
-| value  | uint256 | undefined |
+| validator `indexed` | address | undefined |
+| newStake  | uint256 | undefined |
 
 
 
