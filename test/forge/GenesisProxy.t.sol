@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 
-import {GenesisProxy} from "contracts/libs/GenesisProxy.sol";
+import {GenesisProxy} from "contracts/GenesisProxy/GenesisProxy.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract GenesisProxyTest is Test {

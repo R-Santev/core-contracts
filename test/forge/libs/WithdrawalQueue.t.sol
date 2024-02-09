@@ -3,7 +3,8 @@ pragma solidity 0.8.17;
 
 import "@utils/Test.sol";
 
-import {Withdrawal, WithdrawalQueue, WithdrawalQueueLib} from "contracts/libs/WithdrawalQueue.sol";
+import {WithdrawalQueueLib} from "contracts/ValidatorSet/libs/WithdrawalQueue.sol";
+import {WithdrawalData, WithdrawalQueue} from "contracts/ValidatorSet/libs/IWithdrawalQueue.sol";
 
 abstract contract EmptyState is Test {
     uint256 constant AMOUNT = 2 ether;
@@ -27,7 +28,7 @@ contract WithdrawalQueueTest_EmptyState is EmptyState {
 
         assertEq(withdrawalQueueLibUser.headGetter(), 0);
         assertEq(withdrawalQueueLibUser.tailGetter(), 1);
-        assertEq(withdrawalQueueLibUser.withdrawalsGetter(0), Withdrawal(AMOUNT, EPOCH));
+        assertEq(withdrawalQueueLibUser.withdrawalsGetter(0), WithdrawalData({amount: AMOUNT, epoch: EPOCH}));
     }
 }
 
@@ -49,7 +50,7 @@ contract WithdrawalQueueTest_SingleState is SingleState {
 
         assertEq(withdrawalQueueLibUser.headGetter(), 0);
         assertEq(withdrawalQueueLibUser.tailGetter(), 1);
-        assertEq(withdrawalQueueLibUser.withdrawalsGetter(0), Withdrawal(AMOUNT * 2, EPOCH));
+        assertEq(withdrawalQueueLibUser.withdrawalsGetter(0), WithdrawalData(AMOUNT * 2, EPOCH));
     }
 
     function testAppend_NextEpoch() public {
@@ -57,7 +58,7 @@ contract WithdrawalQueueTest_SingleState is SingleState {
 
         assertEq(withdrawalQueueLibUser.headGetter(), 0);
         assertEq(withdrawalQueueLibUser.tailGetter(), 2);
-        assertEq(withdrawalQueueLibUser.withdrawalsGetter(1), Withdrawal(AMOUNT / 2, EPOCH + 1));
+        assertEq(withdrawalQueueLibUser.withdrawalsGetter(1), WithdrawalData(AMOUNT / 2, EPOCH + 1));
     }
 }
 
@@ -104,7 +105,7 @@ contract WithdrawalQueue_MultipleState is MultipleState {
         );
         // calculate amount and newHead
         expectedNewHead = withdrawalQueueLibUser.headGetter();
-        Withdrawal memory withdrawal = withdrawalQueueLibUser.withdrawalsGetter(expectedNewHead);
+        WithdrawalData memory withdrawal = withdrawalQueueLibUser.withdrawalsGetter(expectedNewHead);
         while (expectedNewHead < withdrawalQueueLibUser.tailGetter() && withdrawal.epoch <= currentEpoch) {
             expectedAmount += withdrawal.amount;
             ++expectedNewHead;
@@ -127,7 +128,7 @@ contract WithdrawalQueue_MultipleState is MultipleState {
         );
         // calculate amount
         uint256 headCursor = withdrawalQueueLibUser.headGetter();
-        Withdrawal memory withdrawal = withdrawalQueueLibUser.withdrawalsGetter(headCursor);
+        WithdrawalData memory withdrawal = withdrawalQueueLibUser.withdrawalsGetter(headCursor);
         while (headCursor < withdrawalQueueLibUser.tailGetter()) {
             if (withdrawal.epoch > currentEpoch) expectedAmount += withdrawal.amount;
             withdrawal = withdrawalQueueLibUser.withdrawalsGetter(++headCursor);
@@ -182,7 +183,7 @@ contract WithdrawalQueueLibUser {
         return queue.tail;
     }
 
-    function withdrawalsGetter(uint256 a) external view returns (Withdrawal memory) {
+    function withdrawalsGetter(uint256 a) external view returns (WithdrawalData memory) {
         return queue.withdrawals[a];
     }
 
