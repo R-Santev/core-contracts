@@ -307,39 +307,20 @@ async function vestManagerFixtureFunction(this: Mocha.Context) {
 }
 
 async function vestedDelegationFixtureFunction(this: Mocha.Context) {
-  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager } =
-    await loadFixture(this.fixtures.vestManagerFixture);
-
-  const validator = this.signers.validators[2].address;
-  const vestingDuration = 52; // in weeks
-  await vestManager.openVestedDelegatePosition(validator, vestingDuration, {
-    value: this.minDelegation,
-  });
-
-  // Commit epochs so rewards to be distributed
-  await commitEpochs(
-    systemValidatorSet,
-    rewardPool,
-    [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
-    3, // number of epochs to commit
-    this.epochSize
-  );
-
-  return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager };
-}
-
-async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
-  const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken, VestManagerFactory, vestManager } =
-    await loadFixture(this.fixtures.vestedDelegationFixture);
-
-  const { newManagerFactory, newManager } = await createNewVestManager(
+  const {
     validatorSet,
+    systemValidatorSet,
+    bls,
     rewardPool,
-    this.signers.accounts[5]
-  );
+    liquidToken,
+    VestManagerFactory,
+    vestManager,
+    vestManagerOwner,
+  } = await loadFixture(this.fixtures.vestManagerFixture);
 
+  const validator = this.signers.validators[2];
   const vestingDuration = 52; // in weeks
-  await newManager.openVestedDelegatePosition(this.signers.validators[1].address, vestingDuration, {
+  await vestManager.openVestedDelegatePosition(validator.address, vestingDuration, {
     value: this.minDelegation.mul(2),
   });
 
@@ -347,7 +328,47 @@ async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
   await commitEpochs(
     systemValidatorSet,
     rewardPool,
-    [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+    [this.signers.validators[0], this.signers.validators[1], validator],
+    3, // number of epochs to commit
+    this.epochSize
+  );
+
+  return {
+    validatorSet,
+    systemValidatorSet,
+    bls,
+    rewardPool,
+    liquidToken,
+    VestManagerFactory,
+    vestManager,
+    vestManagerOwner,
+    delegatedValidator: validator,
+  };
+}
+
+async function weeklyVestedDelegationFixtureFunction(this: Mocha.Context) {
+  const {
+    validatorSet,
+    systemValidatorSet,
+    bls,
+    rewardPool,
+    liquidToken,
+    VestManagerFactory,
+    vestManager,
+    vestManagerOwner,
+  } = await loadFixture(this.fixtures.vestManagerFixture);
+
+  const validator = this.signers.validators[2];
+  const vestingDuration = 1; // 1 week
+  await vestManager.openVestedDelegatePosition(validator.address, vestingDuration, {
+    value: this.minDelegation.mul(2),
+  });
+
+  // Commit epochs so rewards to be distributed
+  await commitEpochs(
+    systemValidatorSet,
+    rewardPool,
+    [this.signers.validators[0], this.signers.validators[1], validator],
     5, // number of epochs to commit
     this.epochSize
   );
@@ -358,17 +379,12 @@ async function multipleVestedDelegationsFixtureFunction(this: Mocha.Context) {
     bls,
     rewardPool,
     liquidToken,
-    managerFactories: [VestManagerFactory, newManagerFactory],
-    vestManagers: [vestManager, newManager],
+    VestManagerFactory,
+    vestManager,
+    vestManagerOwner,
+    delegatedValidator: validator,
   };
 }
-
-// const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-//   this.fixtures.multipleVestedDelegationsFixture
-// );
-
-// // top-up
-// await vestManagers[1].topUpVestedDelegatePosition(this.delegatedValidators[1], { value: this.minDelegation });
 
 async function blsFixtureFunction(this: Mocha.Context) {
   const BLSFactory = new BLS__factory(this.signers.admin);
@@ -405,5 +421,5 @@ export async function generateFixtures(context: Mocha.Context) {
   context.fixtures.delegatedFixture = delegatedFixtureFunction.bind(context);
   context.fixtures.vestManagerFixture = vestManagerFixtureFunction.bind(context);
   context.fixtures.vestedDelegationFixture = vestedDelegationFixtureFunction.bind(context);
-  context.fixtures.multipleVestedDelegationsFixture = multipleVestedDelegationsFixtureFunction.bind(context);
+  context.fixtures.weeklyVestedDelegationFixture = weeklyVestedDelegationFixtureFunction.bind(context);
 }

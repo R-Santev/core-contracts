@@ -136,17 +136,21 @@ export interface Fixtures {
       liquidToken: LiquidityToken;
       VestManagerFactory: VestManager__factory;
       vestManager: VestManager;
+      vestManagerOwner: SignerWithAddress;
+      delegatedValidator: SignerWithAddress;
     }>;
   };
-  multipleVestedDelegationsFixture: {
+  weeklyVestedDelegationFixture: {
     (): Promise<{
       validatorSet: ValidatorSet;
       systemValidatorSet: ValidatorSet;
       bls: BLS;
       rewardPool: RewardPool;
       liquidToken: LiquidityToken;
-      managerFactories: VestManager__factory[];
-      vestManagers: VestManager[];
+      VestManagerFactory: VestManager__factory;
+      vestManager: VestManager;
+      vestManagerOwner: SignerWithAddress;
+      delegatedValidator: SignerWithAddress;
     }>;
   };
 }

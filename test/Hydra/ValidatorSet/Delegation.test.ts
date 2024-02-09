@@ -436,25 +436,18 @@ export function RunDelegationTests(): void {
       });
 
       it("should slash the amount when in active position", async function () {
-        const { systemValidatorSet, rewardPool, vestManagers, liquidToken } = await loadFixture(
-          this.fixtures.multipleVestedDelegationsFixture
-        );
+        const { systemValidatorSet, rewardPool, liquidToken, vestManager, vestManagerOwner, delegatedValidator } =
+          await loadFixture(this.fixtures.vestedDelegationFixture);
 
         // ensure position is active
-        const isActive = await rewardPool.isActiveDelegatePosition(
-          this.delegatedValidators[1],
-          vestManagers[1].address
-        );
+        const isActive = await rewardPool.isActiveDelegatePosition(delegatedValidator.address, vestManager.address);
         expect(isActive, "isActive").to.be.true;
 
         // check is amount properly removed from delegation
-        const delegatedBalanceBefore = await rewardPool.delegationOf(
-          this.delegatedValidators[1],
-          vestManagers[1].address
-        );
+        const delegatedBalanceBefore = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
 
         const cutAmount = delegatedBalanceBefore.div(2);
-        const position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManagers[1].address);
+        const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
 
         // Hydra TODO: Create table-driven unit tests with precalculated values to test the exact amounts
         // check if amount is properly burned
@@ -475,123 +468,115 @@ export function RunDelegationTests(): void {
         //   decrease.mul(-1)
         // );
 
-        await liquidToken.connect(this.vestManagerOwners[1]).approve(vestManagers[1].address, cutAmount);
+        await liquidToken.connect(vestManagerOwner).approve(vestManager.address, cutAmount);
 
         const penalty = await calculatePenalty(position, cutAmount);
-        await vestManagers[1].cutVestedDelegatePosition(this.delegatedValidators[1], cutAmount);
+        await vestManager.cutVestedDelegatePosition(delegatedValidator.address, cutAmount);
 
-        const delegatedBalanceAfter = await rewardPool.delegationOf(
-          this.delegatedValidators[1],
-          vestManagers[1].address
-        );
+        const delegatedBalanceAfter = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
         expect(delegatedBalanceAfter, "delegatedBalanceAfter").to.be.eq(delegatedBalanceBefore.sub(cutAmount));
 
         // claimableRewards must be 0
         const claimableRewards = await rewardPool.getRawDelegatorReward(
-          this.delegatedValidators[1],
-          vestManagers[1].address
+          delegatedValidator.address,
+          vestManager.address
         );
         expect(claimableRewards, "claimableRewards").to.be.eq(0);
 
         // check if amount is properly slashed
-        const balanceBefore = await this.vestManagerOwners[1].getBalance();
+        const balanceBefore = await vestManagerOwner.getBalance();
 
         // commit Epoch so reward is available for withdrawal
         await commitEpoch(
           systemValidatorSet,
           rewardPool,
-          [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+          [this.signers.validators[0], this.signers.validators[1], delegatedValidator],
           this.epochSize
         );
-        await vestManagers[1].withdraw(this.vestManagerOwners[1].address);
+        await vestManager.withdraw(vestManagerOwner.address);
 
-        const balanceAfter = await this.vestManagerOwners[1].getBalance();
+        const balanceAfter = await vestManagerOwner.getBalance();
 
-        // cut half of the requested amount because half of the vesting period is still not passed
-        expect(balanceAfter.sub(balanceBefore)).to.be.eq(cutAmount.sub(penalty));
-        expect(balanceAfter).to.be.eq(balanceBefore.add(cutAmount.sub(penalty)));
+        // should slash the delegator with the calculated penalty
+        expect(balanceAfter, "balanceAfter").to.be.eq(balanceBefore.add(cutAmount.sub(penalty)));
       });
 
       it("should properly cut position", async function () {
-        const { systemValidatorSet, rewardPool, vestManagers, liquidToken } = await loadFixture(
-          this.fixtures.multipleVestedDelegationsFixture
-        );
+        const { systemValidatorSet, rewardPool, liquidToken, vestManager, vestManagerOwner, delegatedValidator } =
+          await loadFixture(this.fixtures.vestedDelegationFixture);
 
         // commit Epoch so reward is made
         await commitEpochs(
           systemValidatorSet,
           rewardPool,
-          [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+          [this.signers.validators[0], this.signers.validators[1], delegatedValidator],
           3,
           this.epochSize
         );
 
-        const reward = await rewardPool.getRawDelegatorReward(this.delegatedValidators[0], vestManagers[0].address);
+        const reward = await rewardPool.getRawDelegatorReward(delegatedValidator.address, vestManager.address);
         expect(reward, "reward").to.not.be.eq(0);
 
         // Finish the vesting period
         await time.increase(WEEK * 60);
 
-        const balanceBefore = await this.vestManagerOwners[0].getBalance();
-        const delegatedBalance = await rewardPool.delegationOf(this.delegatedValidators[0], vestManagers[0].address);
+        const balanceBefore = await vestManagerOwner.getBalance();
+        const delegatedBalance = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
         expect(delegatedBalance, "delegatedBalance").to.not.be.eq(0);
 
-        await liquidToken.connect(this.vestManagerOwners[0]).approve(vestManagers[0].address, delegatedBalance);
-        await vestManagers[0].cutVestedDelegatePosition(this.delegatedValidators[0], delegatedBalance);
+        await liquidToken.connect(vestManagerOwner).approve(vestManager.address, delegatedBalance);
+        await vestManager.cutVestedDelegatePosition(delegatedValidator.address, delegatedBalance);
 
         // commit one more epoch so withdraw to be available
         await commitEpochs(
           systemValidatorSet,
           rewardPool,
-          [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+          [this.signers.validators[0], this.signers.validators[1], delegatedValidator],
           3,
           this.epochSize
         );
-        await vestManagers[0].withdraw(this.vestManagerOwners[0].address);
+        await vestManager.withdraw(vestManagerOwner.address);
 
-        const balanceAfter = await this.vestManagerOwners[0].getBalance();
+        const balanceAfter = await vestManagerOwner.getBalance();
 
         expect(balanceAfter, "balanceAfter").to.be.eq(balanceBefore.add(delegatedBalance));
 
         // check is amount properly removed from delegation
-        expect(await rewardPool.delegationOf(this.delegatedValidators[0], vestManagers[0].address)).to.be.eq(0);
+        expect(await rewardPool.delegationOf(delegatedValidator.address, vestManager.address)).to.be.eq(0);
 
         // ensure reward is still available for withdrawal
-        const rewardAfter = await rewardPool.getRawDelegatorReward(
-          this.delegatedValidators[0],
-          vestManagers[0].address
-        );
+        const rewardAfter = await rewardPool.getRawDelegatorReward(delegatedValidator.address, vestManager.address);
         expect(rewardAfter).to.be.eq(reward);
       });
 
       it("should delete position when closing it", async function () {
-        const { rewardPool, vestManagers, liquidToken } = await loadFixture(
-          this.fixtures.multipleVestedDelegationsFixture
+        const { rewardPool, liquidToken, vestManager, vestManagerOwner, delegatedValidator } = await loadFixture(
+          this.fixtures.vestedDelegationFixture
         );
 
-        // cut position
-        const delegatedAmount = await rewardPool.delegationOf(this.delegatedValidators[0], vestManagers[0].address);
-        await liquidToken.connect(this.vestManagerOwners[0]).approve(vestManagers[0].address, delegatedAmount);
-        await vestManagers[0].cutVestedDelegatePosition(this.delegatedValidators[0], delegatedAmount);
-        expect(
-          (await rewardPool.delegationPositions(this.delegatedValidators[0], vestManagers[0].address)).start
-        ).to.be.eq(0);
+        // cut the whole position
+        const delegatedAmount = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
+        await liquidToken.connect(vestManagerOwner).approve(vestManager.address, delegatedAmount);
+        await vestManager.cutVestedDelegatePosition(delegatedValidator.address, delegatedAmount);
+        expect((await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address)).start).to.be.eq(
+          0
+        );
       });
     });
 
     describe("topUpVestedDelegatePosition()", async function () {
       it("should revert when not owner of the vest manager", async function () {
-        const { vestManagers } = await loadFixture(this.fixtures.multipleVestedDelegationsFixture);
+        const { vestManager } = await loadFixture(this.fixtures.vestedDelegationFixture);
 
         await expect(
-          vestManagers[0]
+          vestManager
             .connect(this.signers.accounts[10])
             .topUpVestedDelegatePosition(this.signers.accounts[10].address, { value: this.minDelegation })
         ).to.be.revertedWith("Ownable: caller is not the owner");
       });
 
       it("should revert when not manager", async function () {
-        const { validatorSet } = await loadFixture(this.fixtures.multipleVestedDelegationsFixture);
+        const { validatorSet } = await loadFixture(this.fixtures.vestedDelegationFixture);
 
         await expect(
           validatorSet
@@ -601,10 +586,10 @@ export function RunDelegationTests(): void {
       });
 
       it("should revert when delegation too low", async function () {
-        const { validatorSet, vestManagers } = await loadFixture(this.fixtures.multipleVestedDelegationsFixture);
+        const { validatorSet, vestManager } = await loadFixture(this.fixtures.vestedDelegationFixture);
 
         await expect(
-          vestManagers[0].topUpVestedDelegatePosition(this.signers.validators[0].address, {
+          vestManager.topUpVestedDelegatePosition(this.signers.validators[0].address, {
             value: this.minDelegation.sub(1),
           })
         )
@@ -613,63 +598,80 @@ export function RunDelegationTests(): void {
       });
 
       it("should revert when position is not active", async function () {
-        const { validatorSet, vestManagers } = await loadFixture(this.fixtures.multipleVestedDelegationsFixture);
+        const { validatorSet, vestManager, delegatedValidator } = await loadFixture(
+          this.fixtures.vestedDelegationFixture
+        );
 
-        // enter the reward maturity phase
+        // enter the reward maturity phase in order to make the position inactive
         await time.increase(WEEK * 55);
-        await expect(
-          vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
-        )
+        await expect(vestManager.topUpVestedDelegatePosition(delegatedValidator.address, { value: this.minDelegation }))
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
           .withArgs("vesting", "POSITION_NOT_ACTIVE");
       });
 
       it("should properly top-up position", async function () {
-        const { validatorSet, rewardPool, vestManagers } = await loadFixture(
-          this.fixtures.multipleVestedDelegationsFixture
+        const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+          this.fixtures.vestManagerFixture
         );
 
-        const delegatedBalanceBefore = await rewardPool.delegationOf(
-          this.delegatedValidators[0],
-          vestManagers[0].address
-        );
-        const totalAmount = delegatedBalanceBefore.add(this.minDelegation);
+        const duration = 1; // 1 week
+        await vestManager.openVestedDelegatePosition(this.delegatedValidators[0], duration, {
+          value: this.minDelegation,
+        });
         const positionEndBefore = (
-          await rewardPool.delegationPositions(this.delegatedValidators[0], vestManagers[0].address)
+          await rewardPool.delegationPositions(this.delegatedValidators[0], vestManager.address)
         ).end;
 
-        await vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation });
+        // enter the active state
+        await time.increase(1);
+        await commitEpoch(
+          systemValidatorSet,
+          rewardPool,
+          [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+          this.epochSize
+        );
+
+        // ensure position is active
+        const isActive = await rewardPool.isActiveDelegatePosition(this.delegatedValidators[0], vestManager.address);
+        expect(isActive, "isActive").to.be.true;
+
+        const delegatedAmount = await rewardPool.delegationOf(this.delegatedValidators[0], vestManager.address);
+        const topUpAmount = this.minDelegation.div(2);
+        const totalAmount = delegatedAmount.add(topUpAmount);
+
+        await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], { value: topUpAmount });
 
         // delegation is increased
-        const delegatedBalanceAfter = await rewardPool.delegationOf(
-          this.delegatedValidators[0],
-          vestManagers[0].address
-        );
-        expect(delegatedBalanceAfter, "delegatedBalanceAfter").to.be.eq(totalAmount);
+        expect(
+          await rewardPool.delegationOf(this.delegatedValidators[0], vestManager.address),
+          "delegationOf"
+        ).to.be.eq(totalAmount);
 
         // balance change data is added
         const balanceChange = await rewardPool.delegationPoolParamsHistory(
           this.delegatedValidators[0],
-          vestManagers[0].address,
+          vestManager.address,
           1
         );
-        expect(balanceChange.balance, "balance change").to.be.eq(totalAmount);
-        expect(balanceChange.epochNum, "epochNum").to.be.eq(await validatorSet.currentEpochId());
+        expect(balanceChange.balance, "balanceChange.balance").to.be.eq(totalAmount);
+        expect(balanceChange.epochNum, "balanceChange.epochNum").to.be.eq(await validatorSet.currentEpochId());
 
         // duration increase is proper
-        const position = await rewardPool.delegationPositions(this.delegatedValidators[0], vestManagers[0].address);
-        expect(position.end).to.be.eq(positionEndBefore.add(WEEK * 52));
+        const positionEndAfter = (
+          await rewardPool.delegationPositions(this.delegatedValidators[0], vestManager.address)
+        ).end;
+        expect(positionEndAfter).to.be.eq(positionEndBefore.add((duration * WEEK) / 2));
       });
 
       it("should revert when too many top-ups are made", async function () {
-        const { systemValidatorSet, validatorSet, rewardPool, vestManagers } = await loadFixture(
-          this.fixtures.multipleVestedDelegationsFixture
+        const { systemValidatorSet, validatorSet, rewardPool, vestManager } = await loadFixture(
+          this.fixtures.vestedDelegationFixture
         );
 
         const maxTopUps = 52; // one cannot top-up more than 52 times
         for (let i = 0; i < maxTopUps; i++) {
           const delegatingAmount = this.minDelegation.mul(i + 1).div(5);
-          await vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: delegatingAmount });
+          await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], { value: delegatingAmount });
 
           // commit epoch cause only 1 top-up can be made per epoch
           await commitEpoch(
@@ -681,58 +683,55 @@ export function RunDelegationTests(): void {
         }
 
         await expect(
-          vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
+          vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
         )
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
           .withArgs("vesting", "TOO_MANY_TOP_UPS");
       });
 
       it("should revert when top-up already made in the same epoch", async function () {
-        const { validatorSet, vestManagers } = await loadFixture(this.fixtures.multipleVestedDelegationsFixture);
+        const { validatorSet, vestManager } = await loadFixture(this.fixtures.vestedDelegationFixture);
 
-        await vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation });
+        await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation });
 
         await expect(
-          vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
+          vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
         )
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
           .withArgs("_onAccountParamsChange", "BALANCE_CHANGE_ALREADY_MADE");
       });
 
       it("should increase duration no more than 100%", async function () {
-        const { rewardPool, vestManagers } = await loadFixture(this.fixtures.multipleVestedDelegationsFixture);
+        const { rewardPool, vestManager } = await loadFixture(this.fixtures.vestedDelegationFixture);
 
         const positionBeforeTopUp = await rewardPool.delegationPositions(
           this.delegatedValidators[0],
-          vestManagers[0].address
+          vestManager.address
         );
 
-        const topUpAmount = (await rewardPool.delegationOf(this.delegatedValidators[0], vestManagers[0].address)).mul(
-          2
-        );
-        await vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], {
+        const topUpAmount = (await rewardPool.delegationOf(this.delegatedValidators[0], vestManager.address)).mul(2);
+        await vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], {
           value: topUpAmount.add(this.minDelegation),
         });
 
-        const vestingEndAfter = (
-          await rewardPool.delegationPositions(this.delegatedValidators[0], vestManagers[0].address)
-        ).end;
+        const vestingEndAfter = (await rewardPool.delegationPositions(this.delegatedValidators[0], vestManager.address))
+          .end;
         expect(vestingEndAfter, "vestingEndAfter").to.be.eq(positionBeforeTopUp.end.add(positionBeforeTopUp.duration));
       });
 
       it("should revert when top-up closed position", async function () {
-        const { validatorSet, rewardPool, vestManagers, liquidToken } = await loadFixture(
-          this.fixtures.multipleVestedDelegationsFixture
+        const { validatorSet, rewardPool, liquidToken, vestManager } = await loadFixture(
+          this.fixtures.vestedDelegationFixture
         );
 
         // close position
-        const delegatedAmount = await rewardPool.delegationOf(this.delegatedValidators[0], vestManagers[0].address);
-        await liquidToken.connect(this.vestManagerOwners[0]).approve(vestManagers[0].address, delegatedAmount);
-        await vestManagers[0].cutVestedDelegatePosition(this.delegatedValidators[0], delegatedAmount);
+        const delegatedAmount = await rewardPool.delegationOf(this.delegatedValidators[0], vestManager.address);
+        await liquidToken.connect(this.vestManagerOwners[0]).approve(vestManager.address, delegatedAmount);
+        await vestManager.cutVestedDelegatePosition(this.delegatedValidators[0], delegatedAmount);
 
         // top-up
         await expect(
-          vestManagers[0].topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
+          vestManager.topUpVestedDelegatePosition(this.delegatedValidators[0], { value: this.minDelegation })
         )
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
           .withArgs("vesting", "POSITION_NOT_ACTIVE");
