@@ -365,7 +365,7 @@ export function RunVestedDelegateClaimTests(): void {
       const { systemValidatorSet, validatorSet, rewardPool, vestManager, vestManagerOwner, delegatedValidator } =
         await loadFixture(this.fixtures.weeklyVestedDelegationFixture);
 
-      // calculate bae rewards
+      // calculate base rewards
       const baseReward = await rewardPool.getRawDelegatorReward(delegatedValidator.address, vestManager.address);
       const base = await rewardPool.base();
       const vestBonus = await rewardPool.getVestingBonus(1);
