@@ -107,11 +107,7 @@ abstract contract StakingRewards is IRewardPool, Vesting, RewardsWithdrawal {
     }
 
     /**
-     * @notice Returns the penalty and reward that will be burned, if vested stake position is active
-     * @param staker The address of the staker
-     * @param amount The amount that is going to be unstaked
-     * @return penalty for the staker
-     * @return reward of the staker
+     * @inheritdoc IRewardPool
      */
     function calculateStakePositionPenalty(
         address staker,

@@ -142,6 +142,31 @@ function beforeTopUpParams(address, address) external view returns (uint256 rewa
 | balance | uint256 | undefined |
 | correction | int256 | undefined |
 
+### calculateDelegatePositionPenalty
+
+```solidity
+function calculateDelegatePositionPenalty(address validator, address delegator, uint256 amount) external view returns (uint256 penalty, uint256 reward)
+```
+
+Returns the penalty and reward that will be burned, if vested delegate position is active
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | The address of the validator |
+| delegator | address | The address of the delegator |
+| amount | uint256 | The amount that is going to be undelegated |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| penalty | uint256 | for the delegator |
+| reward | uint256 | of the delegator |
+
 ### calculateStakePositionPenalty
 
 ```solidity

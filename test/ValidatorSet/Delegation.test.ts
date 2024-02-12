@@ -436,7 +436,7 @@ export function RunDelegationTests(): void {
       });
 
       it("should get staker penalty and rewards that will be burned, if closing from active position", async function () {
-        const { systemValidatorSet, rewardPool, vestManager } = await loadFixture(
+        const { systemValidatorSet, rewardPool, vestManager, delegatedValidator } = await loadFixture(
           this.fixtures.vestedDelegationFixture
         );
 
@@ -444,19 +444,19 @@ export function RunDelegationTests(): void {
         await commitEpochs(
           systemValidatorSet,
           rewardPool,
-          [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+          [this.signers.validators[0], this.signers.validators[1], delegatedValidator],
           5, // number of epochs to commit
           this.epochSize
         );
 
         // calculate penalty locally
-        const position = await rewardPool.delegationPositions(this.delegatedValidators[1], vestManager.address);
+        const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
         const latestTimestamp = await time.latest();
         const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
 
         // get the penalty and reward from the contract
         const { penalty, reward } = await rewardPool.calculateDelegatePositionPenalty(
-          this.delegatedValidators[1],
+          delegatedValidator.address,
           vestManager.address,
           this.minStake
         );
@@ -505,7 +505,7 @@ export function RunDelegationTests(): void {
         const nextTimestamp = latestTimestamp + 2;
         await time.setNextBlockTimestamp(nextTimestamp);
         const penalty = await calculatePenalty(position, nextTimestamp, cutAmount);
-        await vestManager.cutVestedDelegatePosition(this.delegatedValidators[1], cutAmount);
+        await vestManager.cutVestedDelegatePosition(delegatedValidator.address, cutAmount);
 
         const delegatedBalanceAfter = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
         expect(delegatedBalanceAfter, "delegatedBalanceAfter").to.be.eq(delegatedBalanceBefore.sub(cutAmount));

@@ -118,12 +118,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     }
 
     /**
-     * @notice Returns the penalty and reward that will be burned, if vested delegate position is active
-     * @param validator The address of the validator
-     * @param delegator The address of the delegator
-     * @param amount The amount that is going to be undelegated
-     * @return penalty for the delegator
-     * @return reward of the delegator
+     * @inheritdoc IRewardPool
      */
     function calculateDelegatePositionPenalty(
         address validator,
