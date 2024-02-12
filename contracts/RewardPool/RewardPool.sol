@@ -49,7 +49,6 @@ contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards
      */
     function distributeRewardsFor(
         uint256 epochId,
-        Epoch calldata epoch,
         Uptime[] calldata uptime,
         uint256 epochSize
     ) external payable onlySystemCall {
@@ -59,7 +58,7 @@ contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards
         require(totalBlocks != 0, "EPOCH_NOT_COMMITTED");
 
         uint256 totalSupply = validatorSet.totalSupply();
-        uint256 rewardIndex = _calcRewardIndex(epoch, totalSupply, epochSize);
+        uint256 rewardIndex = _calcRewardIndex(totalSupply, epochSize, totalBlocks);
         uint256 length = uptime.length;
         uint256 totalReward = 0;
         for (uint256 i = 0; i < length; ++i) {
@@ -133,19 +132,18 @@ contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards
      * The participation factor is applied later in the distribution process.
      * (base + vesting and RSI are applied on claimReward for delegators
      * and on _distributeValidatorReward for validators)
-     * @param epoch Epoch for which the reward is distributed
      * @param activeStake Total active stake for the epoch
-     * @param epochSize Number of blocks in the epoch
+     * @param totalBlocks Number of blocks in the epoch
+     * @param epochSize Expected size (number of blocks) of the epoch
      */
     function _calcRewardIndex(
-        Epoch calldata epoch,
         uint256 activeStake,
-        uint256 epochSize
+        uint256 epochSize,
+        uint256 totalBlocks
     ) private view returns (uint256) {
         uint256 modifiedEpochReward = applyMacro(activeStake);
-        uint256 blocksNum = epoch.endBlock - epoch.startBlock;
 
-        return (modifiedEpochReward * blocksNum) / (epochSize);
+        return (modifiedEpochReward * totalBlocks) / (epochSize);
     }
 
     function _calculateValidatorAndDelegatorShares(

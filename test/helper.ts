@@ -46,7 +46,7 @@ export async function commitEpoch(
   const maxReward = await getMaxEpochReward(systemValidatorSet, prevEpochId);
   const distributeRewardsTx = await rewardPool
     .connect(systemValidatorSet.signer)
-    .distributeRewardsFor(currEpochId, newEpoch, validatorsUptime, epochSize, {
+    .distributeRewardsFor(currEpochId, validatorsUptime, epochSize, {
       value: maxReward,
     });
 

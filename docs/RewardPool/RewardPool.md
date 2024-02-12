@@ -428,7 +428,7 @@ The vesting positions for every delegator.
 ### distributeRewardsFor
 
 ```solidity
-function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uint256 epochSize) external payable
+function distributeRewardsFor(uint256 epochId, Uptime[] uptime, uint256 epochSize) external payable
 ```
 
 
@@ -440,7 +440,6 @@ function distributeRewardsFor(uint256 epochId, Epoch epoch, Uptime[] uptime, uin
 | Name | Type | Description |
 |---|---|---|
 | epochId | uint256 | undefined |
-| epoch | Epoch | undefined |
 | uptime | Uptime[] | undefined |
 | epochSize | uint256 | undefined |
 

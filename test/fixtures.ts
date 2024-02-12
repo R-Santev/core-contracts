@@ -112,7 +112,7 @@ async function commitEpochTxFixtureFunction(this: Mocha.Context) {
     },
   ];
   const maxReward = await getMaxEpochReward(systemValidatorSet, epochId.sub(1));
-  await rewardPool.connect(this.signers.system).distributeRewardsFor(epochId, epoch, uptime, this.epochSize, {
+  await rewardPool.connect(this.signers.system).distributeRewardsFor(epochId, uptime, this.epochSize, {
     value: maxReward,
   });
 

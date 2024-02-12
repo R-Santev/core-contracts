@@ -30,16 +30,10 @@ interface IRewardPool {
      * @notice Distributes rewards for the given epoch
      * @dev Transfers funds from sender to this contract
      * @param epochId The epoch number
-     * @param epoch Epoch details
      * @param uptime uptime data for every validator
      * @param epochSize Number of blocks per epoch
      */
-    function distributeRewardsFor(
-        uint256 epochId,
-        Epoch calldata epoch,
-        Uptime[] calldata uptime,
-        uint256 epochSize
-    ) external payable;
+    function distributeRewardsFor(uint256 epochId, Uptime[] calldata uptime, uint256 epochSize) external payable;
 
     /**
      * @notice Update the reward params for the vested position
