@@ -120,6 +120,23 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     /**
      * @inheritdoc IRewardPool
      */
+    function calculateDelegatePositionPenalty(
+        address validator,
+        address delegator,
+        uint256 amount
+    ) external view returns (uint256 penalty, uint256 reward) {
+        DelegationPool storage pool = delegationPools[validator];
+        VestingPosition memory position = delegationPositions[validator][delegator];
+        if (position.isActive()) {
+            penalty = _calcSlashing(position, amount);
+            // apply the max Vesting bonus, because the full reward must be burned
+            reward = applyMaxReward(pool.claimableRewards(delegator));
+        }
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
     function getDelegationPoolParamsHistory(
         address validator,
         address delegator

@@ -435,6 +435,37 @@ export function RunDelegationTests(): void {
           .withArgs("vesting", "DELEGATION_TOO_LOW");
       });
 
+      it("should get staker penalty and rewards that will be burned, if closing from active position", async function () {
+        const { systemValidatorSet, rewardPool, vestManager, delegatedValidator } = await loadFixture(
+          this.fixtures.vestedDelegationFixture
+        );
+
+        // commit some more epochs to generate additional rewards
+        await commitEpochs(
+          systemValidatorSet,
+          rewardPool,
+          [this.signers.validators[0], this.signers.validators[1], delegatedValidator],
+          5, // number of epochs to commit
+          this.epochSize
+        );
+
+        // calculate penalty locally
+        const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
+        const latestTimestamp = await time.latest();
+        const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
+
+        // get the penalty and reward from the contract
+        const { penalty, reward } = await rewardPool.calculateDelegatePositionPenalty(
+          delegatedValidator.address,
+          vestManager.address,
+          this.minStake
+        );
+
+        expect(penalty, "penalty").to.be.gt(0);
+        expect(penalty, "penalty = calculatedPenalty").to.be.equal(calculatedPenalty);
+        expect(reward, "reward").to.be.gt(0);
+      });
+
       it("should slash the amount when in active position", async function () {
         const { systemValidatorSet, rewardPool, liquidToken, vestManager, vestManagerOwner, delegatedValidator } =
           await loadFixture(this.fixtures.vestedDelegationFixture);
@@ -470,7 +501,10 @@ export function RunDelegationTests(): void {
 
         await liquidToken.connect(vestManagerOwner).approve(vestManager.address, cutAmount);
 
-        const penalty = await calculatePenalty(position, cutAmount);
+        const latestTimestamp = await time.latest();
+        const nextTimestamp = latestTimestamp + 2;
+        await time.setNextBlockTimestamp(nextTimestamp);
+        const penalty = await calculatePenalty(position, nextTimestamp, cutAmount);
         await vestManager.cutVestedDelegatePosition(delegatedValidator.address, cutAmount);
 
         const delegatedBalanceAfter = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
@@ -498,6 +532,8 @@ export function RunDelegationTests(): void {
         const balanceAfter = await vestManagerOwner.getBalance();
 
         // should slash the delegator with the calculated penalty
+        // cut half of the requested amount because half of the vesting period is still not passed
+        expect(balanceAfter.sub(balanceBefore), "left balance").to.be.eq(cutAmount.sub(penalty));
         expect(balanceAfter, "balanceAfter").to.be.eq(balanceBefore.add(cutAmount.sub(penalty)));
       });
 

@@ -194,6 +194,32 @@ interface IRewardPool {
     ) external view returns (DelegationPoolParams[] memory);
 
     /**
+     * @notice Returns the penalty and reward that will be burned, if vested stake position is active
+     * @param staker The address of the staker
+     * @param amount The amount that is going to be unstaked
+     * @return penalty for the staker
+     * @return reward of the staker
+     */
+    function calculateStakePositionPenalty(
+        address staker,
+        uint256 amount
+    ) external view returns (uint256 penalty, uint256 reward);
+
+    /**
+     * @notice Returns the penalty and reward that will be burned, if vested delegate position is active
+     * @param validator The address of the validator
+     * @param delegator The address of the delegator
+     * @param amount The amount that is going to be undelegated
+     * @return penalty for the delegator
+     * @return reward of the delegator
+     */
+    function calculateDelegatePositionPenalty(
+        address validator,
+        address delegator,
+        uint256 amount
+    ) external view returns (uint256 penalty, uint256 reward);
+
+    /**
      * @notice Claims reward for the vest manager (delegator).
      * @param validator Validator to claim from
      * @param to Address to transfer the reward to
