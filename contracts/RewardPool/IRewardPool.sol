@@ -183,6 +183,17 @@ interface IRewardPool {
     ) external view returns (uint256);
 
     /**
+     * @notice Gets delegators's history of the delegated position
+     * @param validator Address of validator
+     * @param delegator Address of delegator
+     * @return Delegator's history of the delegated position
+     */
+    function getDelegationPoolParamsHistory(
+        address validator,
+        address delegator
+    ) external view returns (DelegationPoolParams[] memory);
+
+    /**
      * @notice Claims reward for the vest manager (delegator).
      * @param validator Validator to claim from
      * @param to Address to transfer the reward to

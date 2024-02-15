@@ -120,6 +120,16 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     /**
      * @inheritdoc IRewardPool
      */
+    function getDelegationPoolParamsHistory(
+        address validator,
+        address delegator
+    ) external view returns (DelegationPoolParams[] memory) {
+        return delegationPoolParamsHistory[validator][delegator];
+    }
+
+    /**
+     * @inheritdoc IRewardPool
+     */
     function onNewValidator(address validator) external onlyValidatorSet {
         delegationPools[validator].validator = validator;
     }

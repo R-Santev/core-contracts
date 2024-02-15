@@ -331,6 +331,29 @@ function getDefaultRSI() external pure returns (uint256 nominator)
 |---|---|---|
 | nominator | uint256 | undefined |
 
+### getDelegationPoolParamsHistory
+
+```solidity
+function getDelegationPoolParamsHistory(address validator, address delegator) external view returns (struct DelegationPoolParams[])
+```
+
+Gets delegators&#39;s history of the delegated position
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| validator | address | Address of validator |
+| delegator | address | Address of delegator |
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | DelegationPoolParams[] | Delegator&#39;s history of the delegated position |
+
 ### getDelegatorPositionReward
 
 ```solidity
