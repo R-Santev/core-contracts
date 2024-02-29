@@ -17,7 +17,7 @@ contract APR is Initializable, AccessControl {
     function __APR_init(address manager) internal onlyInitializing {
         initializeVestingBonus();
 
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, manager);
         _grantRole(MANAGER_ROLE, manager);
     }
 

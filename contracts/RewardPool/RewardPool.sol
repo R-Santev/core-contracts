@@ -29,11 +29,11 @@ contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards
         IValidatorSet newValidatorSet,
         address newRewardWallet,
         uint256 newMinDelegation,
-        address aprManager
+        address manager
     ) external initializer onlySystemCall {
         __RewardPoolBase_init(newValidatorSet);
         __DelegationRewards_init(newMinDelegation);
-        __APR_init(aprManager);
+        __APR_init(manager);
         _initialize(newRewardWallet, newValidatorSet);
     }
 
