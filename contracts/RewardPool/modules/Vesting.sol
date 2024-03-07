@@ -119,11 +119,13 @@ abstract contract Vesting is APR {
      */
     function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
         // Calculate what part of the balance to be slashed
-        uint256 leftPeriod = position.end - block.timestamp;
-        uint256 fullPeriod = position.duration;
-        uint256 slash = (amount * leftPeriod) / fullPeriod;
+        uint256 leftWeeks = (position.end - block.timestamp) / 1 weeks;
+        if (leftWeeks != 52) {
+            leftWeeks++;
+        }
 
-        return slash;
+        uint256 bps = 30 * leftWeeks; // 0.3% * left weeks
+        return (amount * bps) / 10000;
     }
 
     function _saveEpochRPS(address validator, uint256 rewardPerShare, uint256 epochNumber) internal {
