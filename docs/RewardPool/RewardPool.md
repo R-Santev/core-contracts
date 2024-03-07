@@ -839,7 +839,7 @@ Keeps the history of the RPS for the validators
 ### initialize
 
 ```solidity
-function initialize(contract IValidatorSet newValidatorSet, address newRewardWallet, uint256 newMinDelegation, address aprManager) external nonpayable
+function initialize(contract IValidatorSet newValidatorSet, address newRewardWallet, uint256 newMinDelegation, address manager) external nonpayable
 ```
 
 
@@ -853,7 +853,7 @@ function initialize(contract IValidatorSet newValidatorSet, address newRewardWal
 | newValidatorSet | contract IValidatorSet | undefined |
 | newRewardWallet | address | undefined |
 | newMinDelegation | uint256 | undefined |
-| aprManager | address | undefined |
+| manager | address | undefined |
 
 ### isActiveDelegatePosition
 
