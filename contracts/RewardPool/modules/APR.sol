@@ -11,7 +11,7 @@ contract APR is Initializable, AccessControl {
 
     uint256 public base = 500;
     uint256 public macroFactor = 7500;
-    uint256 public rsi = 11000;
+    uint256 public rsi = 10000;
     uint256[52] public vestingBonus;
 
     function __APR_init(address manager) internal onlyInitializing {
