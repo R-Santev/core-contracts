@@ -43,21 +43,10 @@ function owner() external view returns (address)
 |---|---|---|
 | _0 | address | undefined |
 
-### renounceOwnership
+### relocateFees
 
 ```solidity
-function renounceOwnership() external nonpayable
-```
-
-
-
-*Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner.*
-
-
-### transferFees
-
-```solidity
-function transferFees(address _contractAddress, bytes _encodedFunction) external nonpayable
+function relocateFees(address contractAddress, bytes callData) external nonpayable
 ```
 
 Generic method that will be used to transfer the generated fees to another contract
@@ -68,8 +57,19 @@ Generic method that will be used to transfer the generated fees to another contr
 
 | Name | Type | Description |
 |---|---|---|
-| _contractAddress | address | The address of the contract that will be called |
-| _encodedFunction | bytes | The encoded function with its signature and parameters, if any |
+| contractAddress | address | The address of the contract that will be called |
+| callData | bytes | The encoded function with its signature and parameters, if any |
+
+### renounceOwnership
+
+```solidity
+function renounceOwnership() external nonpayable
+```
+
+
+
+*Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner.*
+
 
 ### transferOwnership
 
@@ -108,6 +108,23 @@ event FeeReceived(address indexed from, uint256 amount)
 | from `indexed` | address | undefined |
 | amount  | uint256 | undefined |
 
+### FeesRelocated
+
+```solidity
+event FeesRelocated(bool success, bytes data)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| success  | bool | undefined |
+| data  | bytes | undefined |
+
 ### Initialized
 
 ```solidity
@@ -140,23 +157,6 @@ event OwnershipTransferred(address indexed previousOwner, address indexed newOwn
 |---|---|---|
 | previousOwner `indexed` | address | undefined |
 | newOwner `indexed` | address | undefined |
-
-### Response
-
-```solidity
-event Response(bool success, bytes data)
-```
-
-
-
-
-
-#### Parameters
-
-| Name | Type | Description |
-|---|---|---|
-| success  | bool | undefined |
-| data  | bytes | undefined |
 
 
 
