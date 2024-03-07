@@ -6,7 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract FeeHandler is Initializable, OwnableUpgradeable {
     event FeeReceived(address indexed from, uint256 amount);
-    event Response(bool success, bytes data);
+    event FeesRelocated(bool success, bytes data);
 
     constructor() {
         _disableInitializers();
@@ -19,12 +19,12 @@ contract FeeHandler is Initializable, OwnableUpgradeable {
     /**
      * @notice Generic method that will be used to transfer the generated fees to another contract
      * @param contractAddress The address of the contract that will be called
-     * @param encodedFunction The encoded function with its signature and parameters, if any
+     * @param callData The encoded function with its signature and parameters, if any
      */
-    function relocateFees(address contractAddress, bytes memory encodedFunction) public onlyOwner {
-        (bool success, bytes memory data) = contractAddress.call{value: address(this).balance}(encodedFunction);
+    function relocateFees(address contractAddress, bytes memory callData) public onlyOwner {
+        (bool success, bytes memory data) = contractAddress.call{value: address(this).balance}(callData);
 
-        emit Response(success, data);
+        emit FeesRelocated(success, data);
     }
 
     receive() external payable {
