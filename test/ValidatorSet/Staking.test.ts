@@ -287,9 +287,8 @@ export function RunStakingTests(): void {
         await time.setNextBlockTimestamp(nextTimestamp);
         await stakerValidatorSet.unstake(this.minStake);
 
-        // calculate the penalty for the left period
-        const leftWeeks = hre.ethers.BigNumber.from(VESTING_DURATION_WEEKS - 1);
-        const bps = leftWeeks.mul(30);
+        // hardcode the penalty percent by 0.3% a week (9 weeks should be left)
+        const bps = 9 * 30;
         const penalty = this.minStake.mul(bps).div(10000);
 
         const withdrawalAmount = await stakerValidatorSet.pendingWithdrawals(this.staker.address);

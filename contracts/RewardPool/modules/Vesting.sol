@@ -37,6 +37,9 @@ error NotVestingManager();
 abstract contract Vesting is APR {
     using VestingPositionLib for VestingPosition;
 
+    /// @notice A constant for the maximum comission a validator can receive from the delegator's rewards
+    uint256 private constant WEEK_MINUS_SECOND = 604799;
+
     /// @notice The vesting positions for every validator
     mapping(address => VestingPosition) public positions;
     /// @notice The vesting positions for every delegator.
@@ -121,16 +124,9 @@ abstract contract Vesting is APR {
      */
     function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
         uint256 leftPeriod = position.end - block.timestamp;
-        uint256 leftWeeks = leftPeriod % 1 weeks; // get the remainder first
-        if (leftWeeks == 0) {
-            // if no remainder, then get the exact weeks
-            leftWeeks = leftPeriod / 1 weeks;
-        } else {
-            // if there is remainder, then week is not passed => increase by 1
-            leftWeeks = (leftPeriod / 1 weeks) + 1;
-        }
-
+        uint256 leftWeeks = (leftPeriod + WEEK_MINUS_SECOND) / 1 weeks;
         uint256 bps = 30 * leftWeeks; // 0.3% * left weeks
+
         return (amount * bps) / 10000;
     }
 

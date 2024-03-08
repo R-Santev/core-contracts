@@ -555,9 +555,8 @@ export function RunDelegationTests(): void {
         await time.setNextBlockTimestamp(nextTimestamp);
         await vestManager.cutVestedDelegatePosition(delegatedValidator.address, delegatedBalance);
 
-        // calculate the penalty for the left period
-        const leftWeeks = hre.ethers.BigNumber.from(VESTING_DURATION_WEEKS - 1);
-        const bps = leftWeeks.mul(30);
+        // hardcode the penalty percent by 0.3% a week (9 weeks should be left)
+        const bps = 9 * 30;
         const penalty = delegatedBalance.mul(bps).div(10000);
 
         const delegatedBalanceAfter = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
