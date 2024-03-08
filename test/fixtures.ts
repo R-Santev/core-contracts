@@ -111,7 +111,7 @@ async function commitEpochTxFixtureFunction(this: Mocha.Context) {
       signedBlocks: hre.ethers.BigNumber.from(10),
     },
   ];
-  const maxReward = await getMaxEpochReward(systemValidatorSet, epochId.sub(1));
+  const maxReward = await getMaxEpochReward(systemValidatorSet);
   await rewardPool.connect(this.signers.system).distributeRewardsFor(epochId, uptime, this.epochSize, {
     value: maxReward,
   });
@@ -319,8 +319,7 @@ async function vestedDelegationFixtureFunction(this: Mocha.Context) {
   } = await loadFixture(this.fixtures.vestManagerFixture);
 
   const validator = this.signers.validators[2];
-  const vestingDuration = 52; // in weeks
-  await vestManager.openVestedDelegatePosition(validator.address, vestingDuration, {
+  await vestManager.openVestedDelegatePosition(validator.address, VESTING_DURATION_WEEKS, {
     value: this.minDelegation.mul(2),
   });
 

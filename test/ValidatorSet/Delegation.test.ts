@@ -5,7 +5,7 @@ import * as hre from "hardhat";
 
 // eslint-disable-next-line camelcase
 import { VestManager__factory } from "../../typechain-types";
-import { WEEK } from "../constants";
+import { VESTING_DURATION_WEEKS, WEEK } from "../constants";
 import { calculatePenalty, claimPositionRewards, commitEpoch, commitEpochs, getUserManager } from "../helper";
 import { RunDelegateClaimTests, RunVestedDelegateClaimTests } from "../RewardPool/RewardPool.test";
 
@@ -316,11 +316,10 @@ export function RunDelegationTests(): void {
         const { validatorSet, vestManager } = await loadFixture(this.fixtures.vestedDelegationFixture);
 
         // enter the reward maturity phase
-        await time.increase(WEEK * 55);
+        await time.increase(WEEK * VESTING_DURATION_WEEKS + 1);
 
-        const vestingDuration = 52; // in weeks
         await expect(
-          vestManager.openVestedDelegatePosition(this.delegatedValidators[0], vestingDuration, {
+          vestManager.openVestedDelegatePosition(this.delegatedValidators[0], VESTING_DURATION_WEEKS, {
             value: this.minDelegation,
           })
         )
@@ -449,10 +448,8 @@ export function RunDelegationTests(): void {
           this.epochSize
         );
 
-        // calculate penalty locally
         const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
-        const latestTimestamp = await time.latest();
-        const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
+        const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
 
         // get the penalty and reward from the contract
         const { penalty, reward } = await rewardPool.calculateDelegatePositionPenalty(
@@ -460,6 +457,9 @@ export function RunDelegationTests(): void {
           vestManager.address,
           this.minStake
         );
+
+        // calculate penalty locally
+        const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
 
         expect(penalty, "penalty").to.be.gt(0);
         expect(penalty, "penalty = calculatedPenalty").to.be.equal(calculatedPenalty);
@@ -501,11 +501,11 @@ export function RunDelegationTests(): void {
 
         await liquidToken.connect(vestManagerOwner).approve(vestManager.address, cutAmount);
 
-        const latestTimestamp = await time.latest();
-        const nextTimestamp = latestTimestamp + 2;
+        const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
+        const nextTimestamp = latestTimestamp.add(2);
         await time.setNextBlockTimestamp(nextTimestamp);
-        const penalty = await calculatePenalty(position, nextTimestamp, cutAmount);
         await vestManager.cutVestedDelegatePosition(delegatedValidator.address, cutAmount);
+        const penalty = await calculatePenalty(position, nextTimestamp, cutAmount);
 
         const delegatedBalanceAfter = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
         expect(delegatedBalanceAfter, "delegatedBalanceAfter").to.be.eq(delegatedBalanceBefore.sub(cutAmount));
@@ -535,6 +535,58 @@ export function RunDelegationTests(): void {
         // cut half of the requested amount because half of the vesting period is still not passed
         expect(balanceAfter.sub(balanceBefore), "left balance").to.be.eq(cutAmount.sub(penalty));
         expect(balanceAfter, "balanceAfter").to.be.eq(balanceBefore.add(cutAmount.sub(penalty)));
+      });
+
+      it("should slash when undelegates exactly 1 week after the start of the vested position", async function () {
+        const { systemValidatorSet, rewardPool, liquidToken, vestManager, vestManagerOwner, delegatedValidator } =
+          await loadFixture(this.fixtures.vestedDelegationFixture);
+
+        // ensure position is active
+        const isActive = await rewardPool.isActiveDelegatePosition(delegatedValidator.address, vestManager.address);
+        expect(isActive, "isActive").to.be.true;
+
+        // check is amount properly removed from delegation
+        const delegatedBalance = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
+        const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
+
+        await liquidToken.connect(vestManagerOwner).approve(vestManager.address, delegatedBalance);
+
+        const nextTimestamp = position.start.add(WEEK);
+        await time.setNextBlockTimestamp(nextTimestamp);
+        await vestManager.cutVestedDelegatePosition(delegatedValidator.address, delegatedBalance);
+
+        // calculate the penalty for the left period
+        const leftWeeks = hre.ethers.BigNumber.from(VESTING_DURATION_WEEKS - 1);
+        const bps = leftWeeks.mul(30);
+        const penalty = delegatedBalance.mul(bps).div(10000);
+
+        const delegatedBalanceAfter = await rewardPool.delegationOf(delegatedValidator.address, vestManager.address);
+        expect(delegatedBalanceAfter, "delegatedBalanceAfter").to.be.eq(0);
+
+        // claimableRewards must be 0
+        const claimableRewards = await rewardPool.getRawDelegatorReward(
+          delegatedValidator.address,
+          vestManager.address
+        );
+        expect(claimableRewards, "claimableRewards").to.be.eq(0);
+
+        // check if amount is properly slashed
+        const balanceBefore = await vestManagerOwner.getBalance();
+
+        // commit Epoch so reward is available for withdrawal
+        await commitEpoch(
+          systemValidatorSet,
+          rewardPool,
+          [this.signers.validators[0], this.signers.validators[1], delegatedValidator],
+          this.epochSize
+        );
+        await vestManager.withdraw(vestManagerOwner.address);
+
+        const balanceAfter = await vestManagerOwner.getBalance();
+
+        // should slash the delegator with the calculated penalty
+        expect(balanceAfter.sub(balanceBefore), "left balance").to.be.eq(delegatedBalance.sub(penalty));
+        expect(balanceAfter, "balanceAfter").to.be.eq(balanceBefore.add(delegatedBalance.sub(penalty)));
       });
 
       it("should properly cut position", async function () {

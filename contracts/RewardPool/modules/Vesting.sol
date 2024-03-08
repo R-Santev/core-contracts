@@ -114,14 +114,20 @@ abstract contract Vesting is APR {
         positions[staker].rsiBonus = 0;
     }
 
-    /** @param amount Amount of tokens to be slashed
+    /**
+     * @notice Calculates what part of the provided amount of tokens to be slashed
+     * @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
     function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
-        // Calculate what part of the balance to be slashed
-        uint256 leftWeeks = (position.end - block.timestamp) / 1 weeks;
-        if (leftWeeks != 52) {
-            leftWeeks++;
+        uint256 leftPeriod = position.end - block.timestamp;
+        uint256 leftWeeks = leftPeriod % 1 weeks; // get the remainder first
+        if (leftWeeks == 0) {
+            // if no remainder, then get the exact weeks
+            leftWeeks = leftPeriod / 1 weeks;
+        } else {
+            // if there is remainder, then week is not passed => increase by 1
+            leftWeeks = (leftPeriod / 1 weeks) + 1;
         }
 
         uint256 bps = 30 * leftWeeks; // 0.3% * left weeks
