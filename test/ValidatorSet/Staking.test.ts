@@ -223,13 +223,13 @@ export function RunStakingTests(): void {
         // reward must be bigger than 0
         expect(validatorReward, "validatorReward").to.be.gt(0);
 
-        // calculate penalty locally
         const position = await rewardPool.positions(this.staker.address);
-        const latestTimestamp = await time.latest();
-        const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
-
+        const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
         // get the penalty and reward from the contract
         const { penalty, reward } = await rewardPool.calculateStakePositionPenalty(this.staker.address, this.minStake);
+
+        // calculate penalty locally
+        const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);
 
         expect(penalty, "penalty").to.be.gt(0);
         expect(penalty, "penalty = calculatedPenalty").to.be.equal(calculatedPenalty);
@@ -253,11 +253,11 @@ export function RunStakingTests(): void {
 
         const unstakeAmount = this.minStake.div(2);
         const position = await rewardPool.positions(this.staker.address);
-        const latestTimestamp = await time.latest();
-        const nextTimestamp = latestTimestamp + 2;
+        const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
+        const nextTimestamp = latestTimestamp.add(2);
         await time.setNextBlockTimestamp(nextTimestamp);
-        const penalty = await calculatePenalty(position, nextTimestamp, unstakeAmount);
         await stakerValidatorSet.unstake(unstakeAmount);
+        const penalty = await calculatePenalty(position, nextTimestamp, unstakeAmount);
 
         const withdrawalAmount = await stakerValidatorSet.pendingWithdrawals(this.staker.address);
         expect(withdrawalAmount, "withdrawal amount = calculated amount").to.equal(unstakeAmount.sub(penalty));
@@ -274,6 +274,38 @@ export function RunStakingTests(): void {
         await expect(stakerValidatorSet.withdraw(this.staker.address), "withdraw").to.changeEtherBalance(
           stakerValidatorSet,
           unstakeAmount.sub(penalty).mul(-1)
+        );
+      });
+
+      it("should slash when unstakes exactly 1 week after the start of the vesting position", async function () {
+        const { stakerValidatorSet, systemValidatorSet, rewardPool } = await loadFixture(
+          this.fixtures.newVestingValidatorFixture
+        );
+
+        const position = await rewardPool.positions(this.staker.address);
+        const nextTimestamp = position.start.add(WEEK);
+        await time.setNextBlockTimestamp(nextTimestamp);
+        await stakerValidatorSet.unstake(this.minStake);
+
+        // hardcode the penalty percent by 0.3% a week (9 weeks should be left)
+        const bps = 9 * 30;
+        const penalty = this.minStake.mul(bps).div(10000);
+
+        const withdrawalAmount = await stakerValidatorSet.pendingWithdrawals(this.staker.address);
+        expect(withdrawalAmount, "withdrawal amount = calculated amount").to.equal(this.minStake.sub(penalty));
+
+        // commit epoch after unstake, because it is required to wait 1 epoch to withdraw
+        await commitEpochs(
+          systemValidatorSet,
+          rewardPool,
+          [this.signers.validators[0], this.signers.validators[1], this.staker],
+          1, // number of epochs to commit
+          this.epochSize
+        );
+
+        await expect(stakerValidatorSet.withdraw(this.staker.address), "withdraw").to.changeEtherBalance(
+          stakerValidatorSet,
+          this.minStake.sub(penalty).mul(-1)
         );
       });
 

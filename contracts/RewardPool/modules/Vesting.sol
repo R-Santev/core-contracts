@@ -37,6 +37,10 @@ error NotVestingManager();
 abstract contract Vesting is APR {
     using VestingPositionLib for VestingPosition;
 
+    /// @notice A constant for the calculation of the weeks left of a vesting period
+    /// @dev Representing a week in seconds - 1
+    uint256 private constant WEEK_MINUS_SECOND = 604799;
+
     /// @notice The vesting positions for every validator
     mapping(address => VestingPosition) public positions;
     /// @notice The vesting positions for every delegator.
@@ -114,16 +118,17 @@ abstract contract Vesting is APR {
         positions[staker].rsiBonus = 0;
     }
 
-    /** @param amount Amount of tokens to be slashed
+    /**
+     * @notice Calculates what part of the provided amount of tokens to be slashed
+     * @param amount Amount of tokens to be slashed
      * @dev Invoke only when position is active, otherwise - underflow
      */
     function _calcSlashing(VestingPosition memory position, uint256 amount) internal view returns (uint256) {
-        // Calculate what part of the balance to be slashed
         uint256 leftPeriod = position.end - block.timestamp;
-        uint256 fullPeriod = position.duration;
-        uint256 slash = (amount * leftPeriod) / fullPeriod;
+        uint256 leftWeeks = (leftPeriod + WEEK_MINUS_SECOND) / 1 weeks;
+        uint256 bps = 30 * leftWeeks; // 0.3% * left weeks
 
-        return slash;
+        return (amount * bps) / 10000;
     }
 
     function _saveEpochRPS(address validator, uint256 rewardPerShare, uint256 epochNumber) internal {

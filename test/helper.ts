@@ -9,13 +9,13 @@ import { ValidatorSet } from "../typechain-types/contracts/ValidatorSet";
 import { RewardPool } from "../typechain-types/contracts/RewardPool";
 import { VestManager } from "../typechain-types/contracts/ValidatorSet/modules/Delegation";
 import { VestManager__factory } from "../typechain-types/factories/contracts/ValidatorSet/modules/Delegation";
-import { CHAIN_ID, DOMAIN, EPOCHS_YEAR } from "./constants";
+import { CHAIN_ID, DOMAIN, EPOCHS_YEAR, WEEK } from "./constants";
 
 interface RewardParams {
   timestamp: BigNumber;
 }
 
-export async function getMaxEpochReward(validatorSet: ValidatorSet, epochId: BigNumber) {
+export async function getMaxEpochReward(validatorSet: ValidatorSet) {
   const totalStake = await validatorSet.totalSupply();
   return totalStake;
 }
@@ -42,7 +42,7 @@ export async function commitEpoch(
 
   const commitEpochTx = await systemValidatorSet.commitEpoch(currEpochId, newEpoch, epochSize);
 
-  const maxReward = await getMaxEpochReward(systemValidatorSet, prevEpochId);
+  const maxReward = await getMaxEpochReward(systemValidatorSet);
   const distributeRewardsTx = await rewardPool
     .connect(systemValidatorSet.signer)
     .distributeRewardsFor(currEpochId, validatorsUptime, epochSize, {
@@ -130,11 +130,20 @@ export function findProperRPSIndex<T extends RewardParams>(arr: T[], timestamp: 
   return closestIndex;
 }
 
-export async function calculatePenalty(position: any, timestamp: number, amount: BigNumber) {
-  const duration = position.duration;
-  const leftDuration = position.end.sub(timestamp);
-  const penalty = amount.mul(leftDuration).div(duration);
-  return penalty;
+export async function calculatePenalty(position: any, timestamp: BigNumber, amount: BigNumber) {
+  const leftPeriod: BigNumber = position.end.sub(timestamp);
+  let leftWeeks = leftPeriod.mod(WEEK); // get the remainder first
+  if (leftWeeks.isZero()) {
+    // if no remainder, then get the exact weeks
+    leftWeeks = leftPeriod.div(WEEK);
+  } else {
+    // if there is remainder, then week is not passed => increase by 1
+    leftWeeks = leftPeriod.div(WEEK).add(1);
+  }
+
+  // basis points used for precise percentage calculations
+  const bps = leftWeeks.mul(30);
+  return amount.mul(bps).div(10000);
 }
 
 export async function getUserManager(
