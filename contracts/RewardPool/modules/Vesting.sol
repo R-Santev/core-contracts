@@ -37,8 +37,8 @@ error NotVestingManager();
 abstract contract Vesting is APR {
     using VestingPositionLib for VestingPosition;
 
-    /// @notice A constant representing a week - 1 second in order to properly calculate the weeks left
-    /// for the calculation of the slashing (penalty) when devesting prematurely
+    /// @notice A constant for the calculation of the weeks left of a vesting period
+    /// @dev Representing a week in seconds - 1 second to properly calculate the weeks left when devesting prematurely
     uint256 private constant WEEK_MINUS_SECOND = 604799;
 
     /// @notice The vesting positions for every validator
