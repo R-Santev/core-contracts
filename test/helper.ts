@@ -5,14 +5,50 @@ import * as hre from "hardhat";
 import { BigNumber, ContractTransaction } from "ethers";
 
 import * as mcl from "../ts/mcl";
+import { Fixtures, Signers } from "./mochaContext";
 import { ValidatorSet } from "../typechain-types/contracts/ValidatorSet";
 import { RewardPool } from "../typechain-types/contracts/RewardPool";
 import { VestManager } from "../typechain-types/contracts/ValidatorSet/modules/Delegation";
 import { VestManager__factory } from "../typechain-types/factories/contracts/ValidatorSet/modules/Delegation";
-import { CHAIN_ID, DOMAIN, EPOCHS_YEAR, WEEK } from "./constants";
+import { CHAIN_ID, DOMAIN, EPOCHS_YEAR, SYSTEM, WEEK } from "./constants";
 
 interface RewardParams {
   timestamp: BigNumber;
+}
+
+// * Method used to initialize the parameters of the mocha context, e.g., the signers
+export async function initializeContext(context: any) {
+  context.signers = {} as Signers;
+  context.fixtures = {} as Fixtures;
+
+  const signers = await hre.ethers.getSigners();
+  context.signers.accounts = signers;
+  context.signers.admin = signers[0];
+  context.signers.validators = initValidators(signers, 1, 4);
+  context.signers.governance = signers[5];
+  context.signers.delegator = signers[6];
+  context.signers.rewardWallet = signers[7];
+  context.signers.system = await hre.ethers.getSigner(SYSTEM);
+  context.epochId = hre.ethers.BigNumber.from(1);
+  context.epochSize = hre.ethers.BigNumber.from(64);
+  context.epochReward = hre.ethers.utils.parseEther("0.0000001");
+  context.minStake = hre.ethers.utils.parseEther("1");
+  context.minDelegation = hre.ethers.utils.parseEther("1");
+  context.epochsInYear = 31500;
+  context.epoch = {
+    startBlock: hre.ethers.BigNumber.from(1),
+    endBlock: hre.ethers.BigNumber.from(64),
+    epochRoot: hre.ethers.utils.randomBytes(32),
+  };
+  context.uptime = [
+    {
+      validator: context.signers.validators[0].address,
+      signedBlocks: hre.ethers.BigNumber.from(0),
+    },
+  ];
+
+  const network = await hre.ethers.getDefaultProvider().getNetwork();
+  context.chainId = network.chainId;
 }
 
 export async function getMaxEpochReward(validatorSet: ValidatorSet) {
@@ -250,4 +286,25 @@ export async function applyCustomReward(
   }
 
   return reward.mul(bonus).div(divider).div(EPOCHS_YEAR);
+}
+
+/**
+ * Generate BLS pubkey and signature for validator
+ * @param account ethersjs signer
+ * @returns ValidatorBLS object with pubkey and signature
+ */
+export function generateValidatorBls(account: SignerWithAddress) {
+  const keyPair = mcl.newKeyPair();
+  const signature = genValSignature(account, keyPair);
+
+  const bls = {
+    pubkey: mcl.g2ToHex(keyPair.pubkey),
+    signature: mcl.g1ToHex(signature),
+  };
+
+  return bls;
+}
+
+export function genValSignature(account: SignerWithAddress, keyPair: mcl.keyPair) {
+  return mcl.signValidatorMessage(DOMAIN, CHAIN_ID, account.address, keyPair.secret).signature;
 }

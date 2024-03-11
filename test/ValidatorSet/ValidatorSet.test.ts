@@ -4,51 +4,15 @@ import { expect } from "chai";
 import * as hre from "hardhat";
 
 import * as mcl from "../../ts/mcl";
-import { Fixtures, Signers } from "../mochaContext";
-import { CHAIN_ID, DOMAIN, MAX_COMMISSION, SYSTEM } from "../constants";
+import { CHAIN_ID, DOMAIN, MAX_COMMISSION } from "../constants";
 import { generateFixtures } from "../fixtures";
-import { initValidators } from "../helper";
+import { generateValidatorBls, initializeContext } from "../helper";
 import { RunSystemTests } from "./System.test";
 import { RunStakingTests } from "./Staking.test";
 import { RunDelegationTests } from "./Delegation.test";
 
 describe("ValidatorSet", function () {
   /** Variables */
-
-  // * Method used to initialize the parameters of the mocha context, e.g., the signers
-  async function initializeContext(context: any) {
-    context.signers = {} as Signers;
-    context.fixtures = {} as Fixtures;
-
-    const signers = await hre.ethers.getSigners();
-    context.signers.accounts = signers;
-    context.signers.admin = signers[0];
-    context.signers.validators = initValidators(signers, 1, 4);
-    context.signers.governance = signers[5];
-    context.signers.delegator = signers[6];
-    context.signers.rewardWallet = signers[7];
-    context.signers.system = await hre.ethers.getSigner(SYSTEM);
-    context.epochId = hre.ethers.BigNumber.from(1);
-    context.epochSize = hre.ethers.BigNumber.from(64);
-    context.epochReward = hre.ethers.utils.parseEther("0.0000001");
-    context.minStake = hre.ethers.utils.parseEther("1");
-    context.minDelegation = hre.ethers.utils.parseEther("1");
-    context.epochsInYear = 31500;
-    context.epoch = {
-      startBlock: hre.ethers.BigNumber.from(1),
-      endBlock: hre.ethers.BigNumber.from(64),
-      epochRoot: hre.ethers.utils.randomBytes(32),
-    };
-    context.uptime = [
-      {
-        validator: context.signers.validators[0].address,
-        signedBlocks: hre.ethers.BigNumber.from(0),
-      },
-    ];
-
-    const network = await hre.ethers.getDefaultProvider().getNetwork();
-    context.chainId = network.chainId;
-  }
 
   before(async function () {
     // * Initialize the this context of mocha
@@ -58,12 +22,11 @@ describe("ValidatorSet", function () {
     await generateFixtures(this);
 
     await mcl.init();
-    const keyPair = mcl.newKeyPair();
-    const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, this.signers.admin.address, keyPair.secret).signature;
+    const validatorBls = generateValidatorBls(this.signers.admin);
     this.validatorInit = {
       addr: this.signers.admin.address,
-      pubkey: mcl.g2ToHex(keyPair.pubkey),
-      signature: mcl.g1ToHex(signature),
+      pubkey: validatorBls.pubkey,
+      signature: validatorBls.signature,
       stake: this.minStake.mul(2),
     };
   });
@@ -145,8 +108,35 @@ describe("ValidatorSet", function () {
     });
 
     it("should initialize successfully", async function () {
-      const { systemValidatorSet, bls, rewardPool } = await loadFixture(
-        this.fixtures.initializedValidatorSetStateFixture
+      const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+        this.fixtures.presetValidatorSetStateFixture
+      );
+
+      const systemRewardPool = rewardPool.connect(this.signers.system);
+      await systemRewardPool.initialize(
+        validatorSet.address,
+        this.signers.rewardWallet.address,
+        this.minDelegation,
+        this.signers.system.address
+      );
+      await liquidToken.initialize(
+        "Liquidity Token",
+        "LQT",
+        this.signers.governance.address,
+        systemValidatorSet.address
+      );
+      await systemValidatorSet.initialize(
+        {
+          epochReward: this.epochReward,
+          minStake: this.minStake,
+          minDelegation: this.minDelegation,
+          epochSize: this.epochSize,
+        },
+        [this.validatorInit],
+        bls.address,
+        rewardPool.address,
+        this.signers.governance.address,
+        liquidToken.address
       );
 
       expect(await systemValidatorSet.minStake(), "minStake").to.equal(this.minStake);
