@@ -38,7 +38,7 @@ abstract contract Vesting is APR {
     using VestingPositionLib for VestingPosition;
 
     /// @notice A constant for the calculation of the weeks left of a vesting period
-    /// @dev Representing a week in seconds - 1 second to properly calculate the weeks left when devesting prematurely
+    /// @dev Representing a week in seconds - 1 second to calculate the weeks left when devesting prematurely properly
     uint256 private constant WEEK_MINUS_SECOND = 604799;
 
     /// @notice The vesting positions for every validator
