@@ -5,16 +5,23 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract APR is Initializable, AccessControl {
+    uint256 public constant INITIAL_BASE_APR = 500;
+    uint256 public constant INITIAL_MACRO_FACTOR = 7500;
+    uint256 public constant INITIAL_RSI_BONUS = 10000;
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant EPOCHS_YEAR = 31500;
     bytes32 public constant MANAGER_ROLE = keccak256("manager_role");
 
-    uint256 public base = 500;
-    uint256 public macroFactor = 7500;
-    uint256 public rsi = 10000;
+    uint256 public base;
+    uint256 public macroFactor;
+    uint256 public rsi;
     uint256[52] public vestingBonus;
 
     function __APR_init(address manager) internal onlyInitializing {
+        base = INITIAL_BASE_APR;
+        macroFactor = INITIAL_MACRO_FACTOR;
+        rsi = INITIAL_RSI_BONUS;
+
         initializeVestingBonus();
 
         _grantRole(DEFAULT_ADMIN_ROLE, manager);
