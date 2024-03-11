@@ -5,9 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract APR is Initializable, AccessControl {
-    uint256 public INITIAL_BASE_APR = 500;
-    uint256 public INITIAL_MACRO_FACTOR = 7500;
-    uint256 public INITIAL_RSI_BONUS = 10000;
+    uint256 public constant INITIAL_BASE_APR = 500;
+    uint256 public constant INITIAL_MACRO_FACTOR = 7500;
+    uint256 public constant INITIAL_RSI_BONUS = 10000;
     uint256 public constant DENOMINATOR = 10000;
     uint256 public constant EPOCHS_YEAR = 31500;
     bytes32 public constant MANAGER_ROLE = keccak256("manager_role");
