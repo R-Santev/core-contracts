@@ -13,7 +13,13 @@ import {
   ValidatorSet__factory,
 } from "../typechain-types";
 import { CHAIN_ID, DOMAIN, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
-import { getMaxEpochReward, commitEpochs, registerValidator, createNewVestManager } from "./helper";
+import {
+  getMaxEpochReward,
+  commitEpochs,
+  registerValidator,
+  createNewVestManager,
+  generateValidatorBls,
+} from "./helper";
 
 async function systemFixtureFunction(this: Mocha.Context) {
   const SystemFactory = new System__factory(this.signers.admin);
@@ -25,8 +31,6 @@ async function systemFixtureFunction(this: Mocha.Context) {
 async function presetValidatorSetStateFixtureFunction(this: Mocha.Context) {
   const ValidatorSetFactory = new ValidatorSet__factory(this.signers.admin);
   const validatorSet = await ValidatorSetFactory.deploy();
-
-  await mcl.init();
 
   await hre.network.provider.send("hardhat_setBalance", [SYSTEM, "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"]);
 
@@ -65,16 +69,22 @@ async function initializedValidatorSetStateFixtureFunction(this: Mocha.Context) 
     this.fixtures.presetValidatorSetStateFixture
   );
 
-  const systemRewardPool = await rewardPool.connect(this.signers.system);
+  await mcl.init();
+  const validatorBls = generateValidatorBls(this.signers.admin);
+  const validatorInit = {
+    addr: this.signers.admin.address,
+    pubkey: validatorBls.pubkey,
+    signature: validatorBls.signature,
+    stake: this.minStake.mul(2),
+  };
+
+  const systemRewardPool = rewardPool.connect(this.signers.system);
   await systemRewardPool.initialize(
     validatorSet.address,
     this.signers.rewardWallet.address,
     this.minDelegation,
     this.signers.system.address
   );
-  await systemRewardPool.setBase(500);
-  await systemRewardPool.setMacro(7500);
-  await systemRewardPool.setRSI(11000);
   await liquidToken.initialize("Liquidity Token", "LQT", this.signers.governance.address, systemValidatorSet.address);
   await systemValidatorSet.initialize(
     {
@@ -83,7 +93,7 @@ async function initializedValidatorSetStateFixtureFunction(this: Mocha.Context) 
       minDelegation: this.minDelegation,
       epochSize: this.epochSize,
     },
-    [this.validatorInit],
+    [validatorInit],
     bls.address,
     rewardPool.address,
     this.signers.governance.address,

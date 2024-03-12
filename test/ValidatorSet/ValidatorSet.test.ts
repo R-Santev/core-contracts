@@ -4,51 +4,15 @@ import { expect } from "chai";
 import * as hre from "hardhat";
 
 import * as mcl from "../../ts/mcl";
-import { Fixtures, Signers } from "../mochaContext";
-import { CHAIN_ID, DOMAIN, MAX_COMMISSION, SYSTEM } from "../constants";
+import { CHAIN_ID, DOMAIN, MAX_COMMISSION } from "../constants";
 import { generateFixtures } from "../fixtures";
-import { initValidators } from "../helper";
+import { commitEpoch, generateValidatorBls, initializeContext } from "../helper";
 import { RunSystemTests } from "./System.test";
 import { RunStakingTests } from "./Staking.test";
 import { RunDelegationTests } from "./Delegation.test";
 
 describe("ValidatorSet", function () {
   /** Variables */
-
-  // * Method used to initialize the parameters of the mocha context, e.g., the signers
-  async function initializeContext(context: any) {
-    context.signers = {} as Signers;
-    context.fixtures = {} as Fixtures;
-
-    const signers = await hre.ethers.getSigners();
-    context.signers.accounts = signers;
-    context.signers.admin = signers[0];
-    context.signers.validators = initValidators(signers, 1, 4);
-    context.signers.governance = signers[5];
-    context.signers.delegator = signers[6];
-    context.signers.rewardWallet = signers[7];
-    context.signers.system = await hre.ethers.getSigner(SYSTEM);
-    context.epochId = hre.ethers.BigNumber.from(1);
-    context.epochSize = hre.ethers.BigNumber.from(64);
-    context.epochReward = hre.ethers.utils.parseEther("0.0000001");
-    context.minStake = hre.ethers.utils.parseEther("1");
-    context.minDelegation = hre.ethers.utils.parseEther("1");
-    context.epochsInYear = 31500;
-    context.epoch = {
-      startBlock: hre.ethers.BigNumber.from(1),
-      endBlock: hre.ethers.BigNumber.from(64),
-      epochRoot: hre.ethers.utils.randomBytes(32),
-    };
-    context.uptime = [
-      {
-        validator: context.signers.validators[0].address,
-        signedBlocks: hre.ethers.BigNumber.from(0),
-      },
-    ];
-
-    const network = await hre.ethers.getDefaultProvider().getNetwork();
-    context.chainId = network.chainId;
-  }
 
   before(async function () {
     // * Initialize the this context of mocha
@@ -58,12 +22,11 @@ describe("ValidatorSet", function () {
     await generateFixtures(this);
 
     await mcl.init();
-    const keyPair = mcl.newKeyPair();
-    const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, this.signers.admin.address, keyPair.secret).signature;
+    const validatorBls = generateValidatorBls(this.signers.admin);
     this.validatorInit = {
       addr: this.signers.admin.address,
-      pubkey: mcl.g2ToHex(keyPair.pubkey),
-      signature: mcl.g1ToHex(signature),
+      pubkey: validatorBls.pubkey,
+      signature: validatorBls.signature,
       stake: this.minStake.mul(2),
     };
   });
@@ -145,8 +108,35 @@ describe("ValidatorSet", function () {
     });
 
     it("should initialize successfully", async function () {
-      const { systemValidatorSet, bls, rewardPool } = await loadFixture(
-        this.fixtures.initializedValidatorSetStateFixture
+      const { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+        this.fixtures.presetValidatorSetStateFixture
+      );
+
+      const systemRewardPool = rewardPool.connect(this.signers.system);
+      await systemRewardPool.initialize(
+        validatorSet.address,
+        this.signers.rewardWallet.address,
+        this.minDelegation,
+        this.signers.system.address
+      );
+      await liquidToken.initialize(
+        "Liquidity Token",
+        "LQT",
+        this.signers.governance.address,
+        systemValidatorSet.address
+      );
+      await systemValidatorSet.initialize(
+        {
+          epochReward: this.epochReward,
+          minStake: this.minStake,
+          minDelegation: this.minDelegation,
+          epochSize: this.epochSize,
+        },
+        [this.validatorInit],
+        bls.address,
+        rewardPool.address,
+        this.signers.governance.address,
+        liquidToken.address
       );
 
       expect(await systemValidatorSet.minStake(), "minStake").to.equal(this.minStake);
@@ -435,6 +425,234 @@ describe("ValidatorSet", function () {
         )
           .to.be.revertedWithCustomError(validatorSet, "AlreadyRegistered")
           .withArgs(this.signers.validators[0].address);
+      });
+    });
+
+    describe("StakeSyncer", function () {
+      describe("Stake", function () {
+        it("should emit StakeChanged event on stake", async function () {
+          const { validatorSet } = await loadFixture(this.fixtures.registeredValidatorsStateFixture);
+          const validatorValidatorSet = validatorSet.connect(this.signers.validators[0]);
+
+          await expect(validatorValidatorSet.stake({ value: this.minStake }), "emit StakeChanged")
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(this.signers.validators[0].address, this.minStake);
+
+          // ensure proper staked amount is fetched
+          const validatorData = await validatorSet.getValidator(this.signers.validators[0].address);
+          expect(validatorData.totalStake, "totalStake").to.equal(this.minStake);
+        });
+
+        it("should emit StakeChanged event on opening a vested position", async function () {
+          const { validatorSet } = await loadFixture(this.fixtures.registeredValidatorsStateFixture);
+
+          const validator = this.signers.validators[1];
+          const validatorValidatorSet = validatorSet.connect(validator);
+          const vestingDuration = 12; // weeks
+          await expect(
+            validatorValidatorSet.stakeWithVesting(vestingDuration, { value: this.minStake }),
+            "emit StakeChanged"
+          )
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, this.minStake);
+
+          // ensure proper staked amount is fetched
+          const validatorData = await validatorSet.getValidator(validator.address);
+          expect(validatorData.totalStake, "totalStake").to.equal(this.minStake);
+        });
+
+        it("should emit StakeChanged event on top-up vested position", async function () {
+          const { validatorSet, systemValidatorSet, rewardPool } = await loadFixture(
+            this.fixtures.registeredValidatorsStateFixture
+          );
+
+          const validator = this.signers.validators[2];
+          const validatorValidatorSet = validatorSet.connect(validator);
+          const vestingDuration = 12; // weeks
+          await validatorValidatorSet.stakeWithVesting(vestingDuration, { value: this.minStake });
+          await commitEpoch(
+            systemValidatorSet,
+            rewardPool,
+            [this.signers.validators[0], this.signers.validators[1], validator],
+            this.epochSize
+          );
+
+          await expect(validatorValidatorSet.stake({ value: this.minStake.mul(2) }), "emit StakeChanged")
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, this.minStake.mul(2).add(this.minStake));
+
+          // ensure proper staked amount is fetched
+          const validatorData = await validatorSet.getValidator(validator.address);
+          expect(validatorData.totalStake, "totalStake").to.equal(this.minStake.mul(3));
+        });
+
+        it("should emit StakeChanged event on unstake", async function () {
+          const { validatorSet, systemValidatorSet, rewardPool } = await loadFixture(
+            this.fixtures.registeredValidatorsStateFixture
+          );
+
+          const validator = this.signers.validators[0];
+          const validatorValidatorSet = validatorSet.connect(validator);
+          await validatorValidatorSet.stake({ value: this.minStake });
+          await commitEpoch(
+            systemValidatorSet,
+            rewardPool,
+            [validator, this.signers.validators[1], this.signers.validators[2]],
+            this.epochSize
+          );
+
+          await expect(validatorValidatorSet.unstake(this.minStake), "emit StakeChanged")
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, 0);
+
+          // ensure that the amount is properly unstaked
+          const validatorData = await validatorSet.getValidator(validator.address);
+          expect(validatorData.totalStake, "totalStake").to.equal(0);
+        });
+
+        it("should emit StakeChanged event on unstake from vested position", async function () {
+          const { validatorSet, systemValidatorSet, rewardPool } = await loadFixture(
+            this.fixtures.registeredValidatorsStateFixture
+          );
+
+          const validator = this.signers.validators[0];
+          const validatorValidatorSet = validatorSet.connect(validator);
+          const vestingDuration = 12; // weeks
+          const stakeAmount = this.minStake.mul(2);
+          await validatorValidatorSet.stakeWithVesting(vestingDuration, { value: stakeAmount });
+          await commitEpoch(
+            systemValidatorSet,
+            rewardPool,
+            [validator, this.signers.validators[1], this.signers.validators[2]],
+            this.epochSize
+          );
+
+          const unstakeAmount = this.minStake.div(3);
+          await expect(validatorValidatorSet.unstake(unstakeAmount), "emit StakeChanged")
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, stakeAmount.sub(unstakeAmount));
+
+          // ensure proper staked amount is fetched
+          const validatorData = await validatorSet.getValidator(validator.address);
+          expect(validatorData.totalStake, "totalStake").to.equal(stakeAmount.sub(unstakeAmount));
+        });
+      });
+
+      describe("Delegation", () => {
+        it("should emit StakeChanged event on delegate", async function () {
+          const { validatorSet } = await loadFixture(this.fixtures.registeredValidatorsStateFixture);
+
+          const validator = this.signers.validators[0];
+          const { totalStake } = await validatorSet.getValidator(validator.address);
+
+          const delegatorChildValidatorSet = validatorSet.connect(this.signers.delegator);
+          await expect(
+            delegatorChildValidatorSet.delegate(validator.address, { value: this.minStake }),
+            "emit StakeChanged"
+          )
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, this.minStake);
+
+          // to ensure that delegate is immediately applied on the validator stake
+          expect((await validatorSet.getValidator(validator.address)).totalStake).to.equal(
+            totalStake.add(this.minStake),
+            "totalStake"
+          );
+        });
+
+        it("should emit StakeChanged event on open vested position", async function () {
+          const { validatorSet, vestManager } = await loadFixture(this.fixtures.vestManagerFixture);
+
+          const validator = this.signers.validators[0];
+          const { totalStake } = await validatorSet.getValidator(validator.address);
+
+          const vestingDuration = 12; // weeks
+
+          await expect(
+            vestManager.openVestedDelegatePosition(validator.address, vestingDuration, { value: this.minStake }),
+            "emit StakeChanged"
+          )
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, totalStake.add(this.minStake));
+
+          // to ensure that delegate is immediately applied on the validator stake
+          expect((await validatorSet.getValidator(validator.address)).totalStake, "totalStake").to.equal(
+            totalStake.add(this.minStake)
+          );
+        });
+
+        it("should emit StakeChanged event on top-up vested position", async function () {
+          const { validatorSet, systemValidatorSet, rewardPool, vestManager } = await loadFixture(
+            this.fixtures.vestManagerFixture
+          );
+
+          const validator = this.signers.validators[0];
+          const vestingDuration = 12; // weeks
+          await vestManager.openVestedDelegatePosition(validator.address, vestingDuration, { value: this.minStake });
+          // because balance change can be made only once per epoch when vested delegation position
+          await commitEpoch(
+            systemValidatorSet,
+            rewardPool,
+            [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+            this.epochSize
+          );
+          const { totalStake } = await validatorSet.getValidator(validator.address);
+
+          await expect(
+            vestManager.topUpVestedDelegatePosition(validator.address, { value: this.minStake }),
+            "emit StakeChanged"
+          )
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, totalStake.add(this.minStake));
+          // to ensure that delegate is immediately applied on the validator stake
+          expect((await validatorSet.getValidator(validator.address)).totalStake, "totalStake").to.equal(
+            totalStake.add(this.minStake)
+          );
+        });
+
+        it("should emit StakeChanged event on undelegate", async function () {
+          const { validatorSet } = await loadFixture(this.fixtures.vestManagerFixture);
+
+          const validator = this.signers.validators[0];
+          const delegatorValidatorSet = validatorSet.connect(this.signers.delegator);
+          await delegatorValidatorSet.delegate(validator.address, { value: this.minStake });
+          const { totalStake } = await validatorSet.getValidator(validator.address);
+
+          await expect(await delegatorValidatorSet.undelegate(validator.address, this.minStake), "emit StakeChanged")
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, totalStake.sub(this.minStake));
+
+          // to ensure that undelegate is immediately applied on the validator stake
+          expect((await validatorSet.getValidator(validator.address)).totalStake, "totalStake").to.equal(
+            totalStake.sub(this.minStake)
+          );
+        });
+
+        it("should emit StakeChanged event on cut vested position", async function () {
+          const { validatorSet, systemValidatorSet, rewardPool, liquidToken, vestManager, vestManagerOwner } =
+            await loadFixture(this.fixtures.vestManagerFixture);
+
+          const validator = this.signers.validators[0];
+          const vestingDuration = 12; // weeks
+          await vestManager.openVestedDelegatePosition(validator.address, vestingDuration, { value: this.minStake });
+          // because balance change can be made only once per epoch when vested delegation position
+          await commitEpoch(
+            systemValidatorSet,
+            rewardPool,
+            [this.signers.validators[0], this.signers.validators[1], this.signers.validators[2]],
+            this.epochSize
+          );
+          const { totalStake } = await validatorSet.getValidator(validator.address);
+
+          await liquidToken.connect(vestManagerOwner).approve(vestManager.address, this.minStake);
+          await expect(vestManager.cutVestedDelegatePosition(validator.address, this.minStake), "emit StakeChanged")
+            .to.emit(validatorSet, "StakeChanged")
+            .withArgs(validator.address, totalStake.sub(this.minStake));
+          // to ensure that undelegate is immediately applied on the validator stake
+          expect((await validatorSet.getValidator(validator.address)).totalStake, "totalStake").to.equal(
+            totalStake.sub(this.minStake)
+          );
+        });
       });
     });
 

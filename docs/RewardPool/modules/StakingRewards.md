@@ -61,6 +61,57 @@ function EPOCHS_YEAR() external view returns (uint256)
 |---|---|---|
 | _0 | uint256 | undefined |
 
+### INITIAL_BASE_APR
+
+```solidity
+function INITIAL_BASE_APR() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### INITIAL_MACRO_FACTOR
+
+```solidity
+function INITIAL_MACRO_FACTOR() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
+### INITIAL_RSI_BONUS
+
+```solidity
+function INITIAL_RSI_BONUS() external view returns (uint256)
+```
+
+
+
+
+
+
+#### Returns
+
+| Name | Type | Description |
+|---|---|---|
+| _0 | uint256 | undefined |
+
 ### MANAGER_ROLE
 
 ```solidity
