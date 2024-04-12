@@ -27,23 +27,6 @@ function DEFAULT_ADMIN_ROLE() external view returns (bytes32)
 |---|---|---|
 | _0 | bytes32 | undefined |
 
-### DELEGATORS_COMMISSION
-
-```solidity
-function DELEGATORS_COMMISSION() external view returns (uint256)
-```
-
-A constant that is used to keep the commission of the delegators
-
-
-
-
-#### Returns
-
-| Name | Type | Description |
-|---|---|---|
-| _0 | uint256 | undefined |
-
 ### DENOMINATOR
 
 ```solidity

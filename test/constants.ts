@@ -8,6 +8,7 @@ export const VALIDATOR_PKCHECK_PRECOMPILE = "0x000000000000000000000000000000000
 export const NATIVE_TRANSFER_PRECOMPILE_GAS = 21000;
 export const VALIDATOR_PKCHECK_PRECOMPILE_GAS = 150000;
 export const CHAIN_ID = 31337;
+export const INITIAL_COMMISSION = ethers.BigNumber.from(10);
 export const MAX_COMMISSION = ethers.BigNumber.from(100);
 export const WEEK = 60 * 60 * 24 * 7;
 export const VESTING_DURATION_WEEKS = 10; // in weeks

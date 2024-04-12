@@ -12,7 +12,7 @@ import {
   RewardPool__factory,
   ValidatorSet__factory,
 } from "../typechain-types";
-import { CHAIN_ID, DOMAIN, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
+import { CHAIN_ID, DOMAIN, INITIAL_COMMISSION, SYSTEM, VESTING_DURATION_WEEKS } from "./constants";
 import {
   getMaxEpochReward,
   commitEpochs,
@@ -97,7 +97,8 @@ async function initializedValidatorSetStateFixtureFunction(this: Mocha.Context) 
     bls.address,
     rewardPool.address,
     this.signers.governance.address,
-    liquidToken.address
+    liquidToken.address,
+    INITIAL_COMMISSION
   );
 
   return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
@@ -175,13 +176,13 @@ async function registeredValidatorsStateFixtureFunction(this: Mocha.Context) {
 
   await validatorSet
     .connect(this.signers.validators[0])
-    .register(mcl.g1ToHex(validator1signature), mcl.g2ToHex(keyPair.pubkey));
+    .register(mcl.g1ToHex(validator1signature), mcl.g2ToHex(keyPair.pubkey), INITIAL_COMMISSION);
   await validatorSet
     .connect(this.signers.validators[1])
-    .register(mcl.g1ToHex(validator2signature), mcl.g2ToHex(keyPair.pubkey));
+    .register(mcl.g1ToHex(validator2signature), mcl.g2ToHex(keyPair.pubkey), INITIAL_COMMISSION);
   await validatorSet
     .connect(this.signers.validators[2])
-    .register(mcl.g1ToHex(validator3signature), mcl.g2ToHex(keyPair.pubkey));
+    .register(mcl.g1ToHex(validator3signature), mcl.g2ToHex(keyPair.pubkey), INITIAL_COMMISSION);
 
   return { validatorSet, systemValidatorSet, bls, rewardPool, liquidToken };
 }
