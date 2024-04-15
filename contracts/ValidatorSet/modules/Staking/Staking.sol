@@ -50,8 +50,6 @@ abstract contract Staking is
      */
     function setCommission(uint256 newCommission) external onlyValidator {
         _setCommission(msg.sender, newCommission);
-
-        emit CommissionUpdated(msg.sender, validators[msg.sender].commission, newCommission);
     }
 
     /**
@@ -152,10 +150,12 @@ abstract contract Staking is
         if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
     }
 
-    function _setCommission(address validator, uint256 commission) private {
-        if (commission > MAX_COMMISSION) revert InvalidCommission(commission);
+    function _setCommission(address validator, uint256 newCommission) private {
+        if (newCommission > MAX_COMMISSION) revert InvalidCommission(newCommission);
 
-        validators[validator].commission = commission;
+        validators[validator].commission = newCommission;
+
+        emit CommissionUpdated(msg.sender, validators[msg.sender].commission, newCommission);
     }
 
     // slither-disable-next-line unused-state,naming-convention
