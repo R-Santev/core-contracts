@@ -50,7 +50,8 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         IBLS newBls,
         IRewardPool newRewardPool,
         address governance,
-        address liquidToken
+        address liquidToken,
+        uint256 initialCommission
     ) external initializer onlySystemCall {
         __ValidatorSetBase_init(newBls, newRewardPool);
         __PowerExponent_init();
@@ -58,14 +59,14 @@ contract ValidatorSet is ValidatorSetBase, System, AccessControl, PowerExponent,
         __Staking_init(init.minStake, liquidToken);
         __Delegation_init();
         __ReentrancyGuard_init();
-        _initialize(newValidators);
+        _initialize(newValidators, initialCommission);
     }
 
-    function _initialize(ValidatorInit[] calldata newValidators) private {
+    function _initialize(ValidatorInit[] calldata newValidators, uint256 initialCommission) private {
         epochEndBlocks.push(0);
         // set initial validators
         for (uint256 i = 0; i < newValidators.length; i++) {
-            _register(newValidators[i].addr, newValidators[i].signature, newValidators[i].pubkey);
+            _register(newValidators[i].addr, newValidators[i].signature, newValidators[i].pubkey, initialCommission);
             _stake(newValidators[i].addr, newValidators[i].stake);
         }
     }

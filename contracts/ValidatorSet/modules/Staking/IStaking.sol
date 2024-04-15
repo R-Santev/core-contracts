@@ -18,8 +18,9 @@ interface IStaking {
      * @notice Validates BLS signature with the provided pubkey and registers validators into the set.
      * @param signature Signature to validate message against
      * @param pubkey BLS public key of validator
+     * @param commission The commission rate for the delegators
      */
-    function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external;
+    function register(uint256[2] calldata signature, uint256[4] calldata pubkey, uint256 commission) external;
 
     /**
      * @notice Stakes sent amount.

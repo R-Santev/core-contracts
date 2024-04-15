@@ -10,7 +10,7 @@ import { ValidatorSet } from "../typechain-types/contracts/ValidatorSet";
 import { RewardPool } from "../typechain-types/contracts/RewardPool";
 import { VestManager } from "../typechain-types/contracts/ValidatorSet/modules/Delegation";
 import { VestManager__factory } from "../typechain-types/factories/contracts/ValidatorSet/modules/Delegation";
-import { CHAIN_ID, DOMAIN, EPOCHS_YEAR, SYSTEM, WEEK } from "./constants";
+import { CHAIN_ID, DOMAIN, EPOCHS_YEAR, INITIAL_COMMISSION, SYSTEM, WEEK } from "./constants";
 
 interface RewardParams {
   timestamp: BigNumber;
@@ -120,7 +120,9 @@ export async function registerValidator(validatorSet: ValidatorSet, governance: 
   const keyPair = mcl.newKeyPair();
   const signature = mcl.signValidatorMessage(DOMAIN, CHAIN_ID, account.address, keyPair.secret).signature;
 
-  const tx = await validatorSet.connect(account).register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey));
+  const tx = await validatorSet
+    .connect(account)
+    .register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey), INITIAL_COMMISSION);
   const txReceipt = await tx.wait();
 
   if (txReceipt.status !== 1) {

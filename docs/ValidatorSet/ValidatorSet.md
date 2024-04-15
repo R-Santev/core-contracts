@@ -469,7 +469,7 @@ function implementation() external view returns (address)
 ### initialize
 
 ```solidity
-function initialize(InitStruct init, ValidatorInit[] newValidators, contract IBLS newBls, contract IRewardPool newRewardPool, address governance, address liquidToken) external nonpayable
+function initialize(InitStruct init, ValidatorInit[] newValidators, contract IBLS newBls, contract IRewardPool newRewardPool, address governance, address liquidToken, uint256 initialCommission) external nonpayable
 ```
 
 
@@ -486,6 +486,7 @@ function initialize(InitStruct init, ValidatorInit[] newValidators, contract IBL
 | newRewardPool | contract IRewardPool | undefined |
 | governance | address | undefined |
 | liquidToken | address | undefined |
+| initialCommission | uint256 | undefined |
 
 ### isVestingManager
 
@@ -636,7 +637,7 @@ function powerExponent() external view returns (uint128 value, uint128 pendingVa
 ### register
 
 ```solidity
-function register(uint256[2] signature, uint256[4] pubkey) external nonpayable
+function register(uint256[2] signature, uint256[4] pubkey, uint256 commission) external nonpayable
 ```
 
 Validates BLS signature with the provided pubkey and registers validators into the set.
@@ -649,6 +650,7 @@ Validates BLS signature with the provided pubkey and registers validators into t
 |---|---|---|
 | signature | uint256[2] | Signature to validate message against |
 | pubkey | uint256[4] | BLS public key of validator |
+| commission | uint256 | The commission rate for the delegators |
 
 ### removeFromWhitelist
 
@@ -1430,6 +1432,38 @@ error DelegateRequirement(string src, string msg)
 |---|---|---|
 | src | string | undefined |
 | msg | string | undefined |
+
+### InvalidCommission
+
+```solidity
+error InvalidCommission(uint256 commission)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| commission | uint256 | undefined |
+
+### InvalidMinStake
+
+```solidity
+error InvalidMinStake(uint256 minStake)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| minStake | uint256 | undefined |
 
 ### InvalidSignature
 

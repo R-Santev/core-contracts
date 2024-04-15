@@ -39,8 +39,7 @@ abstract contract Staking is
     }
 
     function __Staking_init_unchained(uint256 newMinStake) internal onlyInitializing {
-        // TODO: all requre statements should be replaced with Error
-        require(newMinStake >= 1 ether, "INVALID_MIN_STAKE");
+        if (newMinStake < 1 ether) revert InvalidMinStake(newMinStake);
         minStake = newMinStake;
     }
 
@@ -50,19 +49,16 @@ abstract contract Staking is
      * @inheritdoc IStaking
      */
     function setCommission(uint256 newCommission) external onlyValidator {
-        require(newCommission <= MAX_COMMISSION, "INVALID_COMMISSION");
-        Validator storage validator = validators[msg.sender];
-        emit CommissionUpdated(msg.sender, validator.commission, newCommission);
-        validator.commission = newCommission;
+        _setCommission(msg.sender, newCommission);
     }
 
     /**
      * @inheritdoc IStaking
      */
-    function register(uint256[2] calldata signature, uint256[4] calldata pubkey) external {
+    function register(uint256[2] calldata signature, uint256[4] calldata pubkey, uint256 commission) external {
         if (validators[msg.sender].registered) revert AlreadyRegistered(msg.sender);
         if (!validators[msg.sender].whitelisted) revert Unauthorized("WHITELIST");
-        _register(msg.sender, signature, pubkey);
+        _register(msg.sender, signature, pubkey, commission);
         _removeFromWhitelist(msg.sender);
 
         emit NewValidator(msg.sender, pubkey);
@@ -100,11 +96,18 @@ abstract contract Staking is
 
     // _______________ Internal functions _______________
 
-    function _register(address validator, uint256[2] calldata signature, uint256[4] calldata pubkey) internal {
+    function _register(
+        address validator,
+        uint256[2] calldata signature,
+        uint256[4] calldata pubkey,
+        uint256 commission
+    ) internal {
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
         validators[validator].active = true;
         validators[validator].registered = true;
+        _setCommission(validator, commission);
+
         validatorsAddresses.push(validator);
         rewardPool.onNewValidator(validator);
     }
@@ -145,6 +148,14 @@ abstract contract Staking is
 
     function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
         if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
+    }
+
+    function _setCommission(address validator, uint256 newCommission) private {
+        if (newCommission > MAX_COMMISSION) revert InvalidCommission(newCommission);
+
+        validators[validator].commission = newCommission;
+
+        emit CommissionUpdated(msg.sender, validators[msg.sender].commission, newCommission);
     }
 
     // slither-disable-next-line unused-state,naming-convention

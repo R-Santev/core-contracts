@@ -79,16 +79,17 @@ contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards
     ) private returns (uint256 reward) {
         require(uptime.signedBlocks <= totalBlocks, "SIGNED_BLOCKS_EXCEEDS_TOTAL");
 
-        uint256 balance = validatorSet.balanceOf(uptime.validator);
+        (, , uint256 totalStake, uint256 commission, , ) = validatorSet.getValidator(uptime.validator);
         DelegationPool storage delegationPool = delegationPools[uptime.validator];
         uint256 delegation = delegationPool.supply;
         // slither-disable-next-line divide-before-multiply
-        uint256 validatorReward = (fullReward * (balance + delegation) * uptime.signedBlocks) /
+        uint256 validatorReward = (fullReward * (totalStake + delegation) * uptime.signedBlocks) /
             (totalSupply * totalBlocks);
         (uint256 validatorShares, uint256 delegatorShares) = _calculateValidatorAndDelegatorShares(
-            balance,
+            totalStake,
             delegation,
-            validatorReward
+            validatorReward,
+            commission
         );
 
         _distributeValidatorReward(uptime.validator, validatorShares);
@@ -149,14 +150,15 @@ contract RewardPool is RewardPoolBase, System, StakingRewards, DelegationRewards
     function _calculateValidatorAndDelegatorShares(
         uint256 stakedBalance,
         uint256 delegatedBalance,
-        uint256 totalReward
+        uint256 totalReward,
+        uint256 commission
     ) private pure returns (uint256, uint256) {
         if (stakedBalance == 0) return (0, 0);
         if (delegatedBalance == 0) return (totalReward, 0);
         uint256 validatorReward = (totalReward * stakedBalance) / (stakedBalance + delegatedBalance);
         uint256 delegatorReward = totalReward - validatorReward;
-        uint256 commission = (DELEGATORS_COMMISSION * delegatorReward) / 100;
+        uint256 validatorCommission = (commission * delegatorReward) / 100;
 
-        return (validatorReward + commission, delegatorReward - commission);
+        return (validatorReward + validatorCommission, delegatorReward - validatorCommission);
     }
 }

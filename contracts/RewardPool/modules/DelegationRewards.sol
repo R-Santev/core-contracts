@@ -13,8 +13,6 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     using DelegationPoolLib for DelegationPool;
     using VestingPositionLib for VestingPosition;
 
-    /// @notice A constant that is used to keep the commission of the delegators
-    uint256 public constant DELEGATORS_COMMISSION = 10;
     /// @notice Keeps the delegation pools
     mapping(address => DelegationPool) public delegationPools;
     // @note maybe this must be part of the ValidatorSet
