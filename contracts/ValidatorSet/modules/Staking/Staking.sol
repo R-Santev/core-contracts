@@ -31,11 +31,6 @@ abstract contract Staking is
         _;
     }
 
-    modifier validCommission(uint256 commission) {
-        if (commission > MAX_COMMISSION) revert InvalidCommission(commission);
-        _;
-    }
-
     // _______________ Initializer _______________
 
     function __Staking_init(uint256 newMinStake, address newLiquidToken) internal onlyInitializing {
@@ -53,11 +48,10 @@ abstract contract Staking is
     /**
      * @inheritdoc IStaking
      */
-    function setCommission(uint256 newCommission) external onlyValidator validCommission(newCommission) {
-        Validator storage validator = validators[msg.sender];
-        validator.commission = newCommission;
+    function setCommission(uint256 newCommission) external onlyValidator {
+        _setCommission(msg.sender, newCommission);
 
-        emit CommissionUpdated(msg.sender, validator.commission, newCommission);
+        emit CommissionUpdated(msg.sender, validators[msg.sender].commission, newCommission);
     }
 
     /**
@@ -109,12 +103,13 @@ abstract contract Staking is
         uint256[2] calldata signature,
         uint256[4] calldata pubkey,
         uint256 commission
-    ) internal validCommission(commission) {
+    ) internal {
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
         validators[validator].active = true;
         validators[validator].registered = true;
-        validators[validator].commission = commission;
+        _setCommission(validator, commission);
+
         validatorsAddresses.push(validator);
         rewardPool.onNewValidator(validator);
     }
@@ -155,6 +150,12 @@ abstract contract Staking is
 
     function _ensureStakeIsInRange(uint256 amount, uint256 currentBalance) private view {
         if (amount + currentBalance < minStake) revert StakeRequirement({src: "stake", msg: "STAKE_TOO_LOW"});
+    }
+
+    function _setCommission(address validator, uint256 commission) private {
+        if (commission > MAX_COMMISSION) revert InvalidCommission(commission);
+
+        validators[validator].commission = commission;
     }
 
     // slither-disable-next-line unused-state,naming-convention
