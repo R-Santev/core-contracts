@@ -31,6 +31,11 @@ abstract contract Staking is
         _;
     }
 
+    modifier validCommission(uint256 commission) {
+        if (commission > MAX_COMMISSION) revert InvalidCommission(commission);
+        _;
+    }
+
     // _______________ Initializer _______________
 
     function __Staking_init(uint256 newMinStake, address newLiquidToken) internal onlyInitializing {
@@ -39,8 +44,7 @@ abstract contract Staking is
     }
 
     function __Staking_init_unchained(uint256 newMinStake) internal onlyInitializing {
-        // TODO: all requre statements should be replaced with Error
-        require(newMinStake >= 1 ether, "INVALID_MIN_STAKE");
+        if (newMinStake < 1 ether) revert InvalidMinStake(newMinStake);
         minStake = newMinStake;
     }
 
@@ -49,8 +53,7 @@ abstract contract Staking is
     /**
      * @inheritdoc IStaking
      */
-    function setCommission(uint256 newCommission) external onlyValidator {
-        require(newCommission <= MAX_COMMISSION, "INVALID_COMMISSION");
+    function setCommission(uint256 newCommission) external onlyValidator validCommission(newCommission) {
         Validator storage validator = validators[msg.sender];
         validator.commission = newCommission;
 
@@ -106,7 +109,7 @@ abstract contract Staking is
         uint256[2] calldata signature,
         uint256[4] calldata pubkey,
         uint256 commission
-    ) internal {
+    ) internal validCommission(commission) {
         _verifyValidatorRegistration(validator, signature, pubkey);
         validators[validator].blsKey = pubkey;
         validators[validator].active = true;

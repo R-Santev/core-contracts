@@ -1433,6 +1433,38 @@ error DelegateRequirement(string src, string msg)
 | src | string | undefined |
 | msg | string | undefined |
 
+### InvalidCommission
+
+```solidity
+error InvalidCommission(uint256 commission)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| commission | uint256 | undefined |
+
+### InvalidMinStake
+
+```solidity
+error InvalidMinStake(uint256 minStake)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| minStake | uint256 | undefined |
+
 ### InvalidSignature
 
 ```solidity

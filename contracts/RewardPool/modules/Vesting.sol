@@ -128,7 +128,7 @@ abstract contract Vesting is APR {
         uint256 leftWeeks = (leftPeriod + WEEK_MINUS_SECOND) / 1 weeks;
         uint256 bps = 30 * leftWeeks; // 0.3% * left weeks
 
-        return (amount * bps) / 10000;
+        return (amount * bps) / DENOMINATOR;
     }
 
     function _saveEpochRPS(address validator, uint256 rewardPerShare, uint256 epochNumber) internal {
@@ -146,10 +146,10 @@ abstract contract Vesting is APR {
         bool rsi
     ) internal pure returns (uint256) {
         uint256 bonus = (position.base + position.vestBonus);
-        uint256 divider = 10000;
+        uint256 divider = DENOMINATOR;
         if (rsi) {
             bonus = bonus * position.rsiBonus;
-            divider *= 10000;
+            divider *= DENOMINATOR;
         }
 
         return (reward * bonus) / divider / EPOCHS_YEAR;

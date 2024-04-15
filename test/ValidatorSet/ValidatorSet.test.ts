@@ -103,6 +103,33 @@ describe("ValidatorSet", function () {
         .withArgs(this.signers.accounts[1].address);
     });
 
+    it("should revert when initialize with invalid commission", async function () {
+      const { systemValidatorSet, bls, rewardPool, liquidToken } = await loadFixture(
+        this.fixtures.presetValidatorSetStateFixture
+      );
+
+      const exceededCommission = MAX_COMMISSION.add(1);
+
+      await expect(
+        systemValidatorSet.initialize(
+          {
+            epochReward: this.epochReward,
+            minStake: this.minStake,
+            minDelegation: this.minDelegation,
+            epochSize: this.epochSize,
+          },
+          [this.validatorInit],
+          bls.address,
+          rewardPool.address,
+          this.signers.governance.address,
+          liquidToken.address,
+          exceededCommission
+        )
+      )
+        .to.be.revertedWithCustomError(systemValidatorSet, "InvalidCommission")
+        .withArgs(exceededCommission);
+    });
+
     it("should have zero total supply", async function () {
       const { systemValidatorSet } = await loadFixture(this.fixtures.presetValidatorSetStateFixture);
 
@@ -371,6 +398,30 @@ describe("ValidatorSet", function () {
         )
           .to.be.revertedWithCustomError(validatorSet, "InvalidSignature")
           .withArgs(this.signers.validators[1].address);
+      });
+
+      it("should revert when register with invalid commission", async function () {
+        const { validatorSet } = await loadFixture(this.fixtures.whitelistedValidatorsStateFixture);
+
+        expect((await validatorSet.validators(this.signers.validators[0].address)).whitelisted, "whitelisted = true").to
+          .be.true;
+
+        const keyPair = mcl.newKeyPair();
+        const signature = mcl.signValidatorMessage(
+          DOMAIN,
+          CHAIN_ID,
+          this.signers.validators[0].address,
+          keyPair.secret
+        ).signature;
+
+        const exceededCommission = MAX_COMMISSION.add(1);
+        await expect(
+          validatorSet
+            .connect(this.signers.validators[0])
+            .register(mcl.g1ToHex(signature), mcl.g2ToHex(keyPair.pubkey), exceededCommission)
+        )
+          .to.be.revertedWithCustomError(validatorSet, "InvalidCommission")
+          .withArgs(exceededCommission);
       });
 
       it("should register", async function () {
@@ -718,9 +769,11 @@ describe("ValidatorSet", function () {
       it("should revert with invalid commission", async function () {
         const { validatorSet } = await loadFixture(this.fixtures.withdrawableFixture);
 
-        await expect(
-          validatorSet.connect(this.signers.validators[0]).setCommission(MAX_COMMISSION.add(1))
-        ).to.be.revertedWith("INVALID_COMMISSION");
+        const exceededCommission = MAX_COMMISSION.add(1);
+
+        await expect(validatorSet.connect(this.signers.validators[0]).setCommission(exceededCommission))
+          .to.be.revertedWithCustomError(validatorSet, "InvalidCommission")
+          .withArgs(exceededCommission);
       });
 
       it("should set commission", async function () {

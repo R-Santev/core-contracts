@@ -863,6 +863,22 @@ error AlreadyRegistered(address validator)
 |---|---|---|
 | validator | address | undefined |
 
+### InvalidCommission
+
+```solidity
+error InvalidCommission(uint256 commission)
+```
+
+
+
+
+
+#### Parameters
+
+| Name | Type | Description |
+|---|---|---|
+| commission | uint256 | undefined |
+
 ### InvalidSignature
 
 ```solidity
