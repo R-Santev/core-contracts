@@ -13,7 +13,7 @@
 ### calculateDelegatePositionPenalty
 
 ```solidity
-function calculateDelegatePositionPenalty(address validator, address delegator, uint256 amount) external view returns (uint256 penalty, uint256 reward)
+function calculateDelegatePositionPenalty(address validator, address delegator, uint256 amount, uint256 epochNumber, uint256 topUpIndex) external view returns (uint256 penalty, uint256 reward)
 ```
 
 Returns the penalty and reward that will be burned, if vested delegate position is active
@@ -27,6 +27,8 @@ Returns the penalty and reward that will be burned, if vested delegate position 
 | validator | address | The address of the validator |
 | delegator | address | The address of the delegator |
 | amount | uint256 | The amount that is going to be undelegated |
+| epochNumber | uint256 | Epoch where the last claimable reward is distributed We need it because not all rewards are matured at the moment of calling the function |
+| topUpIndex | uint256 | The index when a topup has been made |
 
 #### Returns
 

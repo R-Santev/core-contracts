@@ -210,13 +210,18 @@ interface IRewardPool {
      * @param validator The address of the validator
      * @param delegator The address of the delegator
      * @param amount The amount that is going to be undelegated
+     * @param epochNumber Epoch where the last claimable reward is distributed
+     * We need it because not all rewards are matured at the moment of calling the function
+     * @param topUpIndex The index when a topup has been made
      * @return penalty for the delegator
      * @return reward of the delegator
      */
     function calculateDelegatePositionPenalty(
         address validator,
         address delegator,
-        uint256 amount
+        uint256 amount,
+        uint256 epochNumber,
+        uint256 topUpIndex
     ) external view returns (uint256 penalty, uint256 reward);
 
     /**

@@ -6,8 +6,19 @@ import * as hre from "hardhat";
 // eslint-disable-next-line camelcase
 import { VestManager__factory } from "../../typechain-types";
 import { VESTING_DURATION_WEEKS, WEEK } from "../constants";
-import { calculatePenalty, claimPositionRewards, commitEpoch, commitEpochs, getUserManager } from "../helper";
-import { RunDelegateClaimTests, RunVestedDelegateClaimTests } from "../RewardPool/RewardPool.test";
+import {
+  calculatePenalty,
+  claimPositionRewards,
+  commitEpoch,
+  commitEpochs,
+  getUserManager,
+  retrieveRPSData,
+} from "../helper";
+import {
+  RunDelegateClaimTests,
+  RunVestedDelegateClaimTests,
+  RunVestedDelegationRewardsTests,
+} from "../RewardPool/RewardPool.test";
 
 export function RunDelegationTests(): void {
   describe("Delegate", function () {
@@ -451,11 +462,21 @@ export function RunDelegationTests(): void {
         const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
         const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
 
+        // prepare params for call
+        const { epochNum, topUpIndex } = await retrieveRPSData(
+          systemValidatorSet,
+          rewardPool,
+          delegatedValidator.address,
+          vestManager.address
+        );
+
         // get the penalty and reward from the contract
         const { penalty, reward } = await rewardPool.calculateDelegatePositionPenalty(
           delegatedValidator.address,
           vestManager.address,
-          this.minStake
+          this.minStake,
+          epochNum,
+          topUpIndex
         );
 
         // calculate penalty locally
@@ -479,25 +500,6 @@ export function RunDelegationTests(): void {
 
         const cutAmount = delegatedBalanceBefore.div(2);
         const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
-
-        // Hydra TODO: Create table-driven unit tests with precalculated values to test the exact amounts
-        // check if amount is properly burned
-        // const end = position.end;
-        // const rpsValues = await childValidatorSet.getRPSValues(validator);
-        // const epochNum = findProperRPSIndex(rpsValues, end);
-        // const topUpIndex = 0;
-        // let reward = await childValidatorSet.getDelegatorPositionReward(
-        //   validator,
-        //   manager.address,
-        //   epochNum,
-        //   topUpIndex
-        // );
-        // reward = await childValidatorSet.applyMaxReward(reward);
-        // const decrease = reward.add(amountToBeBurned);
-        // await expect(manager.cutVestedDelegatePosition(validator, cutAmount)).to.changeEtherBalance(
-        //   childValidatorSet,
-        //   decrease.mul(-1)
-        // );
 
         await liquidToken.connect(vestManagerOwner).approve(vestManager.address, cutAmount);
 
@@ -823,6 +825,10 @@ export function RunDelegationTests(): void {
           .to.be.revertedWithCustomError(validatorSet, "DelegateRequirement")
           .withArgs("vesting", "POSITION_NOT_ACTIVE");
       });
+    });
+
+    describe("Reward Pool - rewards", async function () {
+      RunVestedDelegationRewardsTests();
     });
 
     describe("Reward Pool - Vested delegate claim", async function () {

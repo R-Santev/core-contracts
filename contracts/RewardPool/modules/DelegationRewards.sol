@@ -76,43 +76,8 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         uint256 topUpIndex
     ) external view returns (uint256) {
         VestingPosition memory position = delegationPositions[validator][delegator];
-        if (_noRewardConditions(position)) {
-            return 0;
-        }
 
-        uint256 sumReward;
-        DelegationPool storage delegationPool = delegationPools[validator];
-        bool rsi = true;
-        if (_isTopUpMade(validator, delegator)) {
-            rsi = false;
-            RewardParams memory params = beforeTopUpParams[validator][delegator];
-            uint256 rsiReward = delegationPool.claimableRewards(
-                delegator,
-                params.rewardPerShare,
-                params.balance,
-                params.correction
-            );
-            sumReward += _applyCustomReward(position, rsiReward, true);
-        }
-
-        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(
-            validator,
-            delegator,
-            epochNumber,
-            topUpIndex
-        );
-        uint256 reward = delegationPool.claimableRewards(delegator, epochRPS, balance, correction) - sumReward;
-        reward = _applyCustomReward(position, reward, rsi);
-        sumReward += reward;
-
-        // If the full maturing period is finished, withdraw also the reward made after the vesting period
-        if (block.timestamp > position.end + position.duration) {
-            uint256 additionalReward = delegationPool.claimableRewards(delegator) - sumReward;
-            additionalReward = _applyCustomReward(additionalReward);
-            sumReward += additionalReward;
-        }
-
-        return sumReward;
+        return _calculatePositionRewards(validator, delegator, position, epochNumber, topUpIndex);
     }
 
     /**
@@ -121,14 +86,14 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     function calculateDelegatePositionPenalty(
         address validator,
         address delegator,
-        uint256 amount
+        uint256 amount,
+        uint256 epochNumber,
+        uint256 topUpIndex
     ) external view returns (uint256 penalty, uint256 reward) {
-        DelegationPool storage pool = delegationPools[validator];
         VestingPosition memory position = delegationPositions[validator][delegator];
         if (position.isActive()) {
             penalty = _calcSlashing(position, amount);
-            // apply the max Vesting bonus, because the full reward must be burned
-            reward = applyMaxReward(pool.claimableRewards(delegator));
+            reward = _calculatePositionRewards(validator, delegator, position, epochNumber, topUpIndex);
         }
     }
 
@@ -422,14 +387,17 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
     ) private view returns (uint256 rps, uint256 balance, int256 correction) {
         VestingPosition memory position = delegationPositions[validator][manager];
         uint256 matureEnd = position.end + position.duration;
-        uint256 alreadyMatured;
+        uint256 timeElapsed;
         // If full mature period is finished, the full reward up to the end of the vesting must be matured
         if (matureEnd < block.timestamp) {
-            alreadyMatured = position.end;
-        } else {
+            timeElapsed = position.end;
+        } else if (position.end < block.timestamp) {
             // rewardPerShare must be fetched from the history records
             uint256 maturedPeriod = block.timestamp - position.end;
-            alreadyMatured = position.start + maturedPeriod;
+            timeElapsed = position.start + maturedPeriod;
+        } else {
+            uint256 passedPeriod = block.timestamp - position.start;
+            timeElapsed = position.start + passedPeriod;
         }
 
         RPS memory rpsData = historyRPS[validator][epochNumber];
@@ -438,7 +406,7 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         }
 
         // If the given RPS is for future time - it is wrong, so revert
-        if (rpsData.timestamp > alreadyMatured) {
+        if (rpsData.timestamp > timeElapsed) {
             revert DelegateRequirement({src: "vesting", msg: "WRONG_RPS"});
         }
 
@@ -578,6 +546,47 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         }
 
         return (params.balance, params.correction);
+    }
+
+    function _calculatePositionRewards(
+        address validator,
+        address delegator,
+        VestingPosition memory position,
+        uint256 epochNumber,
+        uint256 topUpIndex
+    ) private view returns (uint256 sumReward) {
+        DelegationPool storage delegationPool = delegationPools[validator];
+        bool rsi = true;
+        if (_isTopUpMade(validator, delegator)) {
+            rsi = false;
+            RewardParams memory params = beforeTopUpParams[validator][delegator];
+            uint256 rsiReward = delegationPool.claimableRewards(
+                delegator,
+                params.rewardPerShare,
+                params.balance,
+                params.correction
+            );
+            sumReward += _applyCustomReward(position, rsiReward, true);
+        }
+
+        // distribute the proper vesting reward
+        (uint256 epochRPS, uint256 balance, int256 correction) = _rewardParams(
+            validator,
+            delegator,
+            epochNumber,
+            topUpIndex
+        );
+
+        uint256 reward = delegationPool.claimableRewards(delegator, epochRPS, balance, correction);
+        reward = _applyCustomReward(position, reward, rsi);
+        sumReward += reward;
+
+        // If the full maturing period is finished, withdraw also the reward made after the vesting period
+        if (block.timestamp > position.end + position.duration) {
+            uint256 additionalReward = delegationPool.claimableRewards(delegator) - sumReward;
+            additionalReward = _applyCustomReward(additionalReward);
+            sumReward += additionalReward;
+        }
     }
 
     function _burnAmount(uint256 amount) private {
