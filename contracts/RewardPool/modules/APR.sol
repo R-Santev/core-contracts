@@ -96,6 +96,10 @@ contract APR is Initializable, AccessControl {
         return 1e18;
     }
 
+    /// @notice Function that applies the base APR to a given reward
+    /// @dev Denominator is used because we should work with numbers with floating point
+    /// @param reward The reward to which we gonna apply the base APR
+    /// @return The reward with the applied APR
     function _applyCustomReward(uint256 reward) internal view returns (uint256) {
         return _applyBaseAPR(reward) / EPOCHS_YEAR;
     }
