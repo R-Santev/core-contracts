@@ -485,6 +485,25 @@ export function RunDelegationTests(): void {
         const cutAmount = delegatedBalanceBefore.div(2);
         const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
 
+        // Hydra TODO: Create table-driven unit tests with precalculated values to test the exact amounts
+        // check if amount is properly burned
+        // const end = position.end;
+        // const rpsValues = await childValidatorSet.getRPSValues(validator);
+        // const epochNum = findProperRPSIndex(rpsValues, end);
+        // const topUpIndex = 0;
+        // let reward = await childValidatorSet.getDelegatorPositionReward(
+        //   validator,
+        //   manager.address,
+        //   epochNum,
+        //   topUpIndex
+        // );
+        // reward = await childValidatorSet.applyMaxReward(reward);
+        // const decrease = reward.add(amountToBeBurned);
+        // await expect(manager.cutVestedDelegatePosition(validator, cutAmount)).to.changeEtherBalance(
+        //   childValidatorSet,
+        //   decrease.mul(-1)
+        // );
+
         await liquidToken.connect(vestManagerOwner).approve(vestManager.address, cutAmount);
 
         const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
