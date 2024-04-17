@@ -6,14 +6,7 @@ import * as hre from "hardhat";
 // eslint-disable-next-line camelcase
 import { VestManager__factory } from "../../typechain-types";
 import { VESTING_DURATION_WEEKS, WEEK } from "../constants";
-import {
-  calculatePenalty,
-  claimPositionRewards,
-  commitEpoch,
-  commitEpochs,
-  getUserManager,
-  retrieveRPSData,
-} from "../helper";
+import { calculatePenalty, claimPositionRewards, commitEpoch, commitEpochs, getUserManager } from "../helper";
 import {
   RunDelegateClaimTests,
   RunVestedDelegateClaimTests,
@@ -462,22 +455,13 @@ export function RunDelegationTests(): void {
         const position = await rewardPool.delegationPositions(delegatedValidator.address, vestManager.address);
         const latestTimestamp = hre.ethers.BigNumber.from(await time.latest());
 
-        // prepare params for call
-        const { epochNum, topUpIndex } = await retrieveRPSData(
-          systemValidatorSet,
-          rewardPool,
-          delegatedValidator.address,
-          vestManager.address
-        );
-
         // get the penalty and reward from the contract
-        const { penalty, reward } = await rewardPool.calculateDelegatePositionPenalty(
+        const penalty = await rewardPool.calculatePositionPenalty(
           delegatedValidator.address,
           vestManager.address,
-          this.minStake,
-          epochNum,
-          topUpIndex
+          this.minStake
         );
+        const reward = await rewardPool.calculateTotalPositionReward(delegatedValidator.address, vestManager.address);
 
         // calculate penalty locally
         const calculatedPenalty = await calculatePenalty(position, latestTimestamp, this.minStake);

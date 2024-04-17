@@ -165,7 +165,72 @@ export function RunDelegateClaimTests(): void {
 }
 
 export function RunVestedDelegationRewardsTests(): void {
-  describe("getDelegatorPositionReward", async function () {
+  describe("Delegate position rewards", async function () {
+    it("should get no rewards if the position is still active", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool } = await loadFixture(this.fixtures.delegatedFixture);
+
+      const validator = this.signers.validators[1];
+      const manager = await createManagerAndVest(
+        validatorSet,
+        rewardPool,
+        this.signers.accounts[4],
+        validator.address,
+        VESTING_DURATION_WEEKS,
+        this.minDelegation.mul(100)
+      );
+
+      // pass two weeks ahead
+      await time.increase(WEEK * 2);
+
+      // Commit epochs so rewards to be distributed
+      await commitEpochs(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], validator],
+        10, // number of epochs to commit
+        this.epochSize
+      );
+
+      const managerRewards = await getDelegatorPositionReward(
+        validatorSet,
+        rewardPool,
+        validator.address,
+        manager.address
+      );
+
+      expect(managerRewards).to.equal(0);
+    });
+
+    it("should generate partial rewards when enter maturing period", async function () {
+      const { systemValidatorSet, validatorSet, rewardPool, vestManager, delegatedValidator } = await loadFixture(
+        this.fixtures.weeklyVestedDelegationFixture
+      );
+
+      // enter maturing period
+      await time.increase(WEEK * 1 + 1);
+
+      // Commit epoch so some more rewards are distributed
+      await commitEpoch(
+        systemValidatorSet,
+        rewardPool,
+        [this.signers.validators[0], delegatedValidator],
+        this.epochSize
+      );
+
+      const managerRewards = await getDelegatorPositionReward(
+        validatorSet,
+        rewardPool,
+        delegatedValidator.address,
+        vestManager.address
+      );
+      const totalRewards = await rewardPool.calculateTotalPositionReward(
+        delegatedValidator.address,
+        vestManager.address
+      );
+
+      expect(managerRewards).to.be.lessThan(totalRewards);
+    });
+
     it("should have the same rewards if the position size and period are the same", async function () {
       const { systemValidatorSet, validatorSet, rewardPool } = await loadFixture(this.fixtures.delegatedFixture);
 
@@ -199,18 +264,8 @@ export function RunVestedDelegationRewardsTests(): void {
         this.epochSize
       );
 
-      const manager1rewards = await getDelegatorPositionReward(
-        validatorSet,
-        rewardPool,
-        validator.address,
-        manager1.address
-      );
-      const manager2rewards = await getDelegatorPositionReward(
-        validatorSet,
-        rewardPool,
-        validator.address,
-        manager2.address
-      );
+      const manager1rewards = await rewardPool.calculateTotalPositionReward(validator.address, manager1.address);
+      const manager2rewards = await rewardPool.calculateTotalPositionReward(validator.address, manager2.address);
 
       expect(manager1rewards).to.equal(manager2rewards);
     });
@@ -248,18 +303,8 @@ export function RunVestedDelegationRewardsTests(): void {
         this.epochSize
       );
 
-      const manager1rewards = await getDelegatorPositionReward(
-        validatorSet,
-        rewardPool,
-        validator.address,
-        manager1.address
-      );
-      const manager2rewards = await getDelegatorPositionReward(
-        validatorSet,
-        rewardPool,
-        validator.address,
-        manager2.address
-      );
+      const manager1rewards = await rewardPool.calculateTotalPositionReward(validator.address, manager1.address);
+      const manager2rewards = await rewardPool.calculateTotalPositionReward(validator.address, manager2.address);
 
       expect(manager2rewards).to.be.greaterThan(manager1rewards);
     });
@@ -297,18 +342,8 @@ export function RunVestedDelegationRewardsTests(): void {
         this.epochSize
       );
 
-      const manager1rewards = await getDelegatorPositionReward(
-        validatorSet,
-        rewardPool,
-        validator.address,
-        manager1.address
-      );
-      const manager2rewards = await getDelegatorPositionReward(
-        validatorSet,
-        rewardPool,
-        validator.address,
-        manager2.address
-      );
+      const manager1rewards = await rewardPool.calculateTotalPositionReward(validator.address, manager1.address);
+      const manager2rewards = await rewardPool.calculateTotalPositionReward(validator.address, manager2.address);
 
       expect(manager1rewards).to.be.greaterThan(manager2rewards);
     });

@@ -335,12 +335,7 @@ export async function getDelegatorPositionReward(
   delegator: string
 ) {
   // prepare params for call
-  const { epochNum: epochNumManager1, topUpIndex: topUpIndexNumManager1 } = await retrieveRPSData(
-    validatorSet,
-    rewardPool,
-    validator,
-    delegator
-  );
+  const { epochNum, topUpIndex } = await retrieveRPSData(validatorSet, rewardPool, validator, delegator);
 
-  return await rewardPool.getDelegatorPositionReward(validator, delegator, epochNumManager1, topUpIndexNumManager1);
+  return await rewardPool.getDelegatorPositionReward(validator, delegator, epochNum, topUpIndex);
 }
