@@ -58,8 +58,6 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         return _applyCustomReward(reward);
     }
 
-    // vito
-
     /**
      * @inheritdoc IRewardPool
      */
@@ -122,7 +120,6 @@ abstract contract DelegationRewards is RewardPoolBase, Vesting, RewardsWithdrawa
         }
     }
 
-    // vito
     /**
      * @inheritdoc IRewardPool
      */
