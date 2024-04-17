@@ -291,7 +291,7 @@ export function RunVestedDelegationRewardsTests(): void {
         this.minDelegation.mul(100)
       );
 
-      // pass two weeks ahead
+      // pass three weeks ahead
       await time.increase(WEEK * 3);
 
       // Commit epochs so rewards to be distributed
@@ -330,7 +330,7 @@ export function RunVestedDelegationRewardsTests(): void {
         this.minDelegation.mul(2)
       );
 
-      // pass two weeks ahead
+      // pass five weeks ahead
       await time.increase(WEEK * 5);
 
       // Commit epochs so rewards to be distributed
